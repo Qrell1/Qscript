@@ -80,12 +80,60 @@ namespace Qscript
                 case "BINOPER":
                     if (root.token.value == "=")
                     {
+                        // child
+                        CommonNode varChild = take(root, 0); // eax
+                        CommonNode rightChild = take(root, 1);
+                        _objProg.code.Append("xor eax, eax\n");
+                        Translation (rightChild, z_buffer + 1);
+                        _objProg.code.Append($"mov [{varChild.token.value}], eax\n");
+                    }
+                    if (new string[] { "+", "-", "*", "/" }.Contains(root.token.value))
+                    {
+                        CommonNode leftChild = take(root, 0);
+                        CommonNode rightChild = take(root, 1);
+                        /*if (leftChild.type == "NUMBER" &&  rightChild.type == "NUMBER")
+                        {
+                            _objProg.code.Append($mov);
+                        }*/
+                        if (leftChild.type == "NUMBER")
+                            _objProg.code.Append($"mov eax, {leftChild.token.value}\n");
+                        else
+                            Translation(leftChild, z_buffer+1);
+                        if (rightChild.type == "NUMBER")
+                        {
+                            //_objProg.code.Append($"");
+                            string instuct = string.Empty;
+                            switch (root.token.value)
+                            {
+                                case "+":
+                                    instuct = "add";
+                                    break;
+                                case "-":
+                                    instuct = "sub";
+                                    break;
+                                case "*":
+                                    instuct = "mul";
+                                    break;
+                                case "/":
+                                    instuct = "div";
+                                    break;
+                            }
+                            _objProg.code.Append($"{instuct} eax, {rightChild.token.value}\n");
+                        }
+                        else
+                            Translation(rightChild, z_buffer + 1);
+                    }
+                    /*if (root.token.value == "=")
+                    {
                         CommonNode var = take(root, 0);
                         CommonNode type2 = take(var, 0);
                         CommonNode oper2 = take(root, 1);
                         if (!vars.Contains(root.token.value) && type2 != null)
                             _objProg.data.Append($"{var.token.value} {types[type2.token.value]} {oper2.token.value}\n");
-                    }
+                    }*/
+                    break;
+                case "NUMBER":
+                    _objProg.code.Append($"mov eax, {root.token.value}\n");
                     break;
 
             }

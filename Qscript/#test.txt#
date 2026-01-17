@@ -1,0 +1,23 @@
+int32 x = 32 + 32;
+BINOPER [=]
+	x [VAR]
+	BINOPER [+]
+		32
+		32
+xor eax, eax
+mov eax, 32
+add eax, 32
+mov [x], eax
+
+
+Formula == (eax + eax) * eax
+
+left-eax + formula
+xor eax, eax
+mov eax, 32
+add eax, 32
+
+
+
+
+int32 x = (32 + 32) * 2;
