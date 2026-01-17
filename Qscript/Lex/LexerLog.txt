@@ -1,0 +1,176 @@
+Write File:
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Анализирование токена
+[LEXER] Token pos:0 type:ASMINCLUDE      value:asm-include
+[LEXER] Token pos:12 type:STRING          value:"ioqs.asm"
+[LEXER] Token pos:22 type:SEM             value:;
+[LEXER] Token pos:23 type:INT32TYPE       value:int32
+[LEXER] Token pos:29 type:VAR             value:gG1
+[LEXER] Token pos:33 type:ASSIGN          value:=
+[LEXER] Token pos:35 type:NUMBER          value:212
+[LEXER] Token pos:38 type:SEM             value:;
+[LEXER] Token pos:39 type:INT16TYPE       value:int16
+[LEXER] Token pos:45 type:VAR             value:gG2
+[LEXER] Token pos:49 type:ASSIGN          value:=
+[LEXER] Token pos:51 type:NUMBER          value:1432
+[LEXER] Token pos:55 type:SEM             value:;
+[LEXER] Token pos:56 type:INT8TYPE        value:int8
+[LEXER] Token pos:61 type:VAR             value:g_G3
+[LEXER] Token pos:66 type:ASSIGN          value:=
+[LEXER] Token pos:68 type:NUMBER          value:15
+[LEXER] Token pos:70 type:SEM             value:;
+[LEXER] Token pos:71 type:IF              value:if
+[LEXER] Token pos:74 type:LPAR            value:(
+[LEXER] Token pos:75 type:VAR             value:gG1
+[LEXER] Token pos:79 type:SAME            value:==
+[LEXER] Token pos:82 type:NUMBER          value:212
+[LEXER] Token pos:85 type:RPAR            value:)
+[LEXER] Token pos:87 type:LFIG            value:{
+[LEXER] Token pos:89 type:MACRO           value:macro
+[LEXER] Token pos:94 type:CONST           value:OUTF
+[LEXER] Token pos:99 type:STRING          value:"Hello World!"
+[LEXER] Token pos:113 type:SEM             value:;
+[LEXER] Token pos:114 type:RFIG            value:}
+[LEXER] Token pos:115 type:ELSEIF          value:else-if
+[LEXER] Token pos:123 type:LPAR            value:(
+[LEXER] Token pos:124 type:VAR             value:gG1
+[LEXER] Token pos:128 type:BIGOPER         value:<<
+[LEXER] Token pos:131 type:NUMBER          value:212
+[LEXER] Token pos:134 type:RPAR            value:)
+[LEXER] Token pos:135 type:LFIG            value:{
+[LEXER] Token pos:137 type:MACRO           value:macro
+[LEXER] Token pos:142 type:CONST           value:OUTF
+[LEXER] Token pos:147 type:STRING          value:"Hello World2!"
+[LEXER] Token pos:162 type:SEM             value:;
+[LEXER] Token pos:163 type:RFIG            value:}
+
+.data
+gG1 dw ?
+gG2 dd ?
+g_G3 db ?
+
+.code
+mov [gG1], 212
+mov [gG1], 1432
+mov [g_G3], 15
+;if
+cmp gG1, 212
+jne f1
+;true
+OUTF 'Hello World!'
+f1:
+
+-- AST
+1 ASMINCLUDEnode->STRING
+[LEXER] Token pos:0 type:ASMINCLUDE      value:asm-include
+[LEXER] Token pos:12 type:STRING          value:"ioqs.asm"
+[LEXER] Token pos:22 type:SEM             value:;
+2 TYPEVARnode->ASSIGN->NUMBER
+[LEXER] Token pos:23 type:INT32TYPE       value:int32
+[LEXER] Token pos:29 type:VAR             value:gG1
+[LEXER] Token pos:33 type:ASSIGN          value:=
+[LEXER] Token pos:35 type:NUMBER          value:212
+[LEXER] Token pos:38 type:SEM             value:;
+3 TYPEVARnode->ASSIGN->NUMBER
+[LEXER] Token pos:39 type:INT16TYPE       value:int16
+[LEXER] Token pos:45 type:VAR             value:gG2
+[LEXER] Token pos:49 type:ASSIGN          value:=
+[LEXER] Token pos:51 type:NUMBER          value:1432
+[LEXER] Token pos:55 type:SEM             value:;
+4 TYPEVARnode->ASSIGN->NUMBER
+[LEXER] Token pos:56 type:INT8TYPE        value:int8
+[LEXER] Token pos:61 type:VAR             value:g_G3
+[LEXER] Token pos:66 type:ASSIGN          value:=
+[LEXER] Token pos:68 type:NUMBER          value:15
+[LEXER] Token pos:70 type:SEM             value:;
+5 IFnode->(BINOP->(VARnode)(NUMBER))(MACROnode->CONSTnode->ARGnode)
+[LEXER] Token pos:71 type:IF              value:if
+[LEXER] Token pos:74 type:LPAR            value:(
+[LEXER] Token pos:75 type:VAR             value:gG1
+[LEXER] Token pos:79 type:SAME            value:==
+[LEXER] Token pos:82 type:NUMBER          value:212
+[LEXER] Token pos:85 type:RPAR            value:)
+[LEXER] Token pos:87 type:LFIG            value:{
+6
+[LEXER] Token pos:89 type:MACRO           value:macro
+[LEXER] Token pos:94 type:CONST           value:OUTF
+[LEXER] Token pos:99 type:STRING          value:"Hello World!"
+[LEXER] Token pos:113 type:SEM             value:;
+5
+[LEXER] Token pos:114 type:RFIG            value:}
+8
+[LEXER] Token pos:115 type:ELSEIF          value:else-if
+[LEXER] Token pos:123 type:LPAR            value:(
+[LEXER] Token pos:124 type:VAR             value:gG1
+[LEXER] Token pos:128 type:BIGOPER         value:<<
+[LEXER] Token pos:131 type:NUMBER          value:212
+[LEXER] Token pos:134 type:RPAR            value:)
+[LEXER] Token pos:135 type:LFIG            value:{
+9
+[LEXER] Token pos:137 type:MACRO           value:macro
+[LEXER] Token pos:142 type:CONST           value:OUTF
+[LEXER] Token pos:147 type:STRING          value:"Hello World2!"
+[LEXER] Token pos:162 type:SEM             value:;
+8
+[LEXER] Token pos:163 type:RFIG            value:}
