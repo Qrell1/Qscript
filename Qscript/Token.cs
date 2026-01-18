@@ -106,6 +106,8 @@ namespace Qscript
             tokenTypes.Add("STRUCT", new TokenType("STRUCT", "struct"));
             tokenTypes.Add("CLASS", new TokenType("CLASS", "class"));
 
+            tokenTypes.Add("INLINE", new TokenType("INLINE", "inline"));
+
 
             // modifecator модификаторы 
             //tokenTypes.Add("PUBLIC", new TokenType("PUBLIC", "public"));
@@ -115,8 +117,9 @@ namespace Qscript
 
 
             tokenTypes.Add("BOOL", new TokenType("BOOL", @"(true|false)"));
-            tokenTypes.Add("VAR", new TokenType("VAR", @"[a-zA-Z_][a-zA-Z0-9_]*"));
             tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
+            tokenTypes.Add("VAR", new TokenType("VAR", @"[a-zA-Z_][a-zA-Z0-9_]*"));
+            //tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
             tokenTypes.Add("NUMBER", new TokenType("NUMBER", "[0-9]+"));
             tokenTypes.Add("STRING", new TokenType("STRING", @"""[^""]*"""));//@"""[^""//]*[^""\\]*(?:\\.[^""\\]*)*"""));
             //tokenTypes.Add("CHAR", new TokenType("CHAR", @"'[^'\\]*(?:\\.[^'\\]*)*'"));

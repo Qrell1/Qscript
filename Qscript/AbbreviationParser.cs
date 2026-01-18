@@ -1,0 +1,131 @@
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace Qscript
+{
+    public class AbbreviationParser
+    {
+        public ProgramNode ast;
+        public AbbreviationParser() { }
+
+        public CommonNode take(CommonNode node, int i = 0)
+        {
+            if (node.childs.Count >= i + 1)
+            {
+                return node.childs[i];
+            }
+            return null;
+        }
+
+        public CommonNode abbParse (CommonNode root)
+        {
+            return parse(root, 0);
+        }
+
+        public CommonNode parse (CommonNode root, int z_buffer)
+        {
+            switch (root.type)
+            {
+                case "BINOPER":
+                    //parse(root.childs[0]);
+                    CommonNode leftNode = take(root, 0);
+                    CommonNode rightNode = take(root, 1);
+
+                    if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
+                    {
+                        //parse(leftNode, z_buffer + 1);
+                        //parse
+                        int resualt = 0;
+                        switch (root.token.value)
+                        {
+                            case "+":
+                                resualt = Convert.ToInt32(leftNode.token.value) + Convert.ToInt32(rightNode.token.value);
+                                break;
+                            case "-":
+                                resualt = Convert.ToInt32(leftNode.token.value) - Convert.ToInt32(rightNode.token.value);
+                                break;
+                            case "*":
+                                resualt = Convert.ToInt32(leftNode.token.value) * Convert.ToInt32(rightNode.token.value);
+                                break;
+                            case "/":
+                                resualt = Convert.ToInt32(leftNode.token.value) / Convert.ToInt32(rightNode.token.value);
+                                break;
+                        }
+                        root.type = "NUMBER";
+                        root.childs = new List<CommonNode>();
+                        root.token.type.type = "NUMBER";
+                        root.token.value = resualt.ToString();
+                        break;
+                    }
+                    if (leftNode.type != "NUMBER")
+                        leftNode = parse(leftNode, z_buffer);
+                    if (rightNode.type != "NUMBER")
+                        rightNode = parse(rightNode, z_buffer);
+
+                    if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
+                    {
+                        //parse(leftNode, z_buffer + 1);
+                        //parse
+                        int resualt = 0;
+                        switch (root.token.value)
+                        {
+                            case "+":
+                                resualt = Convert.ToInt32(leftNode.token.value) + Convert.ToInt32(rightNode.token.value);
+                                break;
+                            case "-":
+                                resualt = Convert.ToInt32(leftNode.token.value) - Convert.ToInt32(rightNode.token.value);
+                                break;
+                            case "*":
+                                resualt = Convert.ToInt32(leftNode.token.value) * Convert.ToInt32(rightNode.token.value);
+                                break;
+                            case "/":
+                                resualt = Convert.ToInt32(leftNode.token.value) / Convert.ToInt32(rightNode.token.value);
+                                break;
+                        }
+                        root.type = "NUMBER";
+                        root.childs = new List<CommonNode>();
+                        root.token.type.type = "NUMBER";
+                        root.token.value = resualt.ToString();
+                        break;
+                    }
+                    //root = parse(root, z_buffer);
+
+                    break;
+                case "CONST":
+                    //parse(root.childs[0]);
+                    if (take(root, 0).type == "NUMBER")
+                    {
+                        root.childs[0] = parse(root.childs[0], z_buffer + 1);
+                        return root;
+                    }
+                    else if (take(root, 0).type == "STRING")
+                    {
+                        root.childs[0] = parse(root.childs[0], z_buffer + 1);
+                        return root;
+                    }
+                    else if (take(root, 0).type != "BINOPER")
+                        throw new Exception("Ошибка не верный токен ");
+
+                    root.childs[0] = parse(root.childs[0],z_buffer + 1);
+                    //root = parse(root, z_buffer);
+
+                    break;
+                case "STRING":
+                    root.token.value = $"'{root.token.value}', 0";
+                    break;
+                default:
+                    if (root.childs.Count == 0)
+                        break;
+                    for (int i = 0; i < root.childs.Count; i++)
+                    {
+                        root.childs[i] = parse(root.childs[i], z_buffer + 1);
+                    }
+                    break;
+            }
+            return root;
+        }
+    }
+}

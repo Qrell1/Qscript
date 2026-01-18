@@ -26,6 +26,8 @@ namespace QSicon
 
             string[] codes = File.ReadAllLines(args[0]);
             stringCount = codes.Length.ToString().Length;
+            Console.BackgroundColor = ConsoleColor.Cyan;
+            Console.Write(genSpace(stringCount));
             Console.BackgroundColor = ConsoleColor.Yellow;
             Console.ForegroundColor = ConsoleColor.Black;
             Console.WriteLine($"Qscript file{args[0]}");

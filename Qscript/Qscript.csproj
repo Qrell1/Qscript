@@ -61,6 +61,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AbbreviationParser.cs" />
     <Compile Include="Compiler.cs" />
     <Compile Include="Lex\CommentLexer.cs" />
     <Compile Include="Lex\IncludeLexer.cs" />

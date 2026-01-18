@@ -165,16 +165,30 @@ namespace Qscript
             //PrintListToken(forVar);
 
             parser = new Parser(list);
-            ProgramNode ast = parser.parseCode();
+            CommonNode ast = parser.parseCode();
 
+            PrintAST(ast, 0);
+
+            AbbreviationParser addParser = new AbbreviationParser();
+            ast = addParser.abbParse(ast);
+            Console.WriteLine("NEW AST AbbreviationParser!!!");
             PrintAST(ast, 0);
 
             Compiler compiler = new Compiler("dsd");
             compiler.Translation(ast, 0);
+            Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("[DEBUG] SECTION DATA");
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(compiler._objProg.data.ToString());
-            Console.WriteLine("[DEBUG] SECTION CODE");
-            Console.WriteLine(compiler._objProg.code.ToString());
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("[DEBUG] SECTION codeData");
+            Console.ForegroundColor = ConsoleColor.Cyan;
+            Console.WriteLine(compiler._objProg.codeData.ToString());
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.WriteLine("[DEBUG] SECTION procData");
+            Console.ForegroundColor = ConsoleColor.Magenta;
+            Console.WriteLine(compiler._objProg.procData.ToString());
+            Console.ResetColor();
 
             //var compiler = new FASMCompiler();
             //var asm = compiler.Compile(ast);

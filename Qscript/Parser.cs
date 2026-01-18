@@ -14,6 +14,7 @@ namespace Qscript
         public List<Token> tokens;
         public int pos = 0;
 
+
         public Parser(List<Token> _tokens)
         {
             tokens = _tokens;
@@ -638,7 +639,7 @@ namespace Qscript
             if (peek("LPAR") && (tokens[pos+2].type.type == "PS" || tokens[pos+2].type.type == "RPAR"))
             {
                 CommonNode types = parseVarSignature("LPAR", "TYPE");
-                types.type = "TYPE";
+                types.type = "TYPEFORMULA";
                 return parseType(types);
             }
             if (peek("LPAR"))
@@ -711,6 +712,7 @@ namespace Qscript
                     rightNode = parseFormulaSignature();
                 else
                     rightNode = parseFormula();
+                rightNode.type = "VARFORMULA";
                 operNode.childs.Add(rightNode);
                 expect("SEM"); skip();
                 return operNode;
@@ -895,6 +897,19 @@ namespace Qscript
             return usingNode;
         }
 
+        public CommonNode parseConst()
+        {
+            expect("CONST");
+            Token constToken = take();
+            CommonNode constNode = new CommonNode("CONST", constToken);
+            expect("OPER"); if (tokens[pos].value != "=") SyntaxError($"На Позиции:{pos} после константы ожидался оператор =");
+            skip();
+            CommonNode valueNode = parseFormula();
+            constNode.childs.Add(valueNode);
+            expect("SEM"); skip();
+            return constNode;
+        }
+
         public ProgramNode parseCode()
         {
             var root = new ProgramNode("ROOT", new Token(null, "ROOT", -1));
@@ -948,6 +963,10 @@ namespace Qscript
             if (peek("ASM"))
             {
                 return new CommonNode("ASM", take());
+            }
+            if (peek("CONST"))
+            {
+                return parseConst();
             }
             return null;
         }
