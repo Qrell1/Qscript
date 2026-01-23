@@ -139,6 +139,7 @@ namespace Qscript
             List<Token> list2 = includeLexer.lexIncludes(list);
             list = includeLexer.destroyIncludes(list);
             list2.AddRange(list);
+            list = list2;
 
             List<Token> forType = new List<Token>();
             List<Token> forVar = new List<Token>();
