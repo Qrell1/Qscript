@@ -20,9 +20,11 @@ namespace Qscript
             return null;
         }
 
-        public CommonNode abbParse (CommonNode root)
+        public ProgramNode abbParse (ProgramNode root)
         {
-            return parse(root, 0);
+            ast = root;
+            ast.childs = parse(root, 0).childs;
+            return ast;
         }
 
         public CommonNode parse (CommonNode root, int z_buffer)
@@ -115,6 +117,36 @@ namespace Qscript
                     break;
                 case "STRING":
                     root.token.value = $"'{root.token.value}', 0";
+                    break;
+                case "INLINE":
+                    CommonNode body = take(root, 1);
+                    //List<CommonNode> childs = new List<CommonNode>();
+                    for (int i = 0; i < body.childs.Count; i++)
+                    {
+                        if (body.childs[i].type == "RETURN")
+                            throw new Exception("Ошибка в инлайн функции не может быть return");
+                            //childs.Add(body.childs[i]);
+                    }
+                    //body.childs = childs;
+                    ast.inlineNames.Add(root.token.value);
+                    return root;
+                    break;
+                case "REFVAR":
+                    CommonNode var = take(root, 0);
+
+                    if (var.type == "REFVAR")
+                    {
+                        CommonNode vr = parse(var, z_buffer + 1);
+                        var.token.value = root.token.value + "." + vr.token.value;
+                        var.type = vr.type;
+                        var.childs = vr.childs;
+                    }
+                    else
+                    {
+                        CommonNode vr = parse(var, z_buffer + 1);
+                        var.token.value = root.token.value + "." + vr.token.value;
+                    }
+                    return var;
                     break;
                 default:
                     if (root.childs.Count == 0)

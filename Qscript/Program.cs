@@ -124,10 +124,37 @@ namespace Qscript
             Console.WriteLine("Write File: ");
             Console.WriteLine("Auto Run!");
             //string filename = Console.ReadLine();
-            string filename = "compile.qs";
-            string[] codes = File.ReadAllLines("codes\\" + filename);
-            
+            string filename;
+            string[] codes;
+            string pathCompile;
+            TypeApp typeApp = TypeApp.program32;
 
+            if (args.Length == 2)
+            {
+                codes = File.ReadAllLines(args[0]);
+                FileStream fileStream = File.OpenRead(args[0]);
+                string[] refs = args[0].Split('\\');
+                filename = refs[refs.Length-1].Split('.')[0];
+                pathCompile = args[0].Replace(refs[refs.Length-1], "");
+                Console.WriteLine(pathCompile);
+                Console.WriteLine(filename);
+                Console.Read();
+                fileStream.Close();
+                if (args[1] == "-asmmodule")
+                    typeApp = TypeApp.asmmodule;
+                else if (args[1] == "-dll")
+                    typeApp = TypeApp.dll;
+                else if (args[1] == "-program32")
+                    typeApp = TypeApp.program32;
+                else if (args[1] == "-program64")
+                    typeApp = TypeApp.program64;
+            }
+            else
+            {
+                pathCompile = AppDomain.CurrentDomain.BaseDirectory + "\\compile\\";
+                filename = "compile";
+                codes = File.ReadAllLines("codes\\" + filename + ".qs");
+            }
 
             string code = commentLexer.lexCodes(codes);
 
@@ -166,7 +193,7 @@ namespace Qscript
             //PrintListToken(forVar);
 
             parser = new Parser(list);
-            CommonNode ast = parser.parseCode();
+            ProgramNode ast = parser.parseCode();
 
             PrintAST(ast, 0);
 
@@ -175,9 +202,9 @@ namespace Qscript
             Console.WriteLine("NEW AST AbbreviationParser!!!");
             PrintAST(ast, 0);
 
-            Compiler compiler = new Compiler("dsd");
+            Compiler compiler = new Compiler("dsd", ast);
             compiler.Translation(ast, 0);
-            Console.ForegroundColor = ConsoleColor.Yellow;
+            /*Console.ForegroundColor = ConsoleColor.Yellow;
             Console.WriteLine("[DEBUG] SECTION DATA");
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine(compiler._objProg.data.ToString());
@@ -189,8 +216,13 @@ namespace Qscript
             Console.WriteLine("[DEBUG] SECTION procData");
             Console.ForegroundColor = ConsoleColor.Magenta;
             Console.WriteLine(compiler._objProg.procData.ToString());
-            Console.ResetColor();
+            Console.WriteLine("[DEBUG] SECTION macroData");
+            Console.ForegroundColor = ConsoleColor.DarkGreen;
+            Console.WriteLine(compiler._objProg.macroData.ToString());
+            Console.ResetColor();*/
 
+            string data = compiler.ConcatData(TypeApp.program32);
+            compiler.WriteCode(data, filename, pathCompile, "qsr");
             //var compiler = new FASMCompiler();
             //var asm = compiler.Compile(ast);
             //Console.WriteLine(asm.ToString());

@@ -3,6 +3,8 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -10,6 +12,11 @@ using System.Threading.Tasks;
 
 namespace QSicon
 {
+    class QscriptConfig
+    {
+        public string CompilerExe;
+        public string Version;
+    }
     internal class Program
     {
         private static int stringCount;
@@ -75,7 +82,21 @@ namespace QSicon
                 Thread.Sleep(1000);
             }*/
 
-            Console.ReadLine();
+            string command = Console.ReadLine();
+            string[] _args = command.Split(' ');
+            if (_args[0] == "compile")
+            {
+                string config = File.ReadAllText("C:\\ProgramData\\Qscript\\config.json");
+                QscriptConfig qscriptConfig = JsonConvert.DeserializeObject<QscriptConfig>(config);
+
+                var proc = new Process();
+                proc.StartInfo.FileName = qscriptConfig.CompilerExe;
+                proc.StartInfo.Arguments = $"{args[0]} {_args[1]}";
+                proc.Start();
+
+                proc.WaitForExit();
+                proc.Close();
+            }
         }
     }
 }

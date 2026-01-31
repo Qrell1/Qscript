@@ -23,6 +23,7 @@ namespace Qscript
     public class ProgramNode : CommonNode
     {
         public List<CommonNode> Constans = new List<CommonNode>();
+        public List<string> inlineNames = new List<string>();
 
         public ProgramNode(string type, Token token) : base(type, token)
         {}

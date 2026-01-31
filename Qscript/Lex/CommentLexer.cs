@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 
 namespace Qscript.Lex
@@ -12,7 +13,9 @@ namespace Qscript.Lex
         public string lexCodes(string[] codes)
         {
             StringBuilder code = new StringBuilder();
-            string str;
+            string str = string.Empty;
+            bool asm = false;
+            string strasm = string.Empty;
             //char[] sep = "//".ToCharArray();
             for (int i = 0; i < codes.Length; i++)
             {

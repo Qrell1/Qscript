@@ -632,6 +632,28 @@ namespace Qscript
             SyntaxError();
             return null;
         }
+        public CommonNode parseInline()
+        {
+
+            expect("INLINE"); skip(); expect("VAR");
+            CommonNode nameNode = new CommonNode("INLINE", take());
+            expect("LPAR");
+
+
+            if (peek("LPAR"))
+            {
+                //CommonNode args = parseFormula();
+                CommonNode args = parseVarWTypeSignature(); expect(new string[] { "LFIG", "SEM" });
+                CommonNode body = parseBody();
+                nameNode.childs.Add(args);
+                nameNode.childs.Add(body);
+                //expect("SEM"); skip();
+                return nameNode;
+            }
+
+            SyntaxError();
+            return null;
+        }
         public CommonNode parseLpar()
         {
             int i = tokens.Count - pos;
@@ -920,12 +942,6 @@ namespace Qscript
                 CommonNode node = parse();
                 if (node == null) break;
                 root.childs.Add(node);
-
-                // Проверяем точку с запятой (если есть)
-                if (pos < tokens.Count && tokens[pos].type.type == "SEM")
-                {
-                    //require(TokenTypeList.tokenTypes["SEM"]);
-                }
             }
             return root;
         }
@@ -967,6 +983,10 @@ namespace Qscript
             if (peek("CONST"))
             {
                 return parseConst();
+            }
+            if (peek("INLINE"))
+            {
+                return parseInline();
             }
             return null;
         }

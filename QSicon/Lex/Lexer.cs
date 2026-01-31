@@ -75,12 +75,12 @@ namespace Qscript.Lex
                         value = value.Replace("\\\"", "\"").Replace("\\\\", "\\");
                         str = value;
                     }
-                    else if (tokenType.type == "ASM")
+                    /*else if (tokenType.type == "ASM")
                     {
                         (string value, int length) = lexAsmInsert(pos, code);
                         pos += length;
                         str = value;
-                    }
+                    }*/
 
 
 

@@ -4,16 +4,21 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using static System.Collections.Specialized.BitVector32;
 
 namespace Qscript
 {
     public enum CodeData
     { 
-        codeData, procData
+        codeData, procData, macroData
     }
-
+    public enum TypeApp
+    {
+        dll, program32, program64, asmmodule
+    }
     public class objProgram
     {
         //public List<CommonNode> functions;
@@ -22,6 +27,9 @@ namespace Qscript
 
         public StringBuilder codeData = new StringBuilder();
         public StringBuilder procData = new StringBuilder();
+        public StringBuilder macroData = new StringBuilder();
+
+        public StringBuilder includes = new StringBuilder();
 
         //public StringBuilder localsData = new StringBuilder();
 
@@ -32,6 +40,8 @@ namespace Qscript
         public objProgram _objProg = new objProgram();
         public string fasmCompilerPath;
         private List<CommonNode> list;
+        private ProgramNode ProgramAst;
+        private string refVarStr = string.Empty;
 
         private List<string> vars = new List<string>();
 
@@ -60,7 +70,7 @@ namespace Qscript
         public int constsIndex;
 
         public int pos;
-        public Compiler(string _fasmCompilerPath) { fasmCompilerPath = _fasmCompilerPath; }
+        public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; }
 
         //
         public bool peek(string type)
@@ -94,6 +104,10 @@ namespace Qscript
             {
                 _objProg.code = _objProg.procData;
             }
+            if (data == CodeData.macroData)
+            {
+                _objProg.code = _objProg.macroData;
+            }
         }
         public void local()
         {
@@ -103,8 +117,8 @@ namespace Qscript
         public void Translation (CommonNode root, int z_buffer)
         {
             //Console.WriteLine($"[DEBUG]--PrintAST>{GenSpaces(z_buffer)} |Тип:{root.type} [{root.token.value}] Дочерних узлов:{root.childs.Count}");
-            
-
+            //if (z_buffer != 0)
+                //_objProg.code.Append("  ");
             switch (root.type)
             {
                 case "ROOT":
@@ -112,13 +126,13 @@ namespace Qscript
                     for (int i = 0; i < root.childs.Count; i++)
                     {
                         CommonNode child = root.childs[i];
-                        Translation (child, z_buffer+1);
+                        Translation(child, z_buffer + 1);
                     }
                     break;
                 case "VAR":
                     if (root.childs.Count == 0)
                     {
-                        //_objProg.code.Append($"mov eax, [{root.token.value}]\n");
+                        _objProg.code.Append($"mov eax, [{root.token.value}]\n");
                         break;
                     }
                     CommonNode type = take(root, 0);
@@ -136,6 +150,22 @@ namespace Qscript
                         _objProg.code.Append($"local {root.token.value} {classes} ??\n");
                     }
                     break;
+                case "REFVAR":
+                    /*CommonNode var = take(root, 0);
+                    
+                    if (var.type == "REFVAR")
+                    {
+                        refVarStr += "." + var.token.value;
+                        var.token.value = refVarStr;
+                        Translation(var, z_buffer + 1);
+                    } else
+                    {
+                        var.token.value = root.token.value + "." + var.token.value;
+                        Translation(var, z_buffer + 1);
+                        refVarStr = string.Empty;
+                    }*/
+
+                    break;
                 case "BINOPER":
                     if (root.token.value == "=")
                     {
@@ -143,7 +173,7 @@ namespace Qscript
                         CommonNode varChild = take(root, 0); // eax
                         CommonNode rightChild = take(root, 1);
                         //_objProg.code.Append("xor eax, eax\n");
-                        Translation (varChild, z_buffer + 1);
+                        Translation(varChild, z_buffer + 1);
                         //Translation (rightChild, z_buffer + 1);
                         if (rightChild.type == "STRING")
                         {
@@ -161,44 +191,7 @@ namespace Qscript
                         _objProg.code.Append($"mov [{varChild.token.value}], eax\n");
                         break;
                     }
-                    if (new string[] { "+=", "-=", "*=", "/=" }.Contains(root.token.value))
-                    {
-                        // child
-                        CommonNode varChild = take(root, 0); // eax
-                        CommonNode rightChild = take(root, 1);
-                        _objProg.code.Append($"mov eax, [{varChild.token.value}]\n");
-                        //Translation(varChild, z_buffer + 1);
-                        //Translation(rightChild, z_buffer + 1);
-                        if (rightChild.type == "NUMBER")
-                            _objProg.code.Append($"mov ebx, {rightChild.token.value}\n");
-                        else if (rightChild.type == "VAR")
-                            _objProg.code.Append($"mov ebx, [{rightChild.token.value}]\n");
-                        else
-                        {
-                            _objProg.code.Append($"push eax\n");
-                            Translation(rightChild, z_buffer + 1);
-                            _objProg.code.Append($"mov ebx, eax\n");
-                            _objProg.code.Append($"pop eax\n");
-                        }
-                        switch (root.token.value)
-                        {
-                            case "+=":
-                                _objProg.code.Append($"add eax, ebx\n");
-                                break;
-                            case "-=":
-                                _objProg.code.Append($"sub eax, ebx\n");
-                                break;
-                            case "*=":
-                                _objProg.code.Append($"mul ebx\n");
-                                break;
-                            case "/=":
-                                _objProg.code.Append("cdq\n");
-                                _objProg.code.Append("idiv ebx\n");
-                                break;
-                        }
-                        _objProg.code.Append($"mov [{varChild.token.value}], eax\n");
-                        break;
-                    }
+                    
                     if (new string[] { "+", "-", "*", "/" }.Contains(root.token.value))
                     {
                         CommonNode leftChild = take(root, 0);
@@ -244,6 +237,30 @@ namespace Qscript
 
 
                         //Translation(leftChild, z_buffer + 1);
+
+                        if (new string[] { leftChild.type, rightChild.type }.Contains("VAR"))
+                        {
+                            _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
+                            switch (root.token.value)
+                            {
+                                case "+":
+                                    _objProg.code.Append($"add eax, eax\n");
+                                    break;
+                                case "-":
+                                    _objProg.code.Append($"sub eax, eax\n");
+                                    break;
+                                case "*":
+                                    _objProg.code.Append($"mul eax\n");
+                                    break;
+                                case "/":
+                                    _objProg.code.Append("cdq\n");
+                                    _objProg.code.Append("idiv eax\n");
+                                    break;
+                            }
+                            break;
+                        }
+
+
                         if (leftChild.type == "NUMBER")
                             _objProg.code.Append($"mov eax, {leftChild.token.value}\n");
                         else if (leftChild.type == "VAR")
@@ -264,7 +281,7 @@ namespace Qscript
                         _objProg.code.Append("pop eax\n");
 
 
-
+                    switchinstruct:
                         string instuct = string.Empty;
                         switch (root.token.value)
                         {
@@ -298,7 +315,7 @@ namespace Qscript
                     break;
                 case "CONST":
                     CommonNode constValue = take(root, 0);
-                    
+
                     //_objProg.data.Append($"const_{constsIndex} db {root.token.value}");
 
                     if (constValue.type == "STRING")
@@ -324,6 +341,7 @@ namespace Qscript
                     _objProg.code.Append($"mov eax, {stringConsts[root.token.value]}\n");
                     break;
                 case "FUNC":
+                    _objProg.code.Append($"; FUNC {root.token.value}\n");
                     setWriteData(CodeData.procData);
                     //CommonNode types2 = take(root, 0);
                     CommonNode signature = take(root, 1);
@@ -336,13 +354,36 @@ namespace Qscript
                             args += $"{signature.childs[i].token.value}:{signature.childs[i].childs[0].token.value}";
                         args += " ";
                     }
-                    _objProg.code.Append($"proc uses eax, {args}\n");
+                    _objProg.code.Append($"proc {root.token.value} uses eax, {args}\n");
                     local();
                     Translation(take(root, 2), z_buffer + 1);
-                    local();
                     _objProg.code.Append($"endp\n");
                     local();
                     setWriteData(CodeData.codeData);
+                    break;
+                case "INLINE":
+                    setWriteData(CodeData.macroData);
+                    //CommonNode types2 = take(root, 0);
+                    CommonNode signatureInline = take(root, 0);
+                    string argsInline = string.Empty;
+                    for (int i = 0; i < signatureInline.childs.Count; i++)
+                    {
+                        argsInline += signatureInline.childs[i].token.value;
+                        if (i < signatureInline.childs.Count - 1)
+                        {
+                            argsInline += ",";
+                        }
+                    }
+                    _objProg.code.Append($"macro {root.token.value} {argsInline}\n");
+                    _objProg.code.Append("{\n");
+                    Translation(take(root, 1), z_buffer + 1);
+                    _objProg.code.Append("}\n");
+                    setWriteData(CodeData.codeData);
+                    break;
+                case "CALL":
+                    //CommonNode types2 = take(root, 0);
+                    parseCall(root, z_buffer);
+
                     break;
                 case "BODY":
                     for (int i = 0; i < root.childs.Count; i++)
@@ -350,30 +391,152 @@ namespace Qscript
                         Translation(root.childs[i], z_buffer + 1);
                     }
                     break;
+                case "ASM":
+                    //_objProg.code.Append(root.token.value);
+                    //string[] strings = root.token.value.Split(new char[] { ';' });
+                    parseAsm(root);
 
+                    break;
+                case "USING":
+                    _objProg.includes.Append($"include '{take(root,0).token.value}'\n");
+                    break;
             }
+            
             /*for (int i = 0; i < root.childs.Count; i++)
             {
                 Translation(root.childs[i], z_buffer + 1);
             }*/
         }
-        /*public void transNode ()
+        public void parseCall (CommonNode root, int z_buffer)
         {
-            if (peek("VAR"))
+            _objProg.code.Append($"; CALL {root.token.value}\n");
+            CommonNode signatureCall = take(root, 0);
+            if (ProgramAst.inlineNames.Contains(root.token.value))
             {
-                string varName = take().token.value;
-                if (peek("TYPE"))
+                _objProg.code.Append($"{root.token.value} ");
+                string args = string.Empty;
+                for (int i = 0; i < signatureCall.childs.Count; i++)
                 {
-                    string typeOper = types[take().token.value];
-                    //objProg.data.Add("  ");
-                    //if (peek("OPER") && take().token.)
+                    if (signatureCall.childs[i].type == "NUMBER" || signatureCall.childs[i].type == "VAR")
+                        args += signatureCall.childs[i].token.value;
+                    else
+                        throw new Exception("У Токена:" + signatureCall.childs[i].token.pos+"ошибка в вызове инлайн функции может быть только переменная или число!!");
+                    if (i < signatureCall.childs.Count-1)
+                        args += ",";
+                }
+                _objProg.code.Append($"{args}\n");
+                return;
+            }
+
+            for (int i = signatureCall.childs.Count - 1; i >= 0; i--)
+            {
+                Translation(take(signatureCall, i), z_buffer + 1);
+                _objProg.code.Append($"push eax\n");
+            }
+            _objProg.code.Append($"call {root.token.value}\n");
+        }
+        // ВРЕМЕННЫЙ СУПЕР ГОВНОКОД
+        public void parseAsm (CommonNode root)
+        {
+            StringBuilder chars = new StringBuilder();
+            char[] strs = root.token.value.ToCharArray();
+            string str = root.token.value;
+            int pos = 0;
+
+            while (pos < str.Length)
+            {
+                Match regx = Regex.Match(str.Substring(pos), "^" + TokenTypeList.tokenTypes["STRING"].regx);
+                if (regx.Success && !string.IsNullOrEmpty(regx.Value))
+                    pos += regx.Length;
+                else
+                {
+                    chars.Append(strs[pos]);
+                    pos++;
                 }
             }
-        }*/
-        public void Compilation (string nameFile)
+            string temp = chars.ToString();
+            str = string.Empty;
+
+            string[] strings = temp.Split(new char[] { ';'}, StringSplitOptions.RemoveEmptyEntries);
+
+            for (int i = 0; i < strings.Length; i++)
+                _objProg.code.Append(strings[i] + "\n");
+        }
+        /*
+         section '.idata' import data readable
+            library kernel, 'kernel32.dll',\
+                    msvcrt, 'msvcrt.dll',\
+                    user, 'user32.dll'
+            import kernel,\
+                ExitProcess, 'ExitProcess',\
+                SetConsoleTitle, 'SetConsoleTitleA',\
+                GetStdHandle, 'GetStdHandle',\
+                SetConsoleTextAttribute, 'SetConsoleTextAttribute',\
+                SetConsoleCursorPosition, 'SetConsoleCursorPosition',\
+                GetProcessHeap, 'GetProcessHeap',\
+                HeapAlloc, 'HeapAlloc',\
+                HeapFree, 'HeapFree',\
+                VirtualAlloc, 'VirtualAlloc',\
+                VirtualFree, 'VirtualFree',\
+                WriteConsoleA, 'WriteConsoleA'
+            import msvcrt,\
+                printf, 'printf',\
+                getch, '_getch',\
+                scanf, 'scanf'
+            import user,\
+                MessageBox, 'MessageBoxA'
+         */
+        public string ConcatData (TypeApp typeApp)
+        {
+            string file = string.Empty;
+            file += _objProg.includes.ToString();
+            file += "\n";
+            file += _objProg.macroData.ToString();
+            file += "\nsection '.data' data readable writable\n";
+            file += _objProg.data.ToString();
+            file += "\nsection '.code' code readable executable\n";
+            file += _objProg.procData.ToString();
+            // section '.code' code readable executable
+            // section '.data' data readable writable
+
+            if (typeApp == TypeApp.asmmodule)
+            {
+                
+            }else if (typeApp == TypeApp.dll)
+            {
+                file += "\nsection '.code' code readable executable\n";
+                file = "PE DLL\n\n" + file;
+            }
+            else if (typeApp == TypeApp.program32)
+            {
+                file = "PE console\n\nentry start\n\n" + file;
+                file += "\nsection '.code' code readable executable\n";
+                file += "    start:\n";
+                file += _objProg.codeData.ToString();
+            }else if (typeApp == TypeApp.program64)
+            {
+                file = "PE console\n\nentry start\n\n" + file;
+                file += "\nsection '.code' code readable executable\n";
+                file += "    start:\n";
+                file += _objProg.codeData.ToString();
+            }
+            return file;
+        }
+        public void WriteCode (string data, string nameFile, string pathCompile, string extend = "asm")
+        {
+            string path = $"{pathCompile}\\{nameFile}\\{nameFile}.{extend}";
+            //File.Delete(path);
+            Console.WriteLine($"{pathCompile}\\{nameFile}\\");
+            Directory.CreateDirectory($"{pathCompile}\\{nameFile}\\");
+            FileStream fileStream = File.Create(path);
+            fileStream.Close();
+            File.WriteAllText(path, data);
+            Console.ReadKey();
+        }
+        public void Compilation (string nameFile, string extend="asm")
         {
             //string path = "/compile" + "/" + nameFile.Replace(".qs", "") + "/" + nameFile;
-            string path = $"/compile/{nameFile}/{nameFile}.asm";
+            string path = $"/compile/{nameFile}/{nameFile}.{extend}";
 
             var proc = new Process();
             proc.StartInfo.FileName = fasmCompilerPath;
