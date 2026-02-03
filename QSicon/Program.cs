@@ -91,7 +91,7 @@ namespace QSicon
 
                 var proc = new Process();
                 proc.StartInfo.FileName = qscriptConfig.CompilerExe;
-                proc.StartInfo.Arguments = $"{args[0]} {_args[1]}";
+                proc.StartInfo.Arguments = $"\"{args[0]}\" {_args[1]}";
                 proc.Start();
 
                 proc.WaitForExit();

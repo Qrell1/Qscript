@@ -32,14 +32,11 @@ namespace Qscript
             switch (root.type)
             {
                 case "BINOPER":
-                    //parse(root.childs[0]);
                     CommonNode leftNode = take(root, 0);
                     CommonNode rightNode = take(root, 1);
 
                     if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
                     {
-                        //parse(leftNode, z_buffer + 1);
-                        //parse
                         int resualt = 0;
                         switch (root.token.value)
                         {
@@ -69,8 +66,6 @@ namespace Qscript
 
                     if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
                     {
-                        //parse(leftNode, z_buffer + 1);
-                        //parse
                         int resualt = 0;
                         switch (root.token.value)
                         {
@@ -93,11 +88,9 @@ namespace Qscript
                         root.token.value = resualt.ToString();
                         break;
                     }
-                    //root = parse(root, z_buffer);
 
                     break;
                 case "CONST":
-                    //parse(root.childs[0]);
                     if (take(root, 0).type == "NUMBER")
                     {
                         root.childs[0] = parse(root.childs[0], z_buffer + 1);
@@ -112,7 +105,6 @@ namespace Qscript
                         throw new Exception("Ошибка не верный токен ");
 
                     root.childs[0] = parse(root.childs[0],z_buffer + 1);
-                    //root = parse(root, z_buffer);
 
                     break;
                 case "STRING":
@@ -120,20 +112,17 @@ namespace Qscript
                     break;
                 case "INLINE":
                     CommonNode body = take(root, 1);
-                    //List<CommonNode> childs = new List<CommonNode>();
                     for (int i = 0; i < body.childs.Count; i++)
                     {
                         if (body.childs[i].type == "RETURN")
                             throw new Exception("Ошибка в инлайн функции не может быть return");
-                            //childs.Add(body.childs[i]);
                     }
-                    //body.childs = childs;
                     ast.inlineNames.Add(root.token.value);
                     return root;
                     break;
-                case "REFVAR":
+                /*case "REFVAR":
                     CommonNode var = take(root, 0);
-
+                    return root;
                     if (var.type == "REFVAR")
                     {
                         CommonNode vr = parse(var, z_buffer + 1);
@@ -147,7 +136,7 @@ namespace Qscript
                         var.token.value = root.token.value + "." + vr.token.value;
                     }
                     return var;
-                    break;
+                    break;*/
                 default:
                     if (root.childs.Count == 0)
                         break;

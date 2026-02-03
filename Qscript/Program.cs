@@ -129,7 +129,7 @@ namespace Qscript
             string pathCompile;
             TypeApp typeApp = TypeApp.program32;
 
-            if (args.Length == 2)
+            if (args.Length >= 2)
             {
                 codes = File.ReadAllLines(args[0]);
                 FileStream fileStream = File.OpenRead(args[0]);
@@ -152,7 +152,7 @@ namespace Qscript
             else
             {
                 pathCompile = AppDomain.CurrentDomain.BaseDirectory + "\\compile\\";
-                filename = "compile";
+                filename = "cm";
                 codes = File.ReadAllLines("codes\\" + filename + ".qs");
             }
 

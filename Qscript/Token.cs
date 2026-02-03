@@ -82,7 +82,8 @@ namespace Qscript
             //tokenTypes.Add("OPER", new TokenType("OPER", @"(==|!=|<<|>>|<=|>=|=<|=>|=?)"));
             //tokenTypes.Add("INC", new TokenType("INC", "[\\--]*"));
             //tokenTypes.Add("DEC", new TokenType("DEC", "[\\++]*"));
-            tokenTypes.Add("OPER", new TokenType("OPER", "(\\++|\\--|==|!=|<<|>>|<=|>=|&&|\\|\\||\\+=|-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-*/%=<>&|!?:~])"));
+            tokenTypes.Add("POSTFIX", new TokenType("POSTFIX", "(\\+\\+|--|\\<>|&|\\?)"));
+            tokenTypes.Add("OPER", new TokenType("OPER", "(\\+=|==|!=|<<|>>|<=|>=|&&|-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-*/%=|!:~])"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", "<"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", ">"));
 
@@ -117,8 +118,8 @@ namespace Qscript
 
 
             tokenTypes.Add("BOOL", new TokenType("BOOL", @"(true|false)"));
-            tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
             tokenTypes.Add("VAR", new TokenType("VAR", @"[a-zA-Z_][a-zA-Z0-9_]*"));
+            tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
             //tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
             tokenTypes.Add("NUMBER", new TokenType("NUMBER", "[0-9]+"));
             tokenTypes.Add("STRING", new TokenType("STRING", @"""[^""]*"""));//@"""[^""//]*[^""\\]*(?:\\.[^""\\]*)*"""));
