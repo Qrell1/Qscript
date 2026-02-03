@@ -105,6 +105,8 @@ namespace Qscript.Lex
                         color = ConsoleColor.Green;
                     else if (new string[] { "OPER", "ENDINCLUDE", "ASMINCLUDE", "INCLUDE", "USING", "ASM" }.Contains(tokenType.type))
                         color = ConsoleColor.Yellow;
+                    else if (new string[] { "POSTFIX" }.Contains(tokenType.type))
+                        color = ConsoleColor.DarkRed;
                     else if (new string[] { "RETURN", "BREAK", "CONTINUE", "BOOL", "INLINE", "MODIFIER", "FOR", "WHILE", "STRUCT", "CLASS" }.Contains(tokenType.type))
                         color = ConsoleColor.Red;
                     else if (new string[] { "CONST", "VAR" }.Contains(tokenType.type))

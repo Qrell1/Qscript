@@ -84,7 +84,8 @@ namespace Qscript
             //tokenTypes.Add("OPER", new TokenType("OPER", @"(==|!=|<<|>>|<=|>=|=<|=>|=?)"));
             //tokenTypes.Add("INC", new TokenType("INC", "[\\--]*"));
             //tokenTypes.Add("DEC", new TokenType("DEC", "[\\++]*"));
-            tokenTypes.Add("OPER", new TokenType("OPER", "(\\++|\\--|==|!=|<<|>>|<=|>=|&&|\\|\\||+=|-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-*/%=<>&|!?:~])"));
+            tokenTypes.Add("POSTFIX", new TokenType("POSTFIX", "(\\+\\+|--|\\<>|&|\\?)"));
+            tokenTypes.Add("OPER", new TokenType("OPER", "(\\+=|==|!=|<<|>>|<=|>=|&&|-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-*/%=|!:~])"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", "<"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", ">"));
 

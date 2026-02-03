@@ -77,7 +77,7 @@ namespace Qscript.Lex
                 Match regx = Regex.Match(code.Substring(pos), "^" + tokenType.regx);
                 if (regx.Success && !string.IsNullOrEmpty(regx.Value))
                 {
-                    Console.WriteLine($"[LEXER] Найден токен: {tokenType.type} значение: {regx.Value}");
+                    //Console.WriteLine($"[LEXER] Найден токен: {tokenType.type} значение: {regx.Value}");
 
                     Token token;
                     if (tokenType.type == "STRING")

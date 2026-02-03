@@ -35,6 +35,20 @@ namespace Qscript
                     CommonNode leftNode = take(root, 0);
                     CommonNode rightNode = take(root, 1);
 
+                    if (leftNode.type == "VAR" && rightNode.type == "CALL")
+                    {
+                        if (!ast.resualtFunc.ContainsKey(rightNode.token.value))
+                            throw new Exception($"Ошибка Функция:{rightNode.token.value} не существует чтобы её вызывать!");
+                        if (!ast.varTypes.ContainsKey(leftNode.token.value))
+                            throw new Exception($"Ошибка Переменной:{rightNode.token.value} не существует!");
+                        if (ast.resualtFunc[rightNode.token.value] == null)
+                            throw new Exception($"Ошибка Функция:{rightNode.token.value} не может возвращать в перменную значения типа void!");
+                        CommonNode typeResualt = ast.resualtFunc[rightNode.token.value];
+                        string type = ast.varTypes[leftNode.token.value];
+                        if (type != typeResualt.token.value)
+                            throw new Exception($"Ошибка Функция:{rightNode.token.value} не может возвращать значение в Переменную:{leftNode.token.value} другого типа!");
+                    }
+
                     if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
                     {
                         int resualt = 0;
@@ -118,6 +132,20 @@ namespace Qscript
                             throw new Exception("Ошибка в инлайн функции не может быть return");
                     }
                     ast.inlineNames.Add(root.token.value);
+                    return root;
+                    break;
+                case "FUNC":
+                    CommonNode signature = take(root, 1);
+                    List<CommonNode> childs = new List<CommonNode>();
+                    if (ast.resualtFunc[root.token.value] != null)
+                    {
+                        CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", -10));
+                        resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
+                        childs.Add(resualtVar);
+                    }
+                    childs.AddRange(signature.childs);
+                    signature.childs = childs;
+                    root.childs[1] = signature;
                     return root;
                     break;
                 /*case "REFVAR":

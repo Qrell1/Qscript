@@ -138,7 +138,7 @@ namespace Qscript
                 pathCompile = args[0].Replace(refs[refs.Length-1], "");
                 Console.WriteLine(pathCompile);
                 Console.WriteLine(filename);
-                Console.Read();
+                //Console.Read();
                 fileStream.Close();
                 if (args[1] == "-asmmodule")
                     typeApp = TypeApp.asmmodule;
@@ -195,7 +195,7 @@ namespace Qscript
             parser = new Parser(list);
             ProgramNode ast = parser.parseCode();
 
-            PrintAST(ast, 0);
+            //PrintAST(ast, 0);
 
             AbbreviationParser addParser = new AbbreviationParser();
             ast = addParser.abbParse(ast);
@@ -223,14 +223,16 @@ namespace Qscript
 
             string data = compiler.ConcatData(TypeApp.program32);
             compiler.WriteCode(data, filename, pathCompile, "qsr");
-            //var compiler = new FASMCompiler();
-            //var asm = compiler.Compile(ast);
-            //Console.WriteLine(asm.ToString());
-            //FASMUntils.CompileAndRun(asm);
+
+            if (args.Length != 0)
+            {
+                Console.Clear();
+                return;
+            }
+
             Console.WriteLine("End...");
-            //parser = new Parser(lexer.lexAnalysis());
-            //var rootNode = parser.parseCode();
-            //parser.run(rootNode);
+            Console.ReadKey();
+
         }
     }
 }

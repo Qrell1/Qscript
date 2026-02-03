@@ -60,6 +60,25 @@ namespace QSicon
         }
         static void Main(string[] args)
         {
+            for (int i = 0; i < args.Length; i++)
+            {
+                Console.WriteLine($"Arg {i}: {args[i]}");
+            }
+            if (args.Length > 1)
+            {
+                string config = File.ReadAllText("C:\\ProgramData\\Qscript\\config.json");
+                QscriptConfig qscriptConfig = JsonConvert.DeserializeObject<QscriptConfig>(config);
+
+                var proc = new Process();
+                proc.StartInfo.FileName = qscriptConfig.CompilerExe;
+                proc.StartInfo.Arguments = $"\"{args[0]}\" {args[1]}";
+                proc.Start();
+
+                proc.WaitForExit();
+                proc.Close();
+                return;
+            }
+
             Console.Title = "Qscript Watching";
 
             string[] codes = File.ReadAllLines(args[0]);
