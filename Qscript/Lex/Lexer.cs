@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data.Common;
 using System.Reflection;
 using System.Text.RegularExpressions;
 
@@ -11,6 +12,9 @@ namespace Qscript.Lex
         public int pos = 0;
         public List<Token> tokenList = new List<Token>();
 
+        private int stringIndex = 0;
+        private int tokenValue;
+
         public Lexer(string _code)
         {
             code = _code;
@@ -20,7 +24,20 @@ namespace Qscript.Lex
         {
             while (nextToken())
             {
+                Error.codeLenght = Error.codeLenght;
+
                 
+                if (Error.codeLenght.Count > stringIndex && tokenValue >= Error.codeLenght[stringIndex])
+                {
+                    stringIndex++;
+                    passEmpetyString:
+                    if (Error.codeLenght.Count > stringIndex && Error.codeLenght[stringIndex] == 0)
+                    {
+                        stringIndex++;
+                        goto passEmpetyString;
+                    }
+                    //tokenValue = 0;
+                }
             }
 
             // Фильтруем пробелы и комментарии
@@ -55,7 +72,6 @@ namespace Qscript.Lex
                 return false;
             }
 
-            
             if (skipWhitespace())
             {
                 return true;
@@ -77,30 +93,33 @@ namespace Qscript.Lex
                 Match regx = Regex.Match(code.Substring(pos), "^" + tokenType.regx);
                 if (regx.Success && !string.IsNullOrEmpty(regx.Value))
                 {
+                    //tokenValue = regx.Value.Length;
                     //Console.WriteLine($"[LEXER] Найден токен: {tokenType.type} значение: {regx.Value}");
-
+                    int length = regx.Value.Length;
                     Token token;
                     if (tokenType.type == "STRING")
                     {
                         string value = regx.Value;
                         value = value.Substring(1, value.Length - 2);
                         value = value.Replace("\\\"", "\"").Replace("\\\\", "\\");
-                        token = new Token(tokenType, value, pos);
+                        token = new Token(tokenType, value, stringIndex);
                     }
                     else if (tokenType.type == "ASM")
                     {
-                        (string value, int length) = lexAsmInsert(pos, code);
-                        token = new Token(tokenType, value, pos);
-                        pos += length;
+                        (string value, int len) = lexAsmInsert(pos, code);
+                        token = new Token(tokenType, value, stringIndex);
+                        length = len;
                         tokenList.Add(token);
                         return true;
                     }
                     else
                     {
-                        token = new Token(tokenType, regx.Value, pos);
+                        token = new Token(tokenType, regx.Value, stringIndex);
+                        length = regx.Value.Length;
                     }
 
-                    pos += regx.Value.Length;
+                    pos += length;
+                    tokenValue += length;
                     tokenList.Add(token);
                     return true;
                 }
@@ -114,6 +133,7 @@ namespace Qscript.Lex
             Match whitespace = Regex.Match(code.Substring(pos), @"^\s+");
             if (whitespace.Success)
             {
+                tokenValue += whitespace.Value.Length;
                 pos += whitespace.Value.Length;
                 return true;
             }
@@ -151,6 +171,7 @@ namespace Qscript.Lex
 
             string asmCode = _code.Substring(startPos + 3, endPos - startPos - 3);
             int length = endPos - startPos + 3; // 2
+            //tokenValue += length;
 
             return (asmCode, length);
         }

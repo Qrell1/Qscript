@@ -199,6 +199,7 @@ namespace Qscript
 
             AbbreviationParser addParser = new AbbreviationParser();
             ast = addParser.abbParse(ast);
+            SemanticAnalyzer.startAnalis(ast);
             Console.WriteLine("NEW AST AbbreviationParser!!!");
             PrintAST(ast, 0);
 

@@ -15,6 +15,7 @@ namespace Qscript
         public TokenType type;
         public string value;
         public int pos;
+        public int posCode;
 
         public Token(TokenType _type, string _value, int _pos)
         {
@@ -131,7 +132,6 @@ namespace Qscript
             //tokenTypes.Add("MINUS", new TokenType("MINUS", "\\-"));
             //tokenTypes.Add("MUL", new TokenType("MUL", "\\*"));
             //tokenTypes.Add("DIV", new TokenType("DIV", "\\/"));
-
             // Pars
             tokenTypes.Add("LPAR", new TokenType("LPAR", "\\("));
             tokenTypes.Add("RPAR", new TokenType("RPAR", "\\)"));

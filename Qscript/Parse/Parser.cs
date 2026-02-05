@@ -16,7 +16,7 @@ namespace Qscript
 
         private ProgramNode root;
 
-        public CommonNode nullNode = new CommonNode("NULLNODE", new Token(null, "",  -10));
+        public CommonNode nullNode = new CommonNode("NULLNODE", new Token(null, "", 0));
 
 
         public Parser(List<Token> _tokens)
@@ -312,9 +312,9 @@ namespace Qscript
             if (peek("RPAR"))
             {
                 skip();
-                return new CommonNode("SIGNATURE", new Token(null, "()", 0));
+                return new CommonNode("SIGNATURE", new Token(null, "()", tokens[pos].pos));
             }
-            CommonNode root = new CommonNode("SIGNATURE", new Token(null, "()", 0));
+            CommonNode root = new CommonNode("SIGNATURE", new Token(null, "()", tokens[pos].pos));
             while (true)
             {
                 expect("VAR"); CommonNode typeNode = new CommonNode("TYPE", take());
@@ -336,9 +336,9 @@ namespace Qscript
             if (peek(rightType))
             {
                 skip();
-                return new CommonNode("SIGNATURE", new Token(null, "()", 0));
+                return new CommonNode("SIGNATURE", new Token(null, "()", tokens[pos].pos));
             }
-            CommonNode root = new CommonNode("SIGNATURE", new Token(null, "()", 0));
+            CommonNode root = new CommonNode("SIGNATURE", new Token(null, "()", tokens[pos].pos));
             while (true)
             {
                 expect("VAR"); CommonNode varNode = new CommonNode(type, take());
@@ -358,9 +358,9 @@ namespace Qscript
             if (peek(rightType))
             {
                 skip();
-                return new CommonNode("SIGNATURE", new Token(null, "()", 0));
+                return new CommonNode("SIGNATURE", new Token(null, "()", tokens[pos - 1].pos));
             }
-            CommonNode root = new CommonNode("SIGNATURE", new Token(null, "()", 0));
+            CommonNode root = new CommonNode("SIGNATURE", new Token(null, "()", tokens[pos - 1].pos));
             while (true)
             {
                 CommonNode formulaNode = parseFormula();
@@ -379,7 +379,7 @@ namespace Qscript
             if (peek("RPAR"))
             {
                 skip();
-                return new CommonNode("CMP", new Token(null, "true", -10));
+                return new CommonNode("CMP", new Token(null, "true", tokens[pos - 1].pos));
             }
             /*CommonNode buffer;
             CommonNode left = parseFormula(); // token 1
@@ -433,17 +433,17 @@ namespace Qscript
             if (peek("SEM"))
             {
                 skip();
-                return new CommonNode("BODY", new Token(null, "{}", -10));
+                return new CommonNode("BODY", new Token(null, "{}", tokens[pos - 1].pos));
             }
             skip();
             if (peek("RFIG"))
             {
                 skip();
-                return new CommonNode("BODY", new Token(null, "{}", -10));
+                return new CommonNode("BODY", new Token(null, "{}", tokens[pos - 1].pos));
             }
             //skip();
 
-            CommonNode root = new CommonNode("BODY", new Token(null, "{}", -10));
+            CommonNode root = new CommonNode("BODY", new Token(null, "{}", tokens[pos].pos));
 
             while (true)
             {
@@ -463,11 +463,7 @@ namespace Qscript
             expect("VAR");
             CommonNode varNode = new CommonNode("VAR", take());
             varNode.childs.Add(typeNode);
-            try
-            {
-                root.varTypes.Add(varNode.token.value, typeNode.token.value);
-            }
-            catch { }
+            
             if (peek("SEM"))
             {
                 skip();
@@ -478,6 +474,7 @@ namespace Qscript
             {
                 CommonNode initMemStaticObject = new CommonNode("ALLOCMEMSTATICOBJECT", take());
                 initMemStaticObject.childs.Add(varNode); expect("SEM"); skip();
+                //root.varTypes.Add(varNode.token.value, typeNode.token.value);
                 return initMemStaticObject;
             }
 
@@ -488,6 +485,7 @@ namespace Qscript
                 CommonNode operNode = new CommonNode("BINOPER", oper);
                 operNode.childs.Add(varNode);
                 operNode.childs.Add(rightOperand);
+                //root.varTypes.Add(varNode.token.value, typeNode.token.value);
                 expect("SEM");skip();
                 return operNode;
             }
@@ -528,6 +526,7 @@ namespace Qscript
             if (peek("VAR"))
             {
                 CommonNode typeNode = new CommonNode("TYPE", varNode.token);
+
                 return parseType(typeNode);
             }
             if (peek("SEM"))
@@ -543,6 +542,7 @@ namespace Qscript
                 CommonNode operNode = new CommonNode("BINOPER", oper);
                 operNode.childs.Add(varNode);
                 operNode.childs.Add(rightOperand);
+
                 expect("SEM"); skip();
                 return operNode;
             }
@@ -601,7 +601,6 @@ namespace Qscript
                 varNode.childs = refvar.childs;
             }
 
-            start:
             //REFVAR
             while (peek("TS"))
             {
@@ -787,7 +786,7 @@ namespace Qscript
             ifNode.childs.Add(ifBodyNode);
             if (peek("ELSE") || peek("ELSEIF"))
             {
-                CommonNode ifElsesNode = new CommonNode("ELSES", new Token(null, "elses", -10));
+                CommonNode ifElsesNode = new CommonNode("ELSES", new Token(null, "elses", tokens[pos].pos));
                 ifElsesNode.childs.Add(parseIfStrurct());
                 ifNode.childs.Add(ifElsesNode);
             }
@@ -1012,7 +1011,7 @@ namespace Qscript
 
         public ProgramNode parseCode()
         {
-            root = new ProgramNode("ROOT", new Token(null, "ROOT", -1));
+            root = new ProgramNode("ROOT", new Token(null, "ROOT", -999));
             while (pos < tokens.Count)
             {
                 if (pos >= tokens.Count) break;

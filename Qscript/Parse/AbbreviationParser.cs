@@ -35,19 +35,7 @@ namespace Qscript
                     CommonNode leftNode = take(root, 0);
                     CommonNode rightNode = take(root, 1);
 
-                    if (leftNode.type == "VAR" && rightNode.type == "CALL")
-                    {
-                        if (!ast.resualtFunc.ContainsKey(rightNode.token.value))
-                            throw new Exception($"Ошибка Функция:{rightNode.token.value} не существует чтобы её вызывать!");
-                        if (!ast.varTypes.ContainsKey(leftNode.token.value))
-                            throw new Exception($"Ошибка Переменной:{rightNode.token.value} не существует!");
-                        if (ast.resualtFunc[rightNode.token.value] == null)
-                            throw new Exception($"Ошибка Функция:{rightNode.token.value} не может возвращать в перменную значения типа void!");
-                        CommonNode typeResualt = ast.resualtFunc[rightNode.token.value];
-                        string type = ast.varTypes[leftNode.token.value];
-                        if (type != typeResualt.token.value)
-                            throw new Exception($"Ошибка Функция:{rightNode.token.value} не может возвращать значение в Переменную:{leftNode.token.value} другого типа!");
-                    }
+                    
 
                     if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
                     {
@@ -123,6 +111,7 @@ namespace Qscript
                     break;
                 case "STRING":
                     root.token.value = $"'{root.token.value}', 0";
+                    return root;
                     break;
                 case "INLINE":
                     CommonNode body = take(root, 1);
@@ -139,7 +128,7 @@ namespace Qscript
                     List<CommonNode> childs = new List<CommonNode>();
                     if (ast.resualtFunc[root.token.value] != null)
                     {
-                        CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", -10));
+                        CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", signature.token.pos));
                         resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                         childs.Add(resualtVar);
                     }
@@ -147,6 +136,12 @@ namespace Qscript
                     signature.childs = childs;
                     root.childs[1] = signature;
                     return root;
+                    break;
+                case "CALL":
+                    for (int i = 0; i < root.childs[0].childs.Count; i++)
+                    {
+                        root.childs[0].childs[i] = parse(root.childs[0].childs[i], z_buffer + 1);
+                    }
                     break;
                 /*case "REFVAR":
                     CommonNode var = take(root, 0);
