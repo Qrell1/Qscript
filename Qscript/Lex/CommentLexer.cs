@@ -24,13 +24,13 @@ namespace Qscript.Lex
                 {
                     str = codes[i].Substring(0, index);
                     code.Append(str);
-                    Error.code.Add(str);
-                    Error.codeLenght.Add(code.Length);
+                    Syntax.code.strings.Add(str);
+                    Syntax.code.stringsSize.Add(str.Length);
                 } else
                 {
                     code.Append(codes[i]);
-                    Error.code.Add(codes[i]);
-                    Error.codeLenght.Add(codes[i].Length);
+                    Syntax.code.strings.Add(codes[i]);
+                    Syntax.code.stringsSize.Add(codes[i].Length);
                 }
             }
             return code.ToString();

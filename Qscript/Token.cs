@@ -148,6 +148,7 @@ namespace Qscript
 
             tokenTypes.Add("SPACE", new TokenType("SPACE", " "));
             tokenTypes.Add("TAB", new TokenType("TAB", "\t"));
+            tokenTypes.Add("N", new TokenType("N", "\n"));
 
             tokenTypes.Add("PS", new TokenType("PS", ","));
             tokenTypes.Add("TS", new TokenType("TS", "."));

@@ -6,6 +6,7 @@ using System.Reflection.Emit;
 using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
+using static System.Net.Mime.MediaTypeNames;
 
 namespace Qscript
 {
@@ -101,7 +102,9 @@ namespace Qscript
             {
                 return true;
             }
-            throw new Exception($"На позиции:{pos} Ожидался Токен:{types}");
+            //throw new Exception($"На позиции:{pos} Ожидался Токен:{types}");
+            Syntax.SyntaxError($"На позиции:{pos} Ожидался Токен:{types}", tokens[pos]);
+            return false;
         }
         public void skip()
         {
@@ -1072,7 +1075,8 @@ namespace Qscript
         // ERROR
         public void SyntaxError(string text = "Хз какая синтаксическая ошибка! Или мне лень её описывать)))")
         {
-            throw new Exception(text);
+            Syntax.SyntaxError(text, tokens[pos]);
+            //throw new Exception(text);
         }
 
     /*public int run(Node node)

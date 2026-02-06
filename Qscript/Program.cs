@@ -158,7 +158,7 @@ namespace Qscript
 
             string code = commentLexer.lexCodes(codes);
 
-            lexer = new Lexer(code);
+            lexer = new Lexer();
             //stringLexer = new StringLexer(lexer.lexAnalysis());
             //List<List<Token>> tokens =  stringLexer.LexStrings();
             //tokens = tokens;
@@ -201,7 +201,8 @@ namespace Qscript
             ast = addParser.abbParse(ast);
             SemanticAnalyzer.startAnalis(ast);
             Console.WriteLine("NEW AST AbbreviationParser!!!");
-            PrintAST(ast, 0);
+            if (args.Length == 0)
+                PrintAST(ast, 0);
 
             Compiler compiler = new Compiler("dsd", ast);
             compiler.Translation(ast, 0);

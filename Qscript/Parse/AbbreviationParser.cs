@@ -125,6 +125,7 @@ namespace Qscript
                     break;
                 case "FUNC":
                     CommonNode signature = take(root, 1);
+                    CommonNode bodyFunc = take(root, 2);
                     List<CommonNode> childs = new List<CommonNode>();
                     if (ast.resualtFunc[root.token.value] != null)
                     {
@@ -132,16 +133,26 @@ namespace Qscript
                         resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                         childs.Add(resualtVar);
                     }
+                    for (int i = 0; i < bodyFunc.childs.Count; i++)
+                    {
+                        bodyFunc.childs[i] = parse(bodyFunc.childs[i], z_buffer + 2);
+                    }
                     childs.AddRange(signature.childs);
                     signature.childs = childs;
                     root.childs[1] = signature;
+                    root.childs[2] = bodyFunc;
                     return root;
                     break;
                 case "CALL":
-                    for (int i = 0; i < root.childs[0].childs.Count; i++)
+                    CommonNode signatureCall = take(root, 0);
+                    for (int j = 0; j < signatureCall.childs.Count; j++)
                     {
-                        root.childs[0].childs[i] = parse(root.childs[0].childs[i], z_buffer + 1);
+                        if (signatureCall.childs[j].type == "STRING")
+                            Console.WriteLine("STRING");
+                        signatureCall.childs[j] = parse(signatureCall.childs[j], z_buffer + 2);
                     }
+                    root.childs[0] = signatureCall;
+                    return root;
                     break;
                 /*case "REFVAR":
                     CommonNode var = take(root, 0);
@@ -167,6 +178,7 @@ namespace Qscript
                     {
                         root.childs[i] = parse(root.childs[i], z_buffer + 1);
                     }
+                    return root;
                     break;
             }
             return root;

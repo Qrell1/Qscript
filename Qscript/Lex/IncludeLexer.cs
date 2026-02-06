@@ -48,8 +48,8 @@ namespace Qscript.Lex
             string[] codes = File.ReadAllLines(includes[index]);
 
             CommentLexer commentLexer = new CommentLexer();
-            string code = commentLexer.lexCodes(codes);
-            Lexer lexer = new Lexer(code);
+            commentLexer.lexCodes(codes);
+            Lexer lexer = new Lexer();
             List<Token> fileTokens = lexer.lexAnalysis();
             List<Token> ts = lexIncludes(fileTokens);
             fileTokens = destroyIncludes(fileTokens);

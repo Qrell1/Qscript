@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Reflection;
@@ -8,23 +9,24 @@ namespace Qscript.Lex
 {
     public class Lexer
     {
-        public string code;
+        public CodeStruct code;
         public int pos = 0;
         public List<Token> tokenList = new List<Token>();
 
         private int stringIndex = 0;
-        private int tokenValue;
+        //private int tokenValue;
+        //private int len;
 
-        public Lexer(string _code)
+        public Lexer()
         {
-            code = _code;
+            code = Syntax.code;
         }
 
         public List<Token> lexAnalysis()
         {
             while (nextToken())
             {
-                Error.codeLenght = Error.codeLenght;
+                /*Error.codeLenght = Error.codeLenght;
 
                 
                 if (Error.codeLenght.Count > stringIndex && tokenValue >= Error.codeLenght[stringIndex])
@@ -36,43 +38,48 @@ namespace Qscript.Lex
                         stringIndex++;
                         goto passEmpetyString;
                     }
-                    //tokenValue = 0;
-                }
+                }*/
             }
 
-            // Фильтруем пробелы и комментарии
-            List<Token> filteredTokens = new List<Token>();
-            int index = 0;
-            foreach (Token token in tokenList)
+            List<Token> tokens = new List<Token>();
+            for (int i = 0; i < tokenList.Count; i++)
             {
-                if (token.type.type != "SPACE" &&
-                    token.type.type != "TAB" &&
-                    token.type.type != "COMMENT")
+                if (tokenList[i].type.type != "SPACE" &&
+                    tokenList[i].type.type != "TAB" &&
+                    tokenList[i].type.type != "COMMENT")
                 {
-                    filteredTokens.Add(token);
+                    tokens.Add(tokenList[i]);
 
                     // Отладочный вывод
                     string spaces = "";
-                    for (int i = 0; i < 20 - token.type.type.Length; i++)
+                    for (int j = 0; j < 20 - tokenList[i].type.type.Length; j++)
                     {
                         spaces += " ";
                     }
-                    Console.WriteLine($"[LEXER] Index:{index} Token pos:{token.pos} type:{token.type.type}{spaces}value:{token.value}");
-                    index++;
+                    Console.WriteLine($"[LEXER] Index:{i} Token pos:{tokenList[i].pos} type:{tokenList[i].type.type}{spaces}value:{tokenList[i].value}");
                 }
             }
 
-            return filteredTokens;
+            return tokens;
         }
 
         private bool nextToken()
         {
-            if (pos >= code.Length)
+            /*if (pos >= code.totalSize)
             {
                 return false;
+            }*/
+            if (code.stringsSize.Count <= stringIndex)
+                return false;
+            if (pos >= code.stringsSize[stringIndex])
+            {
+                if (code.stringsSize.Count-1 == stringIndex)
+                    return false;
+                pos = 0;
+                stringIndex++;
+                return true;
             }
-
-            if (skipWhitespace())
+            if (skipSpace())
             {
                 return true;
             }
@@ -84,13 +91,13 @@ namespace Qscript.Lex
             // Обрабатываем остальные токены
             foreach (TokenType tokenType in TokenTypeList.tokenTypes.Values)
             {
-                if (tokenType.type == "SPACE" ||
+                /*if (tokenType.type == "SPACE" ||
                     tokenType.type == "TAB")
                 {
                     continue;
-                }
+                }*/
 
-                Match regx = Regex.Match(code.Substring(pos), "^" + tokenType.regx);
+                Match regx = Regex.Match(code.strings[stringIndex].Substring(pos), "^" + tokenType.regx);
                 if (regx.Success && !string.IsNullOrEmpty(regx.Value))
                 {
                     //tokenValue = regx.Value.Length;
@@ -106,9 +113,10 @@ namespace Qscript.Lex
                     }
                     else if (tokenType.type == "ASM")
                     {
-                        (string value, int len) = lexAsmInsert(pos, code);
+                        (string value, int len) = lexAsmInsert(pos, code.strings[stringIndex]);
                         token = new Token(tokenType, value, stringIndex);
-                        length = len;
+                        //length = len;
+                        length = 3;
                         tokenList.Add(token);
                         return true;
                     }
@@ -119,21 +127,20 @@ namespace Qscript.Lex
                     }
 
                     pos += length;
-                    tokenValue += length;
+                    //tokenValue += length;
                     tokenList.Add(token);
                     return true;
                 }
             }
 
-            throw new Exception($"На позиции {pos} синтаксическая ошибка. Символ: '{code[pos]}'");
+            throw new Exception($"На позиции {pos} синтаксическая ошибка. Символ: '{code.strings[stringIndex]}'");
         }
 
-        private bool skipWhitespace()
+        private bool skipSpace()
         {
-            Match whitespace = Regex.Match(code.Substring(pos), @"^\s+");
+            Match whitespace = Regex.Match(code.strings[stringIndex].Substring(pos), @"^\s+");
             if (whitespace.Success)
             {
-                tokenValue += whitespace.Value.Length;
                 pos += whitespace.Value.Length;
                 return true;
             }
@@ -163,7 +170,7 @@ namespace Qscript.Lex
 
         private (string, int) lexAsmInsert(int startPos, string _code)
         {
-            int endPos = _code.IndexOf("asm", startPos + 3); // |>
+            /*int endPos = _code.IndexOf("asm", startPos + 3); // |>
             if (endPos == -1)
             {
                 throw new Exception($"На позиции {startPos} незавершенная asm вставка!");
@@ -171,9 +178,28 @@ namespace Qscript.Lex
 
             string asmCode = _code.Substring(startPos + 3, endPos - startPos - 3);
             int length = endPos - startPos + 3; // 2
-            //tokenValue += length;
+            pos += length;*/
+            startPos += 3;
+            string str = code.strings[stringIndex].Substring(startPos);
+            stringIndex++;
+            while (true)
+            {
+                if (code.strings[stringIndex].Contains("asm"))
+                {
+                    //str += code.strings[stringIndex];
+                    pos = 0;
+                    stringIndex++;
+                    break;
+                }
+                else
+                {
+                    str += code.strings[stringIndex];
+                    stringIndex++;
+                }
+            }
 
-            return (asmCode, length);
+
+            return (str, str.Length);
         }
     }
 }

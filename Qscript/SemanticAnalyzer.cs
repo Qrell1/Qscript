@@ -48,25 +48,33 @@ namespace Qscript
                     CommonNode leftNode = take(root, 0);
                     CommonNode rightNode = take(root, 1);
 
+                    if (leftNode.type == "VAR" && leftNode.childs.Count == 1)
+                    {
+                        if (varTypes.Keys.Contains(root.token.value))
+                            Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем!", root);
+                        CommonNode type = leftNode.childs[0];
+                        varTypes.Add(leftNode.token.value, type);
+                    }
+
                     if (leftNode.type == "VAR" && rightNode.type == "CALL")
                     {
                         if (!ast.resualtFunc.ContainsKey(rightNode.token.value))
-                            Error.SyntaxError($"Ошибка Функция:{rightNode.token.value} не существует чтобы её вызывать!", rightNode);
+                            Syntax.SyntaxError($"Ошибка Функция:{rightNode.token.value} не существует чтобы её вызывать!", rightNode);
                         if (!varTypes.ContainsKey(leftNode.token.value))
-                            Error.SyntaxError($"Ошибка Переменной:{leftNode.token.value} не существует!", leftNode);
+                            Syntax.SyntaxError($"Ошибка Переменной:{leftNode.token.value} не существует!", leftNode);
                         if (ast.resualtFunc[rightNode.token.value] == null)
-                            Error.SyntaxError($"Ошибка Функция:{rightNode.token.value} не может возвращать в перменную значения типа void!", rightNode);
+                            Syntax.SyntaxError($"Ошибка Функция:{rightNode.token.value} не может возвращать в перменную значения типа void!", rightNode);
                         CommonNode typeResualt = ast.resualtFunc[rightNode.token.value];
                         CommonNode type = varTypes[leftNode.token.value];
                         if (type.token.value != typeResualt.token.value)
-                            Error.SyntaxError($"Ошибка Функция:{rightNode.token.value} не может возвращать значение в Переменную:{leftNode.token.value} другого типа!", rightNode);
+                            Syntax.SyntaxError($"Ошибка Функция:{rightNode.token.value} не может возвращать значение в Переменную:{leftNode.token.value} другого типа!", rightNode);
                     }
 
                     if (leftNode.type == "VAR")
                     {
                         if ((!varTypes.Keys.Contains(leftNode.token.value) && leftNode.childs.Count == 0) && !leftNode.token.value.Contains(".") && !rightNode.token.value.Contains("."))
                         {
-                            Error.SyntaxError($"Данной переменной несуществует!", leftNode);
+                            Syntax.SyntaxError($"Данной переменной несуществует!", leftNode);
                         }
                         // 1
                         if (rightNode.type == "VAR")
@@ -74,7 +82,7 @@ namespace Qscript
                             try
                             {
                                 if ((varTypes[leftNode.token.value] != varTypes[rightNode.token.value]))
-                                    Error.SyntaxError("Нельзя присваивать этой переменной значение другого типа", leftNode);
+                                    Syntax.SyntaxError("Нельзя присваивать этой переменной значение другого типа", leftNode);
                             }
                             catch { }
                         }
@@ -92,7 +100,7 @@ namespace Qscript
                         }
                         else
                         {
-                            analis(leftNode, z_buffer + 1);
+                            analis(rightNode, z_buffer + 1);
                         }
                         break;
                     }
@@ -103,13 +111,13 @@ namespace Qscript
                     {
                         
                         if (varTypes.Keys.Contains(root.token.value))
-                            Error.SyntaxError($"Нельзя объявлять две переменных с одним именем!", root);
+                            Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем!", root);
                         CommonNode type = root.childs[0];
                         varTypes.Add(root.token.value, type);
                     } else
                     {
                         if (!varTypes.Keys.Contains(root.token.value) && !root.token.value.Contains("."))
-                            Error.SyntaxError($"Нельзя объявлять переменные без указания типа!", root);
+                            Syntax.SyntaxError($"Нельзя объявлять переменные без указания типа!", root);
                     }
                     break;
                 default:
