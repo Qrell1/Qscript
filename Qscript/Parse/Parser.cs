@@ -197,18 +197,18 @@ namespace Qscript
             else
                 left = leftOper;
             Token operatpor = null;          // token 2
-            if (peek("OPER") && (new string[] { "+", "-" }.Contains(tokens[pos].value)))
+            if (peek("OPER") && (new string[] { "&&", "||" }.Contains(tokens[pos].value)))
                 operatpor = take();
             while (operatpor != null)
             {
                 CommonNode right = parseTerm();
                 buffer = left;
-                left = new CommonNode("BINOPER", operatpor);
+                left = new CommonNode("CMP", operatpor);
                 left.childs.Add(buffer);
                 left.childs.Add(right);
-                if (right.type == "CMP")
-                    SyntaxError($"В условии на позиции Токена:{pos} Ошибка вызваная переплетением логики в арифметике!");
-                if (peek("OPER") && (new string[] { "+", "-" }.Contains(tokens[pos].value)))
+                //if (right.type == "CMP")
+                    //SyntaxError($"В условии на позиции Токена:{pos} Ошибка вызваная переплетением логики в арифметике!");
+                if (peek("OPER") && (new string[] { "&&", "||" }.Contains(tokens[pos].value)))
                     operatpor = take();
                 else
                     operatpor = null;
@@ -223,15 +223,17 @@ namespace Qscript
             Token operatpor = null;          // token 2
             //if (peek("OPER") && (new string[] {"*", "/" }.Contains(tokens[pos].value)))
                 //operatpor = take();
-            while (peek("OPER") && (new string[] { "*", "/" }.Contains(tokens[pos].value)))
+            while (peek("OPER") && (new string[] { "==", "!=", "<=", ">=", "<", ">" }.Contains(tokens[pos].value)))
             {
                 operatpor = take();
                 CommonNode right = parseTerm2();
 
                 buffer = left;
-                left = new CommonNode("BINOPER", operatpor);
+                left = new CommonNode("CMP", operatpor);
                 left.childs.Add(buffer);
                 left.childs.Add(right);
+                //if (right.type == "CMP")
+                    //SyntaxError($"В условии на позиции Токена:{pos} Ошибка вызваная переплетением логики в арифметике!");
             }
 
             return left;
@@ -244,15 +246,17 @@ namespace Qscript
             Token operatpor = null;          // token 2
                                              //if (peek("OPER") && (new string[] {"*", "/" }.Contains(tokens[pos].value)))
                                              //operatpor = take();
-            while (peek("OPER") && (new string[] { "==", "!=", "<=", ">=", "<", ">" }.Contains(tokens[pos].value)))
+            while (peek("OPER") && (new string[] { "+", "-" }.Contains(tokens[pos].value)))
             {
                 operatpor = take();
                 CommonNode right = parseTerm3();
 
                 buffer = left;
-                left = new CommonNode("CMP", operatpor);
+                left = new CommonNode("BINOPER", operatpor);
                 left.childs.Add(buffer);
                 left.childs.Add(right);
+                //if (right.type == "BINOPER")
+                    //SyntaxError($"В условии на позиции Токена:{pos} Ошибка вызваная переплетением арифметики в логике!");
             }
 
             return left;
@@ -264,15 +268,17 @@ namespace Qscript
             Token operatpor = null;          // token 2
                                              //if (peek("OPER") && (new string[] {"*", "/" }.Contains(tokens[pos].value)))
                                              //operatpor = take();
-            while (peek("OPER") && (new string[] { "&&", "||" }.Contains(tokens[pos].value)))
+            while (peek("OPER") && (new string[] { "*", "/"  }.Contains(tokens[pos].value)))
             {
                 operatpor = take();
                 CommonNode right = parsePar();
 
                 buffer = left;
-                left = new CommonNode("CMP", operatpor);
+                left = new CommonNode("BINOPER", operatpor);
                 left.childs.Add(buffer);
                 left.childs.Add(right);
+                //if (right.type == "BINOPER")
+                    //SyntaxError($"В условии на позиции Токена:{pos} Ошибка вызваная переплетением арифметики в логике!");
             }
 
             return left;
@@ -838,7 +844,7 @@ namespace Qscript
 
         public CommonNode parseCycle()
         {
-            expect(new string[] {"FOR","WHILE"});
+            expect(new string[] {"FOR","WHILE", "ITER"});
             Token cycleToken = take();
             CommonNode cycleNode = new CommonNode(cycleToken.type.type, cycleToken);
 
@@ -869,6 +875,16 @@ namespace Qscript
             {
                 //expect("LPAR");
                 CommonNode signature = parseIfSignature();
+                CommonNode body = parseBody();
+                cycleNode.childs.Add(signature);
+                cycleNode.childs.Add(body);
+                return cycleNode;
+            }
+
+            if (cycleNode.type == "ITER")
+            {
+                expect("LPAR");
+                CommonNode signature = parseFormula(); //expect("RPAR"); skip();
                 CommonNode body = parseBody();
                 cycleNode.childs.Add(signature);
                 cycleNode.childs.Add(body);
@@ -1040,7 +1056,7 @@ namespace Qscript
             {
                 return parseQueueControlOperator();
             }
-            if (peek("FOR") || peek("WHILE"))
+            if (peek("FOR") || peek("WHILE") || peek("ITER"))
             {
                 return parseCycle();
             }

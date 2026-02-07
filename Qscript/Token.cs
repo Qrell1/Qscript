@@ -70,8 +70,8 @@ namespace Qscript
 
             // Logic
             tokenTypes.Add("ELSEIF", new TokenType("ELSEIF", "else-if"));
-            tokenTypes.Add("IF", new TokenType("IF", "if"));
-            tokenTypes.Add("ELSE", new TokenType("ELSE", "else"));
+            tokenTypes.Add("IF", new TokenType("IF", @"\bif\b"));
+            tokenTypes.Add("ELSE", new TokenType("ELSE", @"\belse\b"));
 
             // Logic Values
             //tokenTypes.Add("SAMEOPER", new TokenType("SAME", "=="));
@@ -83,42 +83,43 @@ namespace Qscript
             //tokenTypes.Add("OPER", new TokenType("OPER", @"(==|!=|<<|>>|<=|>=|=<|=>|=?)"));
             //tokenTypes.Add("INC", new TokenType("INC", "[\\--]*"));
             //tokenTypes.Add("DEC", new TokenType("DEC", "[\\++]*"));
-            tokenTypes.Add("POSTFIX", new TokenType("POSTFIX", "(\\+\\+|--|\\<>|&|\\?)"));
-            tokenTypes.Add("OPER", new TokenType("OPER", "(\\+=|==|!=|<<|>>|<=|>=|&&|-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-*/%=|!:~])"));
+            tokenTypes.Add("POSTFIX", new TokenType("POSTFIX", "(\\+\\+|--|\\<>|\\?)"));
+            tokenTypes.Add("OPER", new TokenType("OPER", "(\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-*/%=|!:~])"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", "<"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", ">"));
 
             // Keys
             //tokenTypes.Add("OUT", new TokenType("OUT", "out"));
-            tokenTypes.Add("ENDINCLUDE", new TokenType("ENDINCLUDE", "end-include"));
-            tokenTypes.Add("ASMINCLUDE", new TokenType("ASMINCLUDE", "asm-include"));
-            tokenTypes.Add("INCLUDE", new TokenType("INCLUDE", "include"));
-            tokenTypes.Add("USING", new TokenType("USING", "using"));
-            tokenTypes.Add("ASM", new TokenType("ASM", "asm"));
+            tokenTypes.Add("ENDINCLUDE", new TokenType("ENDINCLUDE", @"\bend-include\b"));
+            tokenTypes.Add("ASMINCLUDE", new TokenType("ASMINCLUDE", @"\basm-include\b"));
+            tokenTypes.Add("INCLUDE", new TokenType("INCLUDE", @"\binclude\b"));
+            tokenTypes.Add("USING", new TokenType("USING", @"\busing\b"));
+            tokenTypes.Add("ASM", new TokenType("ASM", @"\basm\b"));
             tokenTypes.Add("SEM", new TokenType("SEM", ";"));
             //tokenTypes.Add("MACRO", new TokenType("MACRO", "macro[A-Z]+"));
             //tokenTypes.Add("MACRO", new TokenType("MACRO", "macro"));
-            tokenTypes.Add("RETURN", new TokenType("RETURN", "return"));
-            tokenTypes.Add("BREAK", new TokenType("BREAK", "break"));
-            tokenTypes.Add("CONTINUE", new TokenType("CONTINUE", "continue"));
+            tokenTypes.Add("RETURN", new TokenType("RETURN", @"\breturn\b"));
+            tokenTypes.Add("BREAK", new TokenType("BREAK", @"\bbreak\b"));
+            tokenTypes.Add("CONTINUE", new TokenType("CONTINUE", @"\bcontinue\b"));
 
-            tokenTypes.Add("FOR", new TokenType("FOR", "for"));
-            tokenTypes.Add("WHILE", new TokenType("WHILE", "while"));
+            tokenTypes.Add("ITER", new TokenType("ITER", @"\biter\b"));
+            tokenTypes.Add("FOR", new TokenType("FOR", @"\bfor\b"));
+            tokenTypes.Add("WHILE", new TokenType("WHILE", @"\bwhile\b"));
 
-            tokenTypes.Add("STRUCT", new TokenType("STRUCT", "struct"));
-            tokenTypes.Add("CLASS", new TokenType("CLASS", "class"));
+            tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"\bstruct\b"));
+            tokenTypes.Add("CLASS", new TokenType("CLASS", @"\bclass\b"));
 
-            tokenTypes.Add("INLINE", new TokenType("INLINE", "inline"));
+            tokenTypes.Add("INLINE", new TokenType("INLINE", @"\binline\b"));
 
 
             // modifecator модификаторы 
             //tokenTypes.Add("PUBLIC", new TokenType("PUBLIC", "public"));
             //tokenTypes.Add("PRIVATE", new TokenType("PRIVATE", "private"));
             //tokenTypes.Add("PROTECTED", new TokenType("PROTECTED", "protected"));
-            tokenTypes.Add("MODIFIER", new TokenType("MODIFIER", "(public|private|protected)"));
+            tokenTypes.Add("MODIFIER", new TokenType("MODIFIER", @"(\bpublic\b|\bprivate\b|\bprotected\b)"));
 
 
-            tokenTypes.Add("BOOL", new TokenType("BOOL", @"(true|false)"));
+            tokenTypes.Add("BOOL", new TokenType("BOOL", @"(\btrue\b|false\b)"));
             tokenTypes.Add("VAR", new TokenType("VAR", @"[a-zA-Z_][a-zA-Z0-9_]*"));
             tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
             //tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));

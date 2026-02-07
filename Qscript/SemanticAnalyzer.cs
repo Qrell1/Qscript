@@ -10,6 +10,7 @@ namespace Qscript
     public static class SemanticAnalyzer
     {
         static public ProgramNode ast;
+        static public bool local;
         //static SemanticAnalyzer() { }
 
         static Dictionary<string, string> types = new Dictionary<string, string>()
@@ -24,6 +25,7 @@ namespace Qscript
         };
 
         static Dictionary<string, CommonNode> varTypes = new Dictionary<string, CommonNode>();
+        static Dictionary<string, CommonNode> varTypesLocal = new Dictionary<string, CommonNode>();
 
         public static CommonNode take(CommonNode node, int i = 0)
         {
@@ -60,7 +62,7 @@ namespace Qscript
                     {
                         if (!ast.resualtFunc.ContainsKey(rightNode.token.value))
                             Syntax.SyntaxError($"Ошибка Функция:{rightNode.token.value} не существует чтобы её вызывать!", rightNode);
-                        if (!varTypes.ContainsKey(leftNode.token.value))
+                        if (!varTypes.ContainsKey(leftNode.token.value) || (local && !varTypesLocal.ContainsKey(leftNode.token.value)))
                             Syntax.SyntaxError($"Ошибка Переменной:{leftNode.token.value} не существует!", leftNode);
                         if (ast.resualtFunc[rightNode.token.value] == null)
                             Syntax.SyntaxError($"Ошибка Функция:{rightNode.token.value} не может возвращать в перменную значения типа void!", rightNode);
@@ -72,10 +74,14 @@ namespace Qscript
 
                     if (leftNode.type == "VAR")
                     {
-                        if ((!varTypes.Keys.Contains(leftNode.token.value) && leftNode.childs.Count == 0) && !leftNode.token.value.Contains(".") && !rightNode.token.value.Contains("."))
+                        if ((!local && !varTypes.Keys.Contains(leftNode.token.value) && leftNode.childs.Count == 0) && !leftNode.token.value.Contains(".") && !rightNode.token.value.Contains("."))
                         {
                             Syntax.SyntaxError($"Данной переменной несуществует!", leftNode);
                         }
+                        /*if ((local && !varTypesLocal.Keys.Contains(leftNode.token.value) && leftNode.childs.Count == 0) && !leftNode.token.value.Contains(".") && !rightNode.token.value.Contains("."))
+                        {
+                            Syntax.SyntaxError($"Данной переменной несуществует!", leftNode);
+                        }*/
                         // 1
                         if (rightNode.type == "VAR")
                         {
@@ -106,6 +112,15 @@ namespace Qscript
                     }
 
                     break;
+                case "FUNC":
+                    Dictionary<string, CommonNode> types = varTypes;
+                    for (int i = 0; i < take(root, 0).childs.Count; i++)
+                    {
+                        varTypes.Add(take(root, 0).childs[i].token.value,  take(root, 0).childs[i].childs[0]);
+                    }
+                    analis(take(root, 1), z_buffer + 1);
+                    varTypes = types;
+                    break;
                 case "VAR":
                     if (root.childs.Count > 0)
                     {
@@ -121,7 +136,7 @@ namespace Qscript
                     }
                     break;
                 default:
-                    if (root.childs.Count == 0 || root.type == "SIGNATURE")
+                    if (root.childs.Count == 0 || root.type == "SIGNATURE" || root.type == "CMP")
                         break;
                     for (int i = 0; i < root.childs.Count; i++)
                     {
