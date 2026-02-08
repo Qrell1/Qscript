@@ -58,6 +58,26 @@ namespace Qscript
                         varTypes.Add(leftNode.token.value, type);
                     }
 
+                    if (leftNode.type == "VAR" && rightNode.type == "VAR" && varTypes.Keys.Contains(leftNode.token.value) && varTypes.Keys.Contains(rightNode.token.value))
+                    {
+                        CommonNode leftNodeFloatType = varTypes[leftNode.token.value];
+                        CommonNode rightNodeFloatType = varTypes[rightNode.token.value];
+                        if ((leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "NUMBER"))
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+                        else if ((leftNodeFloatType.token.value == "NUMBER" && rightNodeFloatType.token.value == "FLOAT"))
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+                        else if ((leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "FLOAT"))
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+                        else if ((leftNodeFloatType.token.value == "NUMBER" && rightNodeFloatType.token.value == "NUMBER"))
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+                        else if ((leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "NUMBER"))
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+                        else if (leftNodeFloatType.token.value != rightNodeFloatType.token.value)
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+
+                        return;
+                    }
+
                     if (leftNode.type == "VAR" && rightNode.type == "CALL")
                     {
                         if (!ast.resualtFunc.ContainsKey(rightNode.token.value))
@@ -71,6 +91,15 @@ namespace Qscript
                         if (type.token.value != typeResualt.token.value)
                             Syntax.SyntaxError($"Ошибка Функция:{rightNode.token.value} не может возвращать значение в Переменную:{leftNode.token.value} другого типа!", rightNode);
                     }
+
+                    if (leftNode.type == "CALL" && !ast.resualtFunc.ContainsKey(leftNode.token.value))
+                        Syntax.SyntaxError($"Ошибка Функция:{leftNode.token.value} не существует чтобы её вызывать!", leftNode);
+                    if (rightNode.type == "CALL" && !ast.resualtFunc.ContainsKey(rightNode.token.value))
+                        Syntax.SyntaxError($"Ошибка Функция:{rightNode.token.value} не существует чтобы её вызывать!", rightNode);
+                    if (rightNode.type == "VAR" && !varTypes.ContainsKey(rightNode.token.value) && !rightNode.token.value.Contains("."))
+                        Syntax.SyntaxError($"Ошибка Переменной:{rightNode.token.value} не существует чтобы её использовать!", rightNode);
+                    if (leftNode.type == "VAR" && !varTypes.ContainsKey(leftNode.token.value) && !leftNode.token.value.Contains("."))
+                        Syntax.SyntaxError($"Ошибка Переменной:{leftNode.token.value} не существует чтобы её использовать!", leftNode);
 
                     if (leftNode.type == "VAR")
                     {
@@ -107,6 +136,108 @@ namespace Qscript
                         else
                         {
                             analis(rightNode, z_buffer + 1);
+                        }
+                        break;
+                    }
+
+                    break;
+                case "FLOATBINOPER":
+                    CommonNode leftNodeFloat = take(root, 0);
+                    CommonNode rightNodeFloat = take(root, 1);
+
+                    if (leftNodeFloat.type == "VAR" && leftNodeFloat.childs.Count == 1)
+                    {
+                        if (varTypes.Keys.Contains(root.token.value))
+                            Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем!", root);
+                        CommonNode type = leftNodeFloat.childs[0];
+                        varTypes.Add(leftNodeFloat.token.value, type);
+                    }
+
+                    if (leftNodeFloat.type == "VAR" && rightNodeFloat.type == "VAR" && varTypes.Keys.Contains(leftNodeFloat.token.value) && varTypes.Keys.Contains(rightNodeFloat.token.value))
+                    {
+                        CommonNode leftNodeFloatType = varTypes[leftNodeFloat.token.value];
+                        CommonNode rightNodeFloatType = varTypes[rightNodeFloat.token.value];
+                        if (!(leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "NUMBER"))
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+                        else if (!(leftNodeFloatType.token.value == "NUMBER" && rightNodeFloatType.token.value == "FLOAT"))
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+                        else if (!(leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "FLOAT"))
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+                        else if (!(leftNodeFloatType.token.value == "NUMBER" && rightNodeFloatType.token.value == "NUMBER"))
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+                        else if (!(leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "NUMBER"))
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+                        else if (leftNodeFloatType.token.value != rightNodeFloatType.token.value)
+                            Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
+
+                        /*if (
+                            ((leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "NUMBER") ||
+                            (leftNodeFloatType.token.value == "NUMBER" && rightNodeFloatType.token.value == "FLOAT")) &&
+                            varTypes.ContainsKey(r)
+                            )*/
+
+
+                        return;
+                    }
+
+                    if (leftNodeFloat.type == "VAR" && rightNodeFloat.type == "CALL")
+                    {
+                        if (!ast.resualtFunc.ContainsKey(rightNodeFloat.token.value))
+                            Syntax.SyntaxError($"Ошибка Функция:{rightNodeFloat.token.value} не существует чтобы её вызывать!", rightNodeFloat);
+                        if (!varTypes.ContainsKey(leftNodeFloat.token.value) || (local && !varTypesLocal.ContainsKey(leftNodeFloat.token.value)))
+                            Syntax.SyntaxError($"Ошибка Переменной:{leftNodeFloat.token.value} не существует!", leftNodeFloat);
+                        if (ast.resualtFunc[rightNodeFloat.token.value] == null)
+                            Syntax.SyntaxError($"Ошибка Функция:{rightNodeFloat.token.value} не может возвращать в перменную значения типа void!", rightNodeFloat);
+                        CommonNode typeResualt = ast.resualtFunc[rightNodeFloat.token.value];
+                        CommonNode type = varTypes[leftNodeFloat.token.value];
+                        if (type.token.value != typeResualt.token.value)
+                            Syntax.SyntaxError($"Ошибка Функция:{rightNodeFloat.token.value} не может возвращать значение в Переменную:{leftNodeFloat.token.value} другого типа!", rightNodeFloat);
+                    }
+
+                    if (leftNodeFloat.type == "CALL" && !ast.resualtFunc.ContainsKey(leftNodeFloat.token.value))
+                        Syntax.SyntaxError($"Ошибка Функция:{leftNodeFloat.token.value} не существует чтобы её вызывать!", leftNodeFloat);
+                    if (rightNodeFloat.type == "CALL" && !ast.resualtFunc.ContainsKey(rightNodeFloat.token.value))
+                        Syntax.SyntaxError($"Ошибка Функция:{rightNodeFloat.token.value} не существует чтобы её вызывать!", rightNodeFloat);
+                    if (rightNodeFloat.type == "VAR" && !varTypes.ContainsKey(rightNodeFloat.token.value) && !rightNodeFloat.token.value.Contains("."))
+                        Syntax.SyntaxError($"Ошибка Переменной:{rightNodeFloat.token.value} не существует чтобы её использовать!", rightNodeFloat);
+                    if (leftNodeFloat.type == "VAR" && !varTypes.ContainsKey(leftNodeFloat.token.value) && !leftNodeFloat.token.value.Contains("."))
+                        Syntax.SyntaxError($"Ошибка Переменной:{leftNodeFloat.token.value} не существует чтобы её использовать!", leftNodeFloat);
+
+                    if (leftNodeFloat.type == "VAR")
+                    {
+                        if ((!local && !varTypes.Keys.Contains(leftNodeFloat.token.value) && leftNodeFloat.childs.Count == 0) && !leftNodeFloat.token.value.Contains(".") && !rightNodeFloat.token.value.Contains("."))
+                        {
+                            Syntax.SyntaxError($"Данной переменной несуществует!", leftNodeFloat);
+                        }
+                        /*if ((local && !varTypesLocal.Keys.Contains(leftNode.token.value) && leftNode.childs.Count == 0) && !leftNode.token.value.Contains(".") && !rightNode.token.value.Contains("."))
+                        {
+                            Syntax.SyntaxError($"Данной переменной несуществует!", leftNode);
+                        }*/
+                        // 1
+                        if (rightNodeFloat.type == "VAR")
+                        {
+                            try
+                            {
+                                if ((varTypes[leftNodeFloat.token.value] != varTypes[rightNodeFloat.token.value]))
+                                    Syntax.SyntaxError("Нельзя присваивать этой переменной значение другого типа", leftNodeFloat);
+                            }
+                            catch { }
+                        }
+                        // 2
+                        else if (rightNodeFloat.type == "FLOATBINOPER")
+                        { analis(rightNodeFloat, z_buffer + 1); }
+                        /*else if (!(varTypes.ContainsKey(leftNode.token.value)))
+                        { // Тож Ошибка}
+                            if ((tyvarTypes[leftNode.token.value]] != rightNode.token.value))
+                                Error.SyntaxError("Нельзя присвоить ", leftNode);
+                        }*/
+                        else if (leftNodeFloat.type == "FLOATBINOPER")
+                        {
+                            analis(leftNodeFloat, z_buffer + 1);
+                        }
+                        else
+                        {
+                            analis(rightNodeFloat, z_buffer + 1);
                         }
                         break;
                     }

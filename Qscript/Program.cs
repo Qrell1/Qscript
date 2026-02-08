@@ -40,9 +40,9 @@ namespace Qscript
                 color = ConsoleColor.Green;
             else if (root.type == "CALL")
                 color = ConsoleColor.Yellow;
-            else if (root.type == "NUMBER")
+            else if (root.type == "NUMBER" || root.type == "FLOAT")
                 color = ConsoleColor.Cyan;
-            else if (root.type == "BINOPER" || root.type == "CMP")
+            else if (root.type == "BINOPER" || root.type == "CMP" || root.type == "FLOATBINOPER")
                 color = ConsoleColor.Magenta;
             else if (root.type == "TYPE")
                 color = ConsoleColor.Blue;

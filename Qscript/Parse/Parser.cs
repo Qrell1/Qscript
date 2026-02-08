@@ -183,6 +183,10 @@ namespace Qscript
             {
                 return new CommonNode("BOOL", take());
             }
+            if (peek("FLOAT"))
+            {
+                return new CommonNode("FLOAT", take());
+            }
 
             SyntaxError();
             return null;
@@ -820,7 +824,7 @@ namespace Qscript
                     rightNode = parseFormulaSignature();
                 else
                     rightNode = parseFormula();
-                rightNode.type = "VARFORMULA";
+                //rightNode.type = "VARFORMULA";
                 operNode.childs.Add(rightNode);
                 expect("SEM"); skip();
                 return operNode;

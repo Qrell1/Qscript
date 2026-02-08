@@ -21,16 +21,28 @@ namespace Qscript
             catch { }
             throw new Exception(message);
         }
+        public static string genRedString(int count)
+        {
+            string resualt = string.Empty;
+            for (int i = 0; i < count; i++)
+            {
+                resualt += "^";
+            }
+            return resualt;
+        }
         public static void SyntaxError(string message="Синтаксическая Ошибка!", CommonNode node=null)
         {
+            Console.ForegroundColor = ConsoleColor.White;
             try
             {
                 Console.WriteLine("=---------------------------------------------------------=");
                 Console.WriteLine((node.token.pos-3).ToString() + ": " + code.strings[node.token.pos-2]);
                 Console.WriteLine((node.token.pos-2).ToString() + ": " + code.strings[node.token.pos-1]);
-
-                Console.WriteLine(">>>" + (node.token.pos+1).ToString() + ": " + code.strings[node.token.pos]);
-
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.WriteLine("" + (node.token.pos+1).ToString() + ": " + code.strings[node.token.pos]);
+                
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.WriteLine(genRedString(code.stringsSize[node.token.pos] + 2 + ((node.token.pos + 1).ToString().Length)));
                 Console.WriteLine((node.token.pos+2).ToString() + ": " + code.strings[node.token.pos+1]);
                 Console.WriteLine((node.token.pos+3).ToString() + ": " + code.strings[node.token.pos+2]);
                 Console.WriteLine("=---------------------------------------------------------=");
@@ -50,18 +62,23 @@ namespace Qscript
                     Console.WriteLine(message);
                 }
             }
-            throw new Exception("Синтаксическая Ошибка!");
+            Console.ResetColor();
+            Console.ReadLine();
+            //throw new Exception("Синтаксическая Ошибка!");
         }
         public static void SyntaxError(string message = "Синтаксическая Ошибка!", Token token = null)
         {
+            Console.ForegroundColor = ConsoleColor.White;
             try
             {
                 Console.WriteLine("=---------------------------------------------------------=");
                 Console.WriteLine((token.pos - 3).ToString() + ": " + code.strings[token.pos - 2]);
                 Console.WriteLine((token.pos - 2).ToString() + ": " + code.strings[token.pos - 1]);
-
-                Console.WriteLine(">>>" + (token.pos + 1).ToString() + ": " + code.strings[token.pos]);
-
+                Console.BackgroundColor = ConsoleColor.Red;
+                Console.WriteLine("" + (token.pos + 1).ToString() + ": " + code.strings[token.pos]);
+                
+                Console.BackgroundColor = ConsoleColor.Black;
+                Console.WriteLine(genRedString(code.stringsSize[token.pos] + 2 + ((token.pos + 1).ToString().Length)));
                 Console.WriteLine((token.pos + 2).ToString() + ": " + code.strings[token.pos + 1]);
                 Console.WriteLine((token.pos + 3).ToString() + ": " + code.strings[token.pos + 2]);
                 Console.WriteLine("=---------------------------------------------------------=");
@@ -81,7 +98,9 @@ namespace Qscript
                     Console.WriteLine(message);
                 }
             }
-            throw new Exception("Синтаксическая Ошибка!");
+            Console.ResetColor();
+            Console.ReadLine();
+            //throw new Exception("Синтаксическая Ошибка!");
         }
     }
 }

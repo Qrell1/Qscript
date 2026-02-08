@@ -52,7 +52,8 @@ namespace Qscript
             {"int8", "db"},
             {"byte", "db"},
             {"string", "db"},
-            {"char", "db"}
+            {"char", "db"},
+            {"float", "dd"}
         };
         private Dictionary<string, string> typesarg = new Dictionary<string, string>()
         {
@@ -61,13 +62,17 @@ namespace Qscript
             {"int8", "BYTE"},
             {"byte", "BYTE"},
             {"string", "BYTE"},
-            {"char", "BYTE"}
+            {"char", "BYTE"},
+            { "float", "DWORD" }
         };
         public Dictionary<string, string> stringConsts = new Dictionary<string, string>();
         public int stringConstsIndex;
 
         private Dictionary<string, string> consts = new Dictionary<string, string>();
         private int constsIndex;
+
+        public Dictionary<string, string> floatConsts = new Dictionary<string, string>();
+        public int floatConstsIndex;
 
         private int trueTagIndex;
         private int falseTagIndex;
@@ -128,6 +133,9 @@ namespace Qscript
                 case "BINOPER":
                     translationBinOper(root, z_buffer);
                     break;
+                case "FLOATBINOPER":
+                    translationFloatBinOper(root, z_buffer);
+                    break;
                 case "NUMBER":
                     _objProg.code.Append($"mov eax, {root.token.value}\n");
                     break;
@@ -183,6 +191,10 @@ namespace Qscript
                     _objProg.includes.Append($"include '{take(root,0).token.value}'\n");
                     break;
             }
+        }
+        public void translationReturn (CommonNode root, int z_buffer)
+        {
+
         }
         public void translationIter (CommonNode root, int z_buffer)
         {
@@ -275,6 +287,8 @@ namespace Qscript
             {
                 CommonNode leftChild = take(root, 0); // eax
                 CommonNode rightChild = take(root, 1);
+                string floatVar;
+                string floatVar2;
 
                 _objProg.code.Append($"; CMP\n");
 
@@ -283,10 +297,23 @@ namespace Qscript
                     _objProg.code.Append($"mov eax, {leftChild.token.value}\n");
                     _objProg.code.Append($"cmp eax, {rightChild.token.value}\n");
                 }
+                if (leftChild.type == "FLOAT" && rightChild.type == "FLOAT")
+                {
+                    floatVar = getFloatConst(leftChild);
+                    floatVar2 = getFloatConst(rightChild);
+                    _objProg.code.Append($"mov eax, [{floatVar}]\n");
+                    _objProg.code.Append($"cmp eax, [{floatVar2}]\n");
+                }
                 else if (rightChild.type == "NUMBER")
                 {
                     Translation(leftChild, z_buffer + 1);
                     _objProg.code.Append($"cmp eax, {rightChild.token.value}\n");
+                }
+                else if (rightChild.type == "FLOAT")
+                {
+                    Translation(leftChild, z_buffer + 1);
+                    floatVar = getFloatConst(rightChild);
+                    _objProg.code.Append($"cmp eax, [{floatVar}]\n");
                 }
                 else
                 {
@@ -410,6 +437,11 @@ namespace Qscript
                 CommonNode varChild = take(root, 0); // eax
                 CommonNode rightChild = take(root, 1);
                 //_objProg.code.Append("xor eax, eax\n");
+                if (rightChild.type == "FLOAT")
+                {
+                    _objProg.data.Append($"{varChild.token.value} dd {rightChild.token.value.Replace("f","")}\n");
+                    return;
+                }
                 if (varChild.childs.Count != 0) 
                     Translation(varChild, z_buffer + 1);
                 //Translation (rightChild, z_buffer + 1);
@@ -449,11 +481,51 @@ namespace Qscript
 
                 //string ebx = "ebx"; shr-/ shl-*
 
-                /*if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && (root.token.value == "+=" || root.token.value == "-="))
+                if (rightChild.type == "FLOAT")
                 {
-                    _objProg.code.Append($"add [{leftChild.token.value}], {rightChild.token.value}\n");
-                    return;
-                }*/
+                    string floatVar = getFloatConst(rightChild);
+                    rightChild.token.value = rightChild.token.value.Replace("f","");
+                    if (leftChild.type == "VAR")
+                    {
+                        //mov eax, [a]
+                        //cvtsi2ss xmm0, eax
+                        //addss xmm0, [float_const_1];
+                        //movss[c], xmm0
+
+                        //movss xmm0, [a]
+                        //divss xmm0, [b]
+                        //movss[c], xmm0
+                        _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
+                        _objProg.code.Append($"cvtsi2ss xmm0, eax\n");
+                        string operation = root.token.value.Replace("=", "");
+                        switch (operation)
+                        {
+                            case "+": _objProg.code.Append($"addss xmm0, [{floatVar}]\n"); break;
+                            case "-": _objProg.code.Append($"subss xmm0, [{floatVar}]\n"); break;
+                            case "*": _objProg.code.Append($"mulss xmm0, [{floatVar}]\n"); break;
+                            case "/": _objProg.code.Append($"divss xmm0, [{floatVar}]\n"); break;
+                        }
+                        _objProg.code.Append($"movss [{leftChild.token.value}], xmm0\n");
+                    }
+                }
+                if (leftChild.type == "FLOAT")
+                {
+                    string floatVar = getFloatConst(leftChild);
+                    leftChild.token.value = leftChild.token.value.Replace("f", "");
+                    if (rightChild.type == "VAR")
+                    {
+                        _objProg.code.Append($"movss xmm0, [{floatVar}]\n");
+                        string operation = root.token.value.Replace("=", "");
+                        switch (operation)
+                        {
+                            case "+": _objProg.code.Append($"addss xmm0, [{rightChild.token.value}]\n"); break;
+                            case "-": _objProg.code.Append($"subss xmm0, [{rightChild.token.value}]\n"); break;
+                            case "*": _objProg.code.Append($"mulss xmm0, [{rightChild.token.value}]\n"); break;
+                            case "/": _objProg.code.Append($"divss xmm0, [{rightChild.token.value}]\n"); break;
+                        }
+                        //_objProg.code.Append($"movss [{rightChild}], xmm0\n");
+                    }
+                }
                 if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("*") && (Convert.ToInt32(rightChild.token.value)%2) == 0)
                 {
                     _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
@@ -525,6 +597,130 @@ namespace Qscript
                     _objProg.code.Append($"mov [{leftChild.token.value}], eax\n");
             }
         }
+        public void translationFloatBinOper(CommonNode root, int z_buffer)
+        {
+            if (root.token.value == "=")
+            {
+                // child
+                CommonNode varChild = take(root, 0); // eax
+                CommonNode rightChild = take(root, 1);
+
+                
+
+                //_objProg.code.Append("xor eax, eax\n");
+                if (rightChild.type == "FLOAT" && varChild.type == "VAR" && varChild.childs.Count > 0)
+                {
+                    _objProg.data.Append($"{varChild.token.value} dd {rightChild.token.value.Replace("f", "")}\n");
+                    return;
+                }
+                if (varChild.childs.Count != 0)
+                    Translation(varChild, z_buffer + 1);
+                //Translation (rightChild, z_buffer + 1);
+                if (rightChild.type == "CALL")
+                {
+                    translationCall(rightChild, z_buffer + 1, $"lea eax, [{varChild.token.value}]\n");
+                    _objProg.code.Append($"movss xmm1, eax\n");
+                }
+                else if (rightChild.type == "NUMBER")
+                {
+                    _objProg.code.Append($"mov [{varChild.token.value}], {rightChild.token.value}\n");
+                }
+                else if (rightChild.type == "FLOAT")
+                {
+                    string floatVar = getFloatConst(rightChild);
+                    _objProg.code.Append($"mov eax, [{floatVar}]\n");
+                    _objProg.code.Append($"mov [{varChild.token.value}], eax\n");
+                }
+                else if (rightChild.type == "FLOATBINOPER")
+                {
+                    Translation(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"movss [{varChild.token.value}], xmm0\n");
+                }
+                else if (!(rightChild.type == "NUMBER"))
+                {
+                    Translation(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"mov [{varChild.token.value}], eax\n");
+                }
+                return;
+            }
+            if (new string[] { "+=", "-=", "*=", "/=", "+", "-", "*", "/" }.Contains(root.token.value))
+            {
+                CommonNode leftChild = take(root, 0); // eax
+                CommonNode rightChild = take(root, 1);
+
+                string leftString = "xmm0";
+                string rightString = "xmm1";
+
+                //string ebx = "ebx"; shr-/ shl-*
+
+
+                if (leftChild.type == "VAR")
+                {
+                    _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
+                    _objProg.code.Append($"cvtsi2ss xmm0, eax\n"); // [{leftChild.token.value}]
+                    //return;
+                } else if (leftChild.type == "NUMBER")
+                {
+                    _objProg.code.Append($"movss xmm0, {leftChild.token.value}\n");
+                } else if (leftChild.type == "FLOAT")
+                {
+                    string floatVar = getFloatConst(leftChild);
+                    _objProg.code.Append($"movss xmm0, [{floatVar}]\n");
+                } else if (leftChild.type == "CALL")
+                {
+                    Translation(leftChild, z_buffer + 1);
+                    _objProg.code.Append($"movss xmm0, eax\n");
+                } else if (leftChild.type == "FLOATBINOPER")
+                {
+                    Translation(leftChild, z_buffer + 1);
+                }
+
+                if (rightChild.type == "VAR")
+                {
+                    rightString = $"[{rightChild.token.value}]";
+                    //_objProg.code.Append($"movss xmm0, [{rightChild.token.value}]\n");
+                    //return;
+                }
+                else if (rightChild.type == "NUMBER")
+                {
+                    //_objProg.code.Append($"movss xmm0, {rightChild.token.value}\n");
+                    rightString = rightChild.token.value;
+                }
+                else if (rightChild.type == "FLOAT")
+                {
+                    string floatVar = getFloatConst(rightChild);
+                    _objProg.code.Append($"movss xmm1, [{floatVar}]\n");
+                }
+                else if (rightChild.type == "CALL")
+                {
+                    Translation(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"movss xmm1, eax\n");
+                }
+                else if (rightChild.type == "FLOATBINOPER")
+                {
+                    Translation(rightChild, z_buffer + 1);
+                }
+
+                string str = root.token.value.Replace("=", "");
+                switch (str)
+                {
+                    case "+":
+                        _objProg.code.Append($"addss {leftString}, {rightString}\n");
+                        break;
+                    case "-":
+                        _objProg.code.Append($"subss {leftString}, {rightString}\n");
+                        break;
+                    case "*":
+                        _objProg.code.Append($"mulss {leftString}, {rightString}\n");
+                        break;
+                    case "/":
+                        _objProg.code.Append("divss {leftString}, {rightString}\n");
+                        break;
+                }
+                if (leftChild.type == "VAR" && !(new string[] { "+", "-", "*", "/" }.Contains(root.token.value)))
+                    _objProg.code.Append($"movss [{leftChild.token.value}], xmm0\n");
+            }
+        }
         public void translationConst (CommonNode root, int  z_buffer)
         {
             CommonNode constValue = take(root, 0);
@@ -574,7 +770,11 @@ namespace Qscript
                     }
                 }
             }
+            //_objProg.code.Append($"    sizeof_{root.token.value}:\n");
             _objProg.code.Append("ends\n");
+
+            _objProg.data.Append($"SIZE_{root.token.value.ToUpper()} = sizeof {root.token.value}\n");
+
             setWriteData(CodeData.codeData);
         }
         public void translationInline (CommonNode root, int z_buffer)
@@ -618,7 +818,20 @@ namespace Qscript
                 _objProg.code.Append($"proc {root.token.value} uses eax\n");
             local();
             Translation(take(root, 2), z_buffer + 1);
-            _objProg.code.Append($"ret\n");
+
+            /*
+                mov edi, mc2
+                mov ecx, 2
+                rep movsd
+             */
+            _objProg.code.Append($".return:\n");
+            _objProg.code.Append($"    test edi, edi\n");
+            _objProg.code.Append($"    jz .retn\n");
+            _objProg.code.Append($"    mov esi, [resualtPtr]\n");
+            _objProg.code.Append($"    mov ecx, 2\n");
+            _objProg.code.Append($"    rep movsd\n");
+            _objProg.code.Append($".retn:\n");
+            _objProg.code.Append($"    ret\n");
             _objProg.code.Append($"endp\n");
             local();
             setWriteData(CodeData.codeData);
@@ -641,7 +854,8 @@ namespace Qscript
                         args += stringConsts[signatureCall.childs[i].token.value];
                     }
                     else
-                        throw new Exception("У Токена:" + signatureCall.childs[i].token.pos+"ошибка в вызове инлайн функции может быть только строка, переменная или число!!");
+                        //throw new Exception("У Токена:" + signatureCall.childs[i].token.pos+"ошибка в вызове инлайн функции может быть только строка, переменная или число!!");
+                        Syntax.SyntaxError("У Токена:" + signatureCall.childs[i].token.pos + "ошибка в вызове инлайн функции может быть только строка, переменная или число!!", signatureCall);
                     if (i < signatureCall.childs.Count-1)
                         args += ",";
                 }
@@ -665,7 +879,22 @@ namespace Qscript
             }
             _objProg.code.Append($"call {root.token.value}\n");
         }
-        // ВРЕМЕННЫЙ СУПЕР ГОВНОКОД
+        
+        public string getFloatConst (CommonNode node)
+        {
+            if (floatConsts.Keys.Contains(node.token.value))
+            {
+                return floatConsts[node.token.value];
+            } else
+            {
+                floatConsts.Add(node.token.value, $"float_const_{floatConstsIndex}");
+                _objProg.data.Append($"float_const_{floatConstsIndex} dd {node.token.value}\n");
+                floatConstsIndex++;
+                return floatConsts[node.token.value];
+            }
+        }
+        
+        // ВРЕМЕННЫЙ СУПЕР ГОВНОКОД   
         public void parseAsm (CommonNode root)
         {
             StringBuilder chars = new StringBuilder();

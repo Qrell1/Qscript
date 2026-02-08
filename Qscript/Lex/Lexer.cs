@@ -56,7 +56,7 @@ namespace Qscript.Lex
                     {
                         spaces += " ";
                     }
-                    Console.WriteLine($"[LEXER] Index:{i} Token pos:{tokenList[i].pos} type:{tokenList[i].type.type}{spaces}value:{tokenList[i].value}");
+                    //Console.WriteLine($"[LEXER] Index:{i} Token pos:{tokenList[i].pos} type:{tokenList[i].type.type}{spaces}value:{tokenList[i].value}");
                 }
             }
 
