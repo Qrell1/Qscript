@@ -25,6 +25,7 @@ namespace Qscript
         {
             ast = root;
             ast.childs = parse(root, 0).childs;
+            ast.varTypes = varTypes;
             return ast;
         }
 

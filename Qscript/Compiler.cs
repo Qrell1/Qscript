@@ -53,7 +53,8 @@ namespace Qscript
             {"byte", "db"},
             {"string", "db"},
             {"char", "db"},
-            {"float", "dd"}
+            {"float", "dd"},
+            {"int32_a", "dd"}
         };
         private Dictionary<string, string> typesarg = new Dictionary<string, string>()
         {
@@ -63,7 +64,8 @@ namespace Qscript
             {"byte", "BYTE"},
             {"string", "BYTE"},
             {"char", "BYTE"},
-            { "float", "DWORD" }
+            { "float", "DWORD" },
+            {"int32_a", "DWORD"}
         };
         public Dictionary<string, string> stringConsts = new Dictionary<string, string>();
         public int stringConstsIndex;
@@ -73,6 +75,9 @@ namespace Qscript
 
         public Dictionary<string, string> floatConsts = new Dictionary<string, string>();
         public int floatConstsIndex;
+
+        public CommonNode returnType;
+        public string funcName;
 
         private int trueTagIndex;
         private int falseTagIndex;
@@ -175,6 +180,9 @@ namespace Qscript
                 case "ITER":
                     translationIter(root, z_buffer);
                     break;
+                case "RETURN":
+                    translationReturn(root, z_buffer);
+                    break;
                 case "BODY":
                     for (int i = 0; i < root.childs.Count; i++)
                     {
@@ -194,7 +202,23 @@ namespace Qscript
         }
         public void translationReturn (CommonNode root, int z_buffer)
         {
+            CommonNode returnValue = take(root, 0);
 
+            if (!typesarg.Keys.Contains(returnType.token.value))
+            {
+                Translation(returnValue, z_buffer + 1);
+                _objProg.code.Append($"mov esi, eax\n");
+            } else if (returnType.type == "VAR")
+            {
+                Translation(returnValue, z_buffer + 1);
+                _objProg.code.Append($"mov eax, [{returnValue.token.value}]\n");
+                //_objProg.code.Append($"mov esi, eax\n");
+            } else
+            {
+                Translation(returnValue, z_buffer + 1);
+                //_objProg.code.Append($"mov esi, eax\n");
+            }
+            _objProg.code.Append($"jmp {funcName}.return\n");
         }
         public void translationIter (CommonNode root, int z_buffer)
         {
@@ -409,9 +433,14 @@ namespace Qscript
         }
         public void translationVar (CommonNode root,  int z_buffer)
         {
-            if (root.childs.Count == 0)
+            if (root.childs.Count == 0 && !types.Keys.Contains(root.token.value))
             {
                 _objProg.code.Append($"mov eax, [{root.token.value}]\n");
+                return;
+            }
+            if (root.childs.Count == 0 && typesarg.Keys.Contains(root.token.value))
+            {
+                _objProg.code.Append($"lea eax, [{root.token.value}]\n");
                 return;
             }
             CommonNode type = take(root, 0);
@@ -773,7 +802,11 @@ namespace Qscript
             //_objProg.code.Append($"    sizeof_{root.token.value}:\n");
             _objProg.code.Append("ends\n");
 
-            _objProg.data.Append($"SIZE_{root.token.value.ToUpper()} = sizeof {root.token.value}\n");
+            _objProg.data.Append($"SIZE_{root.token.value.ToUpper()} = sizeof.{root.token.value} / 4\n");
+            //_objProg.data.Append($"virtual at 0");
+            //_objProg.data.Append($"  Point Point");
+            //_objProg.data.Append($"  POINT_SIZE = $");
+            //_objProg.data.Append($"end virtual");
 
             setWriteData(CodeData.codeData);
         }
@@ -806,17 +839,23 @@ namespace Qscript
             string args = string.Empty;
             for (int i = 0; i < signature.childs.Count; i++)
             {
+                args += ",";
+                //if (signature.childs[i].token.value == "resualtPtr")
+                    //args += $"{signature.childs[i].token.value}:DWORD";
                 if (typesarg.ContainsKey(signature.childs[i].childs[0].token.value))
                     args += $"{signature.childs[i].token.value}:{typesarg[signature.childs[i].childs[0].token.value]}";
                 else
-                    args += $"{signature.childs[i].token.value}:{signature.childs[i].childs[0].token.value}";
+                    //args += $"{signature.childs[i].token.value}:{signature.childs[i].childs[0].token.value}";
+                    args += $"{signature.childs[i].token.value}:DWORD";
                 args += " ";
             }
             if (args.Length != 0)
-                _objProg.code.Append($"proc {root.token.value} uses eax, {args}\n");
+                _objProg.code.Append($"proc {root.token.value} uses eax{args}\n");
             else
                 _objProg.code.Append($"proc {root.token.value} uses eax\n");
             local();
+            returnType = take(root, 0);
+            funcName = root.token.value;
             Translation(take(root, 2), z_buffer + 1);
 
             /*
@@ -824,13 +863,30 @@ namespace Qscript
                 mov ecx, 2
                 rep movsd
              */
-            _objProg.code.Append($".return:\n");
-            _objProg.code.Append($"    test edi, edi\n");
-            _objProg.code.Append($"    jz .retn\n");
-            _objProg.code.Append($"    mov esi, [resualtPtr]\n");
-            _objProg.code.Append($"    mov ecx, 2\n");
-            _objProg.code.Append($"    rep movsd\n");
-            _objProg.code.Append($".retn:\n");
+            //_objProg.code.Append($"    ret\n");
+            if (ProgramAst.resualtFunc[root.token.value] == null)
+            {
+
+            }
+            else if (typesarg.Keys.Contains(ProgramAst.resualtFunc[root.token.value].token.value))
+            {
+                _objProg.code.Append($"{root.token.value}.return:\n");
+                _objProg.code.Append($"    test eax, eax\n");
+                _objProg.code.Append($"    jz {root.token.value}.retn\n");
+                _objProg.code.Append($"    mov ebx, [resualtPtr]\n");
+                _objProg.code.Append($"    mov [ebx], eax\n");
+            }
+            else
+            {
+                _objProg.code.Append($"{root.token.value}.return:\n");
+                _objProg.code.Append($"    mov edi, [resualtPtr]\n");
+                _objProg.code.Append($"    test edi, edi\n");
+                _objProg.code.Append($"    jz {root.token.value}.retn\n");
+                //_objProg.code.Append($"    mov edi, [resualtPtr]\n");
+                _objProg.code.Append($"    mov ecx, SIZE_{ProgramAst.resualtFunc[root.token.value].token.value.ToUpper()}\n");
+                _objProg.code.Append($"    rep movsd\n");
+            }
+            _objProg.code.Append($"{root.token.value}.retn:\n");
             _objProg.code.Append($"    ret\n");
             _objProg.code.Append($"endp\n");
             local();
@@ -865,12 +921,21 @@ namespace Qscript
 
             for (int i = signatureCall.childs.Count - 1; i >= 0; i--)
             {
-                Translation(take(signatureCall, i), z_buffer + 1);
-                if (signatureCall.childs[i].type == "STRING")
+                if (signatureCall.childs[i].type == "VAR" && !typesarg.Keys.Contains(ProgramAst.varTypes[signatureCall.childs[i].token.value].token.value))
                 {
+                    _objProg.code.Append($"lea eax, [{signatureCall.childs[i].token.value}]\n");
+                    _objProg.code.Append($"push eax\n");
+                }
+                else if (signatureCall.childs[i].type == "STRING")
+                {
+                    Translation(take(signatureCall, i), z_buffer + 1);
                     _objProg.code.Append($"push {stringConsts[signatureCall.childs[i].token.value]}\n");
                 }
-                _objProg.code.Append($"push eax\n");
+                else
+                {
+                    Translation(take(signatureCall, i), z_buffer + 1);
+                    _objProg.code.Append($"push eax\n");
+                }
             }
             if (resualtPtr!=null && ProgramAst.resualtFunc[root.token.value] != null)
             {

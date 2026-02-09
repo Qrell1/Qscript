@@ -157,15 +157,15 @@ namespace Qscript
                     {
                         CommonNode leftNodeFloatType = varTypes[leftNodeFloat.token.value];
                         CommonNode rightNodeFloatType = varTypes[rightNodeFloat.token.value];
-                        if (!(leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "NUMBER"))
+                        if ((leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "NUMBER"))
                             Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
-                        else if (!(leftNodeFloatType.token.value == "NUMBER" && rightNodeFloatType.token.value == "FLOAT"))
+                        else if ((leftNodeFloatType.token.value == "NUMBER" && rightNodeFloatType.token.value == "FLOAT"))
                             Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
-                        else if (!(leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "FLOAT"))
+                        else if ((leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "FLOAT"))
                             Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
-                        else if (!(leftNodeFloatType.token.value == "NUMBER" && rightNodeFloatType.token.value == "NUMBER"))
+                        else if ((leftNodeFloatType.token.value == "NUMBER" && rightNodeFloatType.token.value == "NUMBER"))
                             Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
-                        else if (!(leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "NUMBER"))
+                        else if ((leftNodeFloatType.token.value == "FLOAT" && rightNodeFloatType.token.value == "NUMBER"))
                             Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
                         else if (leftNodeFloatType.token.value != rightNodeFloatType.token.value)
                             Syntax.SyntaxError("Ошибка нельзя складывать переменные разных типов!", leftNodeFloatType);
