@@ -78,6 +78,7 @@ namespace Qscript
 
         public CommonNode returnType;
         public string funcName;
+        public bool func;
 
         private int trueTagIndex;
         private int falseTagIndex;
@@ -492,14 +493,14 @@ namespace Qscript
                 {
                     translationCall(rightChild, z_buffer + 1, $"lea eax, [{varChild.token.value}]\n");
                 }
+                else if (rightChild.type == "NUMBER")
+                {
+                    _objProg.code.Append($"mov [{varChild.token.value}], {rightChild.token.value}\n");
+                }
                 else if (!(rightChild.type == "NUMBER"))
                 {
                     Translation(rightChild, z_buffer + 1);
                     _objProg.code.Append($"mov [{varChild.token.value}], eax\n");
-                }
-                else if (rightChild.type == "NUMBER")
-                {
-                    _objProg.code.Append($"mov [{varChild.token.value}], {rightChild.token.value}\n");
                 }
                 return;
             }
@@ -567,14 +568,28 @@ namespace Qscript
                     _objProg.code.Append($"shr eax, {Convert.ToInt32(rightChild.token.value)/2}\n");
                     return;
                 }
+                if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("+") && !(root.token.value == "+="))
+                {
+                    _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
+                    _objProg.code.Append($"add eax, {rightChild.token.value}\n");
+                    return;
+                }
+                if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("-") && !(root.token.value == "-="))
+                {
+                    _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
+                    _objProg.code.Append($"sub eax, {rightChild.token.value}\n");
+                    return;
+                }
                 if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("+"))
                 {
                     _objProg.code.Append($"add [{leftChild.token.value}], {rightChild.token.value}\n");
+                    if (func) _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
                     return;
                 }
                 if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("-"))
                 {
                     _objProg.code.Append($"sub [{leftChild.token.value}], {rightChild.token.value}\n");
+                    if (func) _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
                     return;
                 }
                 if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("*"))
@@ -856,8 +871,9 @@ namespace Qscript
             local();
             returnType = take(root, 0);
             funcName = root.token.value;
+            func = true;
             Translation(take(root, 2), z_buffer + 1);
-
+            func = false;
             /*
                 mov edi, mc2
                 mov ecx, 2
@@ -943,6 +959,7 @@ namespace Qscript
                 _objProg.code.Append($"push eax\n");
             }
             _objProg.code.Append($"call {root.token.value}\n");
+            //_objProg.code.Append($"add esp, {(signatureCall.childs.Count+1)*4}\n");
         }
         
         public string getFloatConst (CommonNode node)

@@ -10,6 +10,7 @@ namespace Qscript
     {
         public ProgramNode ast;
         public Dictionary<string, CommonNode> varTypes = new Dictionary<string, CommonNode>();
+
         public AbbreviationParser() { }
 
         public CommonNode take(CommonNode node, int i = 0)
@@ -54,7 +55,9 @@ namespace Qscript
                             return root;
                         }
                     } else if ((leftNode.type == "VAR" && rightNode.type == "VAR") &&
-                        !(leftNode.token.value.Contains(".") || rightNode.token.value.Contains(".")))
+                        !(leftNode.token.value.Contains(".") || rightNode.token.value.Contains(".")) &&
+                        !varTypes.Keys.Contains(leftNode.token.value) && !varTypes.Keys.Contains(rightNode.token.value)
+                        )
                     {
                         Syntax.SyntaxError($"Нельзя складывать не объявленные Переменные: {leftNode.token.value}, {rightNode.token.value}", leftNode);
                     }
@@ -176,10 +179,16 @@ namespace Qscript
                         resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                         childs.Add(resualtVar);
                     }
+                    Dictionary<string, CommonNode> varTypes2 = varTypes;
+                    foreach (CommonNode child in signature.childs)
+                    {
+                        varTypes.Add(child.token.value, child.childs[0]);
+                    }
                     for (int i = 0; i < bodyFunc.childs.Count; i++)
                     {
                         bodyFunc.childs[i] = parse(bodyFunc.childs[i], z_buffer + 2);
                     }
+                    varTypes = varTypes2;
                     childs.AddRange(signature.childs);
                     signature.childs = childs;
                     root.childs[1] = signature;
