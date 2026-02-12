@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 using static System.Collections.Specialized.BitVector32;
 
 namespace Qscript
@@ -76,6 +77,8 @@ namespace Qscript
         public Dictionary<string, string> floatConsts = new Dictionary<string, string>();
         public int floatConstsIndex;
 
+        public List<string> tempStructs = new List<string>();
+
         public CommonNode returnType;
         public string funcName;
         public bool func;
@@ -83,6 +86,7 @@ namespace Qscript
         private int trueTagIndex;
         private int falseTagIndex;
         private int elsesTagIndex;
+        private int tempTagIndex;
 
         private int iterTagIndex;
 
@@ -184,6 +188,9 @@ namespace Qscript
                 case "RETURN":
                     translationReturn(root, z_buffer);
                     break;
+                case "REFVAR":
+                    translationRefVar(root, z_buffer);
+                    break;
                 case "BODY":
                     for (int i = 0; i < root.childs.Count; i++)
                     {
@@ -200,6 +207,15 @@ namespace Qscript
                     _objProg.includes.Append($"include '{take(root,0).token.value}'\n");
                     break;
             }
+        }
+        public void translationRefVar (CommonNode root, int z_buffer)
+        {
+            CommonNode call = take(root, 0);
+            _objProg.code.Append($"sub esp, SIZE_{ProgramAst.resualtFunc[call.token.value].token.value.ToUpper()}\n");
+            translationCall(call, z_buffer + 1, "mov eax, esp\n");
+            _objProg.code.Append($"mov eax, [esp+{ProgramAst.resualtFunc[call.token.value].token.value}.{root.token.value}-4]\n");
+            //_objProg.code.Append($"mov [eax], [esp-{ProgramAst.resualtFunc[call.token.value].token.value}.{root.token.value}]\n");
+            _objProg.code.Append($"add esp, SIZE_{ProgramAst.resualtFunc[call.token.value].token.value.ToUpper()}\n");
         }
         public void translationReturn (CommonNode root, int z_buffer)
         {
@@ -491,7 +507,10 @@ namespace Qscript
                 }
                 else if (rightChild.type == "CALL")
                 {
-                    translationCall(rightChild, z_buffer + 1, $"lea eax, [{varChild.token.value}]\n");
+                    //translationCall(rightChild, z_buffer + 1);//, $"lea eax, [{varChild.token.value}]\n");
+                    if (types.Keys.Contains(ProgramAst.resualtFunc[rightChild.token.value].token.value))
+                    { translationCall(rightChild, z_buffer + 1);  _objProg.code.Append($"mov [{varChild.token.value}], eax\n"); }
+                    else translationCall(rightChild, z_buffer + 1, $"lea eax, [{varChild.token.value}]\n");
                 }
                 else if (rightChild.type == "NUMBER")
                 {
@@ -615,8 +634,45 @@ namespace Qscript
                         _objProg.code.Append($"mov [{leftChild.token.value}], eax\n");
                     return;
                 }
-
-                translationLeftRightNodes(leftChild, rightChild, z_buffer);
+                // $"lea eax, [{varChild.token.value}]\n"
+                if (!root.token.value.Contains("=") && leftChild.type == "CALL" && rightChild.type != "CALL")
+                {
+                    translationCall(leftChild, z_buffer + 1);//$"lea eax, [{getTempVarReturn(leftChild)}]\n");
+                    //_objProg.code.Append($"mov eax, [{getTempVarReturn(leftChild)}]\n");
+                    _objProg.code.Append($"push eax\n");
+                    if (rightChild.type == "NUMBER")
+                        _objProg.code.Append($"mov ebx, {rightChild.token.value}\n");
+                    else
+                    {
+                        //_objProg.code.Append($"push eax\n");
+                        Translation(rightChild, z_buffer + 1);
+                        _objProg.code.Append($"mov ebx, eax\n");
+                        //_objProg.code.Append($"pop eax\n");
+                    }
+                    _objProg.code.Append($"pop eax\n");
+                }
+                else if (!root.token.value.Contains("=") && rightChild.type == "CALL" && leftChild.type != "CALL")
+                {
+                    Translation(leftChild, z_buffer + 1);
+                    //_objProg.code.Append($"mov ecx, eax\n"); // add esp, 8
+                    _objProg.code.Append($"push eax\n");
+                    translationCall(rightChild, z_buffer + 1);//$"lea eax, [{getTempVarReturn(rightChild)}]\n");
+                    _objProg.code.Append($"mov ebx, eax\n");//[{getTempVarReturn(rightChild)}]\n");
+                    _objProg.code.Append($"pop eax\n");
+                    //_objProg.code.Append($"mov eax, ecx\n");
+                }
+                else if (!root.token.value.Contains("=") && leftChild.type == "CALL" && rightChild.type == "CALL")
+                {
+                    translationCall(leftChild, z_buffer + 1);//"lea eax, [{getTempVarReturn(leftChild)}]\n");
+                    _objProg.code.Append($"push eax\n");
+                    translationCall(rightChild, z_buffer +1);//$"lea eax, [{getTempVarReturn(rightChild)}]\n");
+                    _objProg.code.Append($"mov ebx, eax\n");//[{getTempVarReturn(rightChild)}]\n");
+                    _objProg.code.Append($"pop eax\n");
+                }
+                else
+                {
+                    translationLeftRightNodes(leftChild, rightChild, z_buffer);
+                }
 
 
 
@@ -854,7 +910,7 @@ namespace Qscript
             string args = string.Empty;
             for (int i = 0; i < signature.childs.Count; i++)
             {
-                args += ",";
+                if (i != 0) args += ",";
                 //if (signature.childs[i].token.value == "resualtPtr")
                     //args += $"{signature.childs[i].token.value}:DWORD";
                 if (typesarg.ContainsKey(signature.childs[i].childs[0].token.value))
@@ -865,9 +921,9 @@ namespace Qscript
                 args += " ";
             }
             if (args.Length != 0)
-                _objProg.code.Append($"proc {root.token.value} uses eax{args}\n");
+                _objProg.code.Append($"proc {root.token.value} {args}\n");
             else
-                _objProg.code.Append($"proc {root.token.value} uses eax\n");
+                _objProg.code.Append($"proc {root.token.value} \n");
             local();
             returnType = take(root, 0);
             funcName = root.token.value;
@@ -887,10 +943,11 @@ namespace Qscript
             else if (typesarg.Keys.Contains(ProgramAst.resualtFunc[root.token.value].token.value))
             {
                 _objProg.code.Append($"{root.token.value}.return:\n");
-                _objProg.code.Append($"    test eax, eax\n");
-                _objProg.code.Append($"    jz {root.token.value}.retn\n");
-                _objProg.code.Append($"    mov ebx, [resualtPtr]\n");
-                _objProg.code.Append($"    mov [ebx], eax\n");
+                //_objProg.code.Append($"    test eax, eax\n");
+                //_objProg.code.Append($"    jz {root.token.value}.retn\n");
+                //_objProg.code.Append($"    mov eax, [resualtPtr]\n");
+                //_objProg.code.Append($"    mov ebx, [resualtPtr]\n");
+                //_objProg.code.Append($"    mov [ebx], eax\n");
             }
             else
             {
@@ -901,8 +958,10 @@ namespace Qscript
                 //_objProg.code.Append($"    mov edi, [resualtPtr]\n");
                 _objProg.code.Append($"    mov ecx, SIZE_{ProgramAst.resualtFunc[root.token.value].token.value.ToUpper()}\n");
                 _objProg.code.Append($"    rep movsd\n");
+                //_objProg.code.Append($"    lea eax, [resualtPtr]\n");
             }
             _objProg.code.Append($"{root.token.value}.retn:\n");
+            //_objProg.code.Append($"    leave\n");
             _objProg.code.Append($"    ret\n");
             _objProg.code.Append($"endp\n");
             local();
@@ -934,7 +993,6 @@ namespace Qscript
                 _objProg.code.Append($"{args}\n");
                 return;
             }
-
             for (int i = signatureCall.childs.Count - 1; i >= 0; i--)
             {
                 if (signatureCall.childs[i].type == "VAR" && !typesarg.Keys.Contains(ProgramAst.varTypes[signatureCall.childs[i].token.value].token.value))
@@ -953,15 +1011,45 @@ namespace Qscript
                     _objProg.code.Append($"push eax\n");
                 }
             }
-            if (resualtPtr!=null && ProgramAst.resualtFunc[root.token.value] != null)
+            /*if (resualtPtr!=null && ProgramAst.resualtFunc[root.token.value] != null)
+            {
+                _objProg.code.Append(resualtPtr);
+                _objProg.code.Append($"push eax\n");
+            } else if (ProgramAst.resualtFunc[root.token.value] != null)
+            {
+                _objProg.code.Append($"lea eax, [{getTempVarReturn(root)}]\n");
+                _objProg.code.Append($"push eax\n");
+            }*/
+            if (resualtPtr != null)
             {
                 _objProg.code.Append(resualtPtr);
                 _objProg.code.Append($"push eax\n");
             }
+            if (resualtPtr == null)
+            {
+                //_objProg.code.Append("sub ebp, 4\n");
+                //_objProg.code.Append("mov eax, 0\n");
+                //_objProg.code.Append($"push eax\n");
+            }
             _objProg.code.Append($"call {root.token.value}\n");
-            //_objProg.code.Append($"add esp, {(signatureCall.childs.Count+1)*4}\n");
+            //if (ProgramAst.resualtFunc[root.token.value] != null && resualtPtr == null) _objProg.code.Append($"mov eax, [{getTempVarReturn(root)}]\n");
+            
         }
         
+        public string getTempVarReturn (CommonNode call)
+        {
+            CommonNode type = ProgramAst.resualtFunc[call.token.value];
+            if (tempStructs.Contains($"temp_struct_{type.token.value}"))
+            {
+                return $"temp_struct_{type.token.value}";
+            }
+            else
+            {
+                _objProg.data.Append($"temp_struct_{tempTagIndex} {type.token.value} 0\n");
+                tempStructs.Add($"temp_struct_{tempTagIndex}");
+                return $"temp_struct_{tempTagIndex}";
+            }
+        }
         public string getFloatConst (CommonNode node)
         {
             if (floatConsts.Keys.Contains(node.token.value))

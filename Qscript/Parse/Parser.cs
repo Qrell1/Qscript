@@ -572,7 +572,7 @@ namespace Qscript
             {
                 varNode = parseCall(varNode);
                 //expect("SEM"); skip();
-                if (peek("TS"))
+                /*if (peek("TS"))
                 {
                     Token ts = take(); expect("VAR");
                     //CommonNode refs = new CommonNode("REFVAR", take());
@@ -582,7 +582,7 @@ namespace Qscript
                     binoper.childs.Add(refs);
 
                     return binoper;
-                }
+                }*/
                 expect("SEM"); skip();
                 return varNode;
             }
@@ -703,11 +703,25 @@ namespace Qscript
             CommonNode args = parseFormulaSignature();
             varNode.type = "CALL";
             varNode.childs.Add(args);
-            /*if (peek("TS"))
+            if (peek("TS"))
             {
-                skip();
-                ref
-            }*/
+                skip(); expect("VAR");
+                CommonNode var = new CommonNode("VAR", take());
+                while (peek("TS"))
+                {
+                    skip();
+                    var.token.value += "." + take().value;
+                    if (tokens[pos].type.type != "TS")
+                        break;
+                }
+                //if (peek("POSTFIX") || peek("SEM") || peek("LPAR"))
+                    //var = parseVarOperation(var);
+                //else
+                var.type = "REFVAR";
+                var.childs.Add(varNode);
+                varNode = var;
+            }
+
 
             return varNode;
 

@@ -10,6 +10,19 @@ namespace Qscript
     {
         public ProgramNode ast;
         public Dictionary<string, CommonNode> varTypes = new Dictionary<string, CommonNode>();
+        public Dictionary<string, CommonNode> varTypesLocal = new Dictionary<string, CommonNode>();
+
+        private Dictionary<string, string> types = new Dictionary<string, string>()
+        {
+            {"int32", "dd"},
+            {"int16", "dw"},
+            {"int8", "db"},
+            {"byte", "db"},
+            {"string", "db"},
+            {"char", "db"},
+            {"float", "dd"},
+            {"int32_a", "dd"}
+        };
 
         public AbbreviationParser() { }
 
@@ -72,6 +85,21 @@ namespace Qscript
                     }
                     if (leftNode.type == "BINOPER" || rightNode.type == "BINOPER")
                     {
+                        if (leftNode.type == "BINOPER")
+                        {
+                            CommonNode leftNodeTemp = parse(leftNode, z_buffer);
+                            //root.childs[0] = leftNodeTemp;
+                            if (leftNodeTemp.type == "FLOATBINOPER") root.type = "FLOATBINOPER";
+                        }
+                        if (rightNode.type == "BINOPER")
+                        {
+                            CommonNode rightNodeTemp = parse(rightNode, z_buffer);
+                            //root.childs[0] = rightNodeTemp;
+                            if (rightNodeTemp.type == "FLOATBINOPER") root.type = "FLOATBINOPER";
+                        }
+                    }
+                    if (leftNode.type == "BINOPER" && rightNode.type == "BINOPER")
+                    {
                         CommonNode leftNodeTemp = parse(leftNode, z_buffer);
                         CommonNode rightNodeTemp = parse(rightNode, z_buffer);
                         if (leftNode.type == "FLOATBINOPER" || rightNode.type == "FLOATBINOPER")
@@ -82,6 +110,7 @@ namespace Qscript
                             return root;
                         }
                     }
+                    
 
                     if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
                     {
@@ -173,13 +202,13 @@ namespace Qscript
                     CommonNode signature = take(root, 1);
                     CommonNode bodyFunc = take(root, 2);
                     List<CommonNode> childs = new List<CommonNode>();
-                    if (ast.resualtFunc[root.token.value] != null)
+                    if (ast.resualtFunc[root.token.value] != null && !types.Keys.Contains(ast.resualtFunc[root.token.value].token.value))
                     {
                         CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", signature.token.pos));
                         resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                         childs.Add(resualtVar);
                     }
-                    Dictionary<string, CommonNode> varTypes2 = varTypes;
+                    Dictionary<string, CommonNode>  varTypesTemp = varTypes;
                     foreach (CommonNode child in signature.childs)
                     {
                         varTypes.Add(child.token.value, child.childs[0]);
@@ -188,7 +217,7 @@ namespace Qscript
                     {
                         bodyFunc.childs[i] = parse(bodyFunc.childs[i], z_buffer + 2);
                     }
-                    varTypes = varTypes2;
+                    varTypes = varTypesTemp;
                     childs.AddRange(signature.childs);
                     signature.childs = childs;
                     root.childs[1] = signature;
@@ -226,10 +255,17 @@ namespace Qscript
                     {
 
                         if (varTypes.Keys.Contains(root.token.value))
-                            Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем!", root);
+                            Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем {root.token.value}!", root);
                         CommonNode type = root.childs[0];
                         varTypes.Add(root.token.value, type);
                     }
+                    break;
+                case "MODIFIER":
+                    for (int i = 0; i < root.childs.Count; i++)
+                    {
+                        if (root.childs[i].type != "VAR") root.childs[i] = parse(root.childs[i], z_buffer + 1);
+                    }
+                    return root;
                     break;
                 default:
                     if (root.childs.Count == 0)
