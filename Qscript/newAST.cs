@@ -24,8 +24,15 @@ namespace Qscript
     {
         public List<CommonNode> Constans = new List<CommonNode>();
         public List<string> inlineNames = new List<string>();
+
         public Dictionary<string, CommonNode> resualtFunc = new Dictionary<string, CommonNode>();
+        public Dictionary<string, CommonNode> typesArgsFunc = new Dictionary<string, CommonNode>();
         public Dictionary<string, CommonNode> varTypes = new Dictionary<string, CommonNode>();
+
+        public Dictionary<string, CommonNode> declarotivePatternsFunctions = new Dictionary<string, CommonNode>();
+        public Dictionary<string, CommonNode> declarotivePatternsStruct = new Dictionary<string, CommonNode>();
+
+        public List<string> declarotiveNames = new List<string>();
 
         public ProgramNode(string type, Token token) : base(type, token)
         {}

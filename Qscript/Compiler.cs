@@ -853,12 +853,12 @@ namespace Qscript
         {
             setWriteData(CodeData.macroData);
             _objProg.code.Append($"struct {root.token.value}\n");
-            for (int i = 0; i < root.childs.Count; i++)
-            {
-                CommonNode modifier = take(root, i);
-                if (modifier.token.value == "public")
-                {
-                    foreach (CommonNode child in modifier.childs)
+            //for (int i = 0; i < root.childs.Count; i++)
+            //{
+                //CommonNode modifier = take(root, i);
+                //if (modifier.token.value == "public")
+                //{
+                    foreach (CommonNode child in root.childs)
                     {
                         if (child.type == "VAR")
                         {
@@ -868,8 +868,8 @@ namespace Qscript
                                 _objProg.code.Append($"    {child.token.value} {take(child, 0).token.value}\n");
                         }
                     }
-                }
-            }
+                //}
+            //}
             //_objProg.code.Append($"    sizeof_{root.token.value}:\n");
             _objProg.code.Append("ends\n");
 
@@ -995,7 +995,7 @@ namespace Qscript
             }
             for (int i = signatureCall.childs.Count - 1; i >= 0; i--)
             {
-                if (signatureCall.childs[i].type == "VAR" && !typesarg.Keys.Contains(ProgramAst.varTypes[signatureCall.childs[i].token.value].token.value))
+                if (signatureCall.childs[i].type == "VAR" && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[i].childs[0].token.value))
                 {
                     _objProg.code.Append($"lea eax, [{signatureCall.childs[i].token.value}]\n");
                     _objProg.code.Append($"push eax\n");

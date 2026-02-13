@@ -78,7 +78,7 @@ namespace Qscript
                         return;
                     }
 
-                    if (leftNode.type == "VAR" && rightNode.type == "CALL")
+                    if (leftNode.type == "VAR" && rightNode.type == "CALL" && !ast.declarotiveNames.Contains(rightNode.token.value))
                     {
                         if (!ast.resualtFunc.ContainsKey(rightNode.token.value))
                             Syntax.SyntaxError($"Ошибка Функция:{rightNode.token.value} не существует чтобы её вызывать!", rightNode);
@@ -92,9 +92,9 @@ namespace Qscript
                             Syntax.SyntaxError($"Ошибка Функция:{rightNode.token.value} не может возвращать значение в Переменную:{leftNode.token.value} другого типа!", rightNode);
                     }
 
-                    if (leftNode.type == "CALL" && !ast.resualtFunc.ContainsKey(leftNode.token.value))
+                    if (leftNode.type == "CALL" && !ast.resualtFunc.ContainsKey(leftNode.token.value) && !ast.declarotiveNames.Contains(leftNode.token.value))
                         Syntax.SyntaxError($"Ошибка Функция:{leftNode.token.value} не существует чтобы её вызывать!", leftNode);
-                    if (rightNode.type == "CALL" && !ast.resualtFunc.ContainsKey(rightNode.token.value))
+                    if (rightNode.type == "CALL" && !ast.resualtFunc.ContainsKey(rightNode.token.value) && !ast.declarotiveNames.Contains(rightNode.token.value))
                         Syntax.SyntaxError($"Ошибка Функция:{rightNode.token.value} не существует чтобы её вызывать!", rightNode);
                     if (rightNode.type == "VAR" && !varTypes.ContainsKey(rightNode.token.value) && !rightNode.token.value.Contains("."))
                         Syntax.SyntaxError($"Ошибка Переменной:{rightNode.token.value} не существует чтобы её использовать!", rightNode);
@@ -180,7 +180,7 @@ namespace Qscript
                         return;
                     }
 
-                    if (leftNodeFloat.type == "VAR" && rightNodeFloat.type == "CALL")
+                    if (leftNodeFloat.type == "VAR" && rightNodeFloat.type == "CALL" && !ast.declarotiveNames.Contains(rightNodeFloat.token.value))
                     {
                         if (!ast.resualtFunc.ContainsKey(rightNodeFloat.token.value))
                             Syntax.SyntaxError($"Ошибка Функция:{rightNodeFloat.token.value} не существует чтобы её вызывать!", rightNodeFloat);
@@ -194,9 +194,9 @@ namespace Qscript
                             Syntax.SyntaxError($"Ошибка Функция:{rightNodeFloat.token.value} не может возвращать значение в Переменную:{leftNodeFloat.token.value} другого типа!", rightNodeFloat);
                     }
 
-                    if (leftNodeFloat.type == "CALL" && !ast.resualtFunc.ContainsKey(leftNodeFloat.token.value))
+                    if (leftNodeFloat.type == "CALL" && !ast.resualtFunc.ContainsKey(leftNodeFloat.token.value) && !ast.declarotiveNames.Contains(leftNodeFloat.token.value))
                         Syntax.SyntaxError($"Ошибка Функция:{leftNodeFloat.token.value} не существует чтобы её вызывать!", leftNodeFloat);
-                    if (rightNodeFloat.type == "CALL" && !ast.resualtFunc.ContainsKey(rightNodeFloat.token.value))
+                    if (rightNodeFloat.type == "CALL" && !ast.resualtFunc.ContainsKey(rightNodeFloat.token.value) && !ast.declarotiveNames.Contains(rightNodeFloat.token.value))
                         Syntax.SyntaxError($"Ошибка Функция:{rightNodeFloat.token.value} не существует чтобы её вызывать!", rightNodeFloat);
                     if (rightNodeFloat.type == "VAR" && !varTypes.ContainsKey(rightNodeFloat.token.value) && !rightNodeFloat.token.value.Contains("."))
                         Syntax.SyntaxError($"Ошибка Переменной:{rightNodeFloat.token.value} не существует чтобы её использовать!", rightNodeFloat);
@@ -267,7 +267,7 @@ namespace Qscript
                     }
                     break;
                 default:
-                    if (root.childs.Count == 0 || root.type == "SIGNATURE" || root.type == "CMP")
+                    if (root.childs.Count == 0 || root.type == "SIGNATURE" || root.type == "CMP" || root.type == "STRUCT")
                         break;
                     for (int i = 0; i < root.childs.Count; i++)
                     {

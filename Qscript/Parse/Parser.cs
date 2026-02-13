@@ -151,7 +151,25 @@ namespace Qscript
         }
         public CommonNode parseVariableOrNumberOrFunction()
         {
-            if (peek("VAR") && tokens[pos+1].type.type == "LPAR")
+            if (peek("VAR") && tokens[pos + 1].value == "<")
+            {
+                int ps = pos+1;
+                try{while (true)
+                    {
+                        if (tokens[ps].value != ">")
+                            ps++;
+                        else break;
+                    }} catch { SyntaxError("Ну тип ошибка в вызове декларотивной функции"); }
+                ps++;
+                if (tokens[ps].value == "(")
+                {
+                    // CALL
+                    CommonNode varNode = new CommonNode("CALL", take());
+                    varNode = parseCall(varNode);
+                    return varNode;
+                }
+            }
+            if (peek("VAR") && tokens[pos + 1].type.type == "LPAR")
             {
                 // CALL
                 CommonNode varNode = new CommonNode("CALL", take());
@@ -470,6 +488,25 @@ namespace Qscript
             }
         }
 
+        public CommonNode parseDeclarator()
+        {
+            if (peek("OPER") && tokens[pos].value == "<")
+            {
+                CommonNode declarotivePart = new CommonNode("DECLARATOR", take());
+
+                while (peek("VAR"))
+                {
+                    declarotivePart.childs.Add(new CommonNode("TYPE", take()));
+                    if (!peek("PS")) break;
+                    else skip();
+                }
+                expect("OPER"); if (tokens[pos].value != ">") Syntax.SyntaxError("Ожидался Токен: >", take());
+                skip();
+
+                return declarotivePart;
+            }
+            return null;
+        }
 
         public CommonNode parseType(CommonNode typeNode)
         {
@@ -505,15 +542,21 @@ namespace Qscript
 
             if (peek("LPAR"))
             {
-                CommonNode args = parseVarWTypeSignature(); expect(new string[] { "LFIG", "SEM" });
+                if (varNode.childs[0].childs.Count > 0 && varNode.childs[0].type == "TYPE") Syntax.SyntaxError("После возвращаемого типа функции не может идти Декларотивный Кортеж!", varNode.childs[0].childs[0]);
+                CommonNode child;
+                CommonNode args = parseVarWTypeSignature(); expect(new string[] { "LFIG", "SEM", "OPER" });
+                CommonNode declarator = parseDeclarator();
                 CommonNode body = parseBody();
                 varNode.type = "FUNC";
                 varNode.childs.Add(args);
                 varNode.childs.Add(body);
+                if (declarator != null) varNode.childs.Add(declarator);
                 if (varNode.childs[0].token.value == "void")
                     root.resualtFunc.Add(varNode.token.value, null);
                 else
                     root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
+
+                if (declarator != null) root.declarotivePatternsFunctions.Add(varNode.token.value, varNode);
                 return varNode;
             }
             if (peek("TS"))
@@ -535,7 +578,13 @@ namespace Qscript
                 varNode = node;
             expect(new string[] { "OPER", "POSTFIX", "SEM", "LPAR", "TS", "VAR" });
 
-            
+            if (peek("OPER") && tokens[pos].value == "<")
+            {
+                CommonNode typeNode = new CommonNode("TYPE", varNode.token);
+                typeNode.childs.Add(parseDeclarator());
+
+                return parseType(typeNode);
+            }
             if (peek("VAR"))
             {
                 CommonNode typeNode = new CommonNode("TYPE", varNode.token);
@@ -700,9 +749,11 @@ namespace Qscript
         }
         public CommonNode parseCall(CommonNode varNode)
         {
+            CommonNode declarator = parseDeclarator();
             CommonNode args = parseFormulaSignature();
             varNode.type = "CALL";
-            varNode.childs.Add(args);
+            if (declarator != null) varNode.childs.Add(declarator);
+                varNode.childs.Add(args);
             if (peek("TS"))
             {
                 skip(); expect("VAR");
@@ -721,7 +772,7 @@ namespace Qscript
                 var.childs.Add(varNode);
                 varNode = var;
             }
-
+            //if (declarator != null && !root.declarotivePatternsFunctions.Keys.Contains(varNode.token.value)) root.declarotivePatternsFunctions.Add(varNode.token.value, varNode);
 
             return varNode;
 
@@ -928,37 +979,6 @@ namespace Qscript
                 CommonNode body = parseBody();
                 constructor.childs.Add(args);
                 constructor.childs.Add(body);
-                /*if (peek("LPAR"))
-                {
-                    CommonNode varNode = new CommonNode("FUNC", nameToken);
-                    CommonNode typeNode = new CommonNode("TYPE", t);
-                    CommonNode args = parseVarWTypeSignature(); expect(new string[] { "LFIG", "SEM" });
-                    CommonNode body = parseBody();
-                    varNode.childs.Add(args);
-                    varNode.childs.Add(body);
-                    //expect("SEM"); skip();
-                    return varNode;
-                }*/
-                /*if (peek("OPER") && tokens[pos].value == "=")
-                {
-                    CommonNode varNode = new CommonNode("VAR", nameToken);
-                    CommonNode typeNode = new CommonNode("TYPE", typeToken);
-                    varNode.childs.Add(typeNode);
-                    CommonNode operNode = new CommonNode("BINOPER", take());
-                    CommonNode rightOperand = parseFormula();
-                    operNode.childs.Add(varNode);
-                    operNode.childs.Add(rightOperand);
-                    expect("SEM"); skip();
-                    return operNode;
-                }*/
-                /*if (peek("SEM"))
-                {
-                    skip();
-                    CommonNode varNode = new CommonNode("VAR", nameToken);
-                    CommonNode typeNode = new CommonNode("TYPE", typeToken);
-                    varNode.childs.Add(typeNode);
-                    return varNode;
-                }*/
                 //SyntaxError($"На позиции:{pos} странный токен не подходящий для объявления члена структуре данных!");
                 return constructor;
             }
@@ -982,7 +1002,45 @@ namespace Qscript
             expect(new string[] { "STRUCT","CLASS" }); Token typeStructToken = take();
             expect("VAR"); Token nameToken = take();
             CommonNode structNode = new CommonNode(typeStructToken.type.type, nameToken);
+            CommonNode declarotivePart = null;
+            if (peek("OPER") && tokens[pos].value == "<")
+            {
+                declarotivePart = new CommonNode("DECLARATOR", take());
+                while (peek("VAR"))
+                {
+                    declarotivePart.childs.Add(new CommonNode("CONST", take()));
+                    if (!peek("PS")) break;
+                    else skip();
+                } expect("OPER"); if (tokens[pos].value != ">") Syntax.SyntaxError("Ожидался Токен: >", take());
+                skip(); structNode.childs.Add(declarotivePart);
+            }
             expect("LFIG"); skip(); if (peek("RFIG")) { skip(); return structNode; }
+
+            if (peek("MODIFIER") && typeStructToken.value == "struct")
+            {
+                Syntax.SyntaxError("В структурах запрещенно использование модификаторов доступа!", structNode);
+            } else if (!peek("MODIFIER") && typeStructToken.value == "struct")
+            {
+                while (true)
+                {
+                    CommonNode varNode = parseStructChildren(nameToken.value);
+                    if (varNode == null)
+                        varNode = parse(); if (!(new string[] { "VAR" }.Contains(varNode.type))) SyntaxError($"Ты чё в структуре Узел Типа:{varNode.type} не может находиться!");
+                    structNode.childs.Add(varNode);
+
+
+                    if (peek("RFIG"))
+                    {
+                        skip();
+                        if (declarotivePart != null) root.declarotivePatternsStruct.Add(nameToken.value, structNode);
+                        return structNode;
+                    }
+                    else if (peek("MODIFIER"))
+                    {
+                        Syntax.SyntaxError("В структурах запрещенно использование модификаторов доступа!", structNode);
+                    }
+                }
+            }
 
             //
             if (peek("MODIFIER"))
@@ -1007,6 +1065,7 @@ namespace Qscript
                     {
                         skip();
                         structNode.childs.Add(modifierNode);
+                        if (declarotivePart != null) root.declarotivePatternsStruct.Add(nameToken.value, structNode);
                         return structNode;
                     } else if (peek("MODIFIER"))
                     {
@@ -1054,7 +1113,7 @@ namespace Qscript
                 if (pos >= tokens.Count) break;
 
                 CommonNode node = parse();
-                if (node == null) break;
+                if (node == null) continue;
                 root.childs.Add(node);
             }
             return root;
