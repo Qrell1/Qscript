@@ -736,6 +736,12 @@ namespace Qscript
                     Translation(rightChild, z_buffer + 1);
                     _objProg.code.Append($"movss [{varChild.token.value}], xmm0\n");
                 }
+                else if (rightChild.type == "CALL")
+                {
+                    Translation(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"movss xmm0, eax\n");
+                    _objProg.code.Append($"movss [{varChild.token.value}], xmm0\n");
+                }
                 else if (!(rightChild.type == "NUMBER"))
                 {
                     Translation(rightChild, z_buffer + 1);

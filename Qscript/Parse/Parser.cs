@@ -154,11 +154,13 @@ namespace Qscript
             if (peek("VAR") && tokens[pos + 1].value == "<")
             {
                 int ps = pos+1;
+                int z = -1;
                 try{while (true)
                     {
-                        if (tokens[ps].value != ">")
-                            ps++;
-                        else break;
+                        if (tokens[ps].value == "<") { z++; ps++; }
+                        else if (tokens[ps].value == ">" && z != 0) { z--; ps++; }
+                        else if (tokens[ps].value != ">") { ps++; }
+                        else if (tokens[ps].value == ">" && z == 0) break;
                     }} catch { SyntaxError("Ну тип ошибка в вызове декларотивной функции"); }
                 ps++;
                 if (tokens[ps].value == "(")
@@ -488,6 +490,21 @@ namespace Qscript
             }
         }
 
+        public CommonNode parseStack (string type)
+        {
+            expect("LFIG");
+            CommonNode stackNode = new CommonNode("STACK", take());
+
+            while(peek(type))
+            {
+                stackNode.childs.Add(new CommonNode(type, take()));
+                if (peek("PS")) skip();
+            }
+
+            expect("RFIG"); skip();
+            return stackNode;
+        }
+
         public CommonNode parseDeclarator()
         {
             if (peek("OPER") && tokens[pos].value == "<")
@@ -496,7 +513,12 @@ namespace Qscript
 
                 while (peek("VAR"))
                 {
-                    declarotivePart.childs.Add(new CommonNode("TYPE", take()));
+                    CommonNode type = new CommonNode("TYPE", take());
+                    CommonNode declar = parseDeclarator(); // Point<Point<int32[]>>
+                    if (declar != null) type.childs.Add(declar);
+
+                    declarotivePart.childs.Add(type);
+
                     if (!peek("PS")) break;
                     else skip();
                 }
@@ -510,9 +532,28 @@ namespace Qscript
 
         public CommonNode parseType(CommonNode typeNode)
         {
+            /*if (peek("LK"))
+            {
+                skip(); expect("NUMBER");
+                CommonNode count = new CommonNode("COUNT", take()); expect("RK"); skip();
+                //varNode.type = "ARRAY";
+                typeNode.childs.Add(count); //expect("SEM"); skip();
+            }
+            */
+
             expect("VAR");
             CommonNode varNode = new CommonNode("VAR", take());
             varNode.childs.Add(typeNode);
+
+            /*if (peek("LK"))
+            {
+                skip(); expect("NUMBER");
+                CommonNode count = new CommonNode("COUNT", take()); expect("RK"); skip();
+                //varNode.type = "ARRAY";
+                varNode.childs.Add(count); expect("SEM"); skip();
+                return varNode;
+            }*/
+
             
             if (peek("SEM"))
             {
@@ -582,7 +623,7 @@ namespace Qscript
             {
                 CommonNode typeNode = new CommonNode("TYPE", varNode.token);
                 typeNode.childs.Add(parseDeclarator());
-
+                
                 return parseType(typeNode);
             }
             if (peek("VAR"))
@@ -617,7 +658,7 @@ namespace Qscript
                 return operNode;
             }
 
-            if (peek("LPAR"))
+            if (peek("LPAR"))//|| (tokens[pos].value == "?" && tokens[pos+1].value == "(")
             {
                 varNode = parseCall(varNode);
                 //expect("SEM"); skip();
@@ -749,6 +790,10 @@ namespace Qscript
         }
         public CommonNode parseCall(CommonNode varNode)
         {
+            if (peek("?"))
+            {
+                skip(); varNode.type = "INLINECALL";
+            }
             CommonNode declarator = parseDeclarator();
             CommonNode args = parseFormulaSignature();
             varNode.type = "CALL";
@@ -1086,8 +1131,24 @@ namespace Qscript
         {
             expect("USING");
             CommonNode usingNode = new CommonNode("USING", take());
-            expect("STRING"); usingNode.childs.Add(new CommonNode("NAME", take()));
-            expect("SEM"); skip();
+
+            if (peek("STRING"))
+            {
+                expect("STRING"); usingNode.childs.Add(new CommonNode("NAME", take()));
+                expect("SEM"); skip();
+            }
+            else if (peek("VAR"))
+            {
+                usingNode.childs.Add(new CommonNode("NAME", take()));
+                if (peek("INLINE")) usingNode.childs.Add(new CommonNode("INLINE", take()));
+                expect("SEM"); skip();
+            } else if (peek("LFIG"))
+            {
+                CommonNode stack = parseStack("VAR");
+                usingNode.childs.Add(stack);
+                if (peek("INLINE")) usingNode.childs.Add(new CommonNode("INLINE", take()));
+                expect("SEM"); skip();
+            }
 
             return usingNode;
         }

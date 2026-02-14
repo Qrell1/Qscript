@@ -74,7 +74,7 @@ namespace Qscript
                     {
                         Syntax.SyntaxError($"Нельзя складывать не объявленные Переменные: {leftNode.token.value}, {rightNode.token.value}", leftNode);
                     }
-                    if (leftNode.type == "FLOAT" || rightNode.type == "FLOAT")
+                    if (leftNode.type == "FLOAT" || rightNode.type == "FLOAT" || (leftNode.type == "CALL" && ast.resualtFunc[leftNode.token.value].token.value == "float") || (rightNode.type == "CALL" && ast.resualtFunc[rightNode.token.value].token.value == "float"))
                     {
                         CommonNode leftNodeTemp = parse(leftNode, z_buffer);
                         CommonNode rightNodeTemp = parse(rightNode, z_buffer);
@@ -199,7 +199,7 @@ namespace Qscript
                     return root;
                     break;
                 case "FUNC":
-                    if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value) || ast.declarotiveNames.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+                    if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
                     CommonNode signature = take(root, 1);
                     CommonNode bodyFunc = take(root, 2);
                     List<CommonNode> childs = new List<CommonNode>();
@@ -209,7 +209,11 @@ namespace Qscript
                         resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                         childs.Add(resualtVar);
                     }
-                    Dictionary<string, CommonNode>  varTypesTemp = varTypes;
+                    Dictionary<string, CommonNode>  varTypesTemp = new Dictionary<string, CommonNode>();
+                    foreach (var v in varTypes)
+                    {
+                        varTypesTemp.Add(v.Key, v.Value);
+                    }
                     foreach (CommonNode child in signature.childs)
                     {
                         varTypes.Add(child.token.value, child.childs[0]);
@@ -218,7 +222,11 @@ namespace Qscript
                     {
                         bodyFunc.childs[i] = parse(bodyFunc.childs[i], z_buffer + 2);
                     }
-                    varTypes = varTypesTemp;
+                    varTypes.Clear();
+                    foreach (var v in varTypesTemp)
+                    {
+                        varTypes.Add(v.Key, v.Value);
+                    }
                     childs.AddRange(signature.childs);
                     ast.typesArgsFunc.Add(root.token.value, signature);
                     signature.childs = childs;
@@ -228,6 +236,7 @@ namespace Qscript
                     break;
                 case "CALL":
                     if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) root = generationDeclarationFunc(root);
+                    //if (root.token.value.First() == '?') ast.inlineNames.Add(root.token.value);
 
                     CommonNode signatureCall = take(root, 0);
                     for (int j = 0; j < signatureCall.childs.Count; j++)
@@ -244,6 +253,17 @@ namespace Qscript
                 case "CLASS":
                     if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
                     return root;
+                    break;
+                case "USING":
+                    if (root.childs.Count != 2) return root;
+                    CommonNode name = take(root, 0);
+                    CommonNode mode = take(root, 1);
+                    if (mode.type == "INLINE" && name.childs.Count == 0) ast.inlineNames.Add(name.token.value);
+                    else if (mode.type == "INLINE")
+                    {
+                        foreach (CommonNode childName in name.childs) ast.inlineNames.Add(childName.token.value);
+                    }
+                    return new CommonNode("AIR", root.token);
                     break;
                 /*case "REFVAR":
                     CommonNode var = take(root, 0);
@@ -313,6 +333,9 @@ namespace Qscript
 
         public string generationDeclarationStruct (CommonNode type, CommonNode declarator)
         {
+            string secondDeclarator = string.Empty;
+            if (declarator.childs.Count > 0 && declarator.childs[0].childs.Count > 0 && declarator.childs[0].childs[0].type == "DECLARATOR")
+                secondDeclarator = generationDeclarationStruct(declarator.childs[0], declarator.childs[0].childs[0]);
             if (!ast.declarotivePatternsStruct.Keys.Contains(type.token.value)) Syntax.SyntaxError($"Невозможно объявить декларотивный Тип:{type.token.value} так как его не существует!", type);
             CommonNode pattern = ast.declarotivePatternsStruct[type.token.value];
             CommonNode patternDeclarator = take(pattern, 0);
@@ -320,21 +343,36 @@ namespace Qscript
             if (patternDeclarator.childs.Count != declarator.childs.Count) Syntax.SyntaxError($"Невозможно объявить декларотивный Тип:{type.token.value} так как количесва типов разные!", declarator);
 
             string newName = string.Empty;
-            newName += pattern.token.value;
-            for (int i = 0; i < declarator.childs.Count; i++)
+            if (secondDeclarator == string.Empty)
             {
-                newName += $"_{declarator.childs[i].token.value}";
+                newName = pattern.token.value;
+                for (int i = 0; i < declarator.childs.Count; i++)
+                {
+                    newName += $"_{declarator.childs[i].token.value}";
+                }
             }
+            else
+            {
+                newName = secondDeclarator;
+                for (int i = 0; i < declarator.childs.Count; i++)
+                {
+                    newName = $"{declarator.childs[i].token.value}_" + newName;
+                }
+            }
+            //newName += $"_{secondDeclarator}";
             if (ast.declarotiveNames.Contains(newName)) return newName;
 
             Dictionary<string, string> declaratorTypes = new Dictionary<string, string>();
             for (int i = 0; i < patternDeclarator.childs.Count; i++)
             {
-                declaratorTypes.Add(patternDeclarator.childs[i].token.value, declarator.childs[i].token.value);
+                string declaratorString = declarator.childs[i].token.value;
+                if (secondDeclarator != string.Empty) declaratorString = secondDeclarator; // declarator.childs[i].token.value + "_" + 
+                declaratorTypes.Add(patternDeclarator.childs[i].token.value, declaratorString);
             }
             ast.declarotiveNames.Add(newName);
             CommonNode newStruct = replaceNodes(pattern, ref declaratorTypes);
-            newStruct.childs.Remove(patternDeclarator);
+            //newStruct.childs.Remove(patternDeclarator);
+            newStruct.childs.RemoveAt(0);
             newStruct.token.value = newName;
 
             ast.childs.Add(newStruct);
@@ -349,34 +387,58 @@ namespace Qscript
 
             CommonNode declarator = take(root, 0);
 
+            /*for (int i = 0; i < declarator.childs.Count; i++)
+            {
+                declarator.childs[i].token.value = generationDeclarationStruct(declarator.childs[i], declarator.childs[i].childs[0]);
+            }*/
+            //declarator.childs[0].token.value = generationDeclarationStruct(declarator, declarator.childs[0]);
+
             if (patternDeclarator.childs.Count != declarator.childs.Count) Syntax.SyntaxError($"Невозможно объявить декларотивный Тип:{root.token.value} так как количесва типов разные!", declarator);
 
             string newName = string.Empty;
             newName += pattern.token.value;
+            //if () newName += $"_{}";
             for (int i = 0; i < declarator.childs.Count; i++)
             {
-                newName += $"_{declarator.childs[i].token.value}";
+                //newName += $"_{declarator.childs[i].token.value}";
+                newName += $"_{generationDeclarationType(declarator.childs[i])}";
             }
             root.token.value = newName;
-            root.childs[0].childs.Remove(declarator);
+            root.childs.Remove(declarator);
             if (ast.declarotiveNames.Contains(newName)) return root;
 
             Dictionary<string, string> declaratorTypes = new Dictionary<string, string>();
             for (int i = 0; i < patternDeclarator.childs.Count; i++)
             {
-                declaratorTypes.Add(patternDeclarator.childs[i].token.value, declarator.childs[i].token.value);
+                declaratorTypes.Add(patternDeclarator.childs[i].token.value, generationDeclarationType(declarator.childs[i]));
             }
             ast.declarotiveNames.Add(newName);
             CommonNode newFunc = replaceNodes(pattern, ref declaratorTypes);
+            //newFunc.childs.Remove(newFunc.childs.Last());
+            newFunc.childs.RemoveAt(newFunc.childs.Count-1);
             ast.resualtFunc.Add(newName, take(newFunc, 0));
-            ast.typesArgsFunc.Add(newName, take(newFunc, 1));
-            newFunc.childs.Remove(newFunc.childs.Last());
+            //ast.typesArgsFunc.Add(newName, take(newFunc, 1));
             newFunc.token.value = newName;
 
 
             ast.childs.Add(newFunc);
             
             return root;
+        }
+        public string generationDeclarationType(CommonNode declarator)
+        {
+            if (declarator.childs.Count == 0)
+                return declarator.token.value;
+
+            string result = string.Empty;
+            result += declarator.token.value;
+            declarator = take(declarator, 0);
+            foreach (var ch in declarator.childs)
+            {
+                result += "_" + generationDeclarationType(ch);
+            }
+
+            return result;
         }
     }
 }

@@ -201,7 +201,14 @@ namespace Qscript
             AbbreviationParser addParser = new AbbreviationParser();
             ast = addParser.abbParse(ast);
             SemanticAnalyzer.startAnalis(ast);
-            PrintAST(ast.declarotivePatternsStruct.Values.Last(), 0);
+            foreach (var item in ast.declarotivePatternsStruct.Values)
+            {
+                PrintAST(item, 0);
+            }
+            foreach (var item in ast.declarotivePatternsFunctions.Values)
+            {
+                PrintAST(item, 0);
+            }
             Console.WriteLine("NEW AST AbbreviationParser!!!");
             if (args.Length == 0)
                 PrintAST(ast, 0);

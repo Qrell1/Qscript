@@ -244,13 +244,21 @@ namespace Qscript
 
                     break;
                 case "FUNC":
-                    Dictionary<string, CommonNode> types = varTypes;
-                    for (int i = 0; i < take(root, 0).childs.Count; i++)
+                    Dictionary<string, CommonNode> types = new Dictionary<string, CommonNode>();
+                    foreach (var v in varTypes)
                     {
-                        varTypes.Add(take(root, 0).childs[i].token.value,  take(root, 0).childs[i].childs[0]);
+                        types.Add(v.Key, v.Value);
                     }
-                    analis(take(root, 1), z_buffer + 1);
-                    varTypes = types;
+                    for (int i = 0; i < take(root, 1).childs.Count; i++)
+                    {
+                        varTypes.Add(take(root, 1).childs[i].token.value,  take(root, 1).childs[i].childs[0]);
+                    }
+                    analis(take(root, 2), z_buffer + 1);
+                    varTypes.Clear();
+                    foreach (var v in types)
+                    {
+                        varTypes.Add(v.Key, v.Value);
+                    }
                     break;
                 case "VAR":
                     if (root.childs.Count > 0)
@@ -266,8 +274,18 @@ namespace Qscript
                             Syntax.SyntaxError($"Нельзя объявлять переменные без указания типа!", root);
                     }
                     break;
+                /*case "BODY":
+                    local = true;
+                    Dictionary<string, CommonNode> varTypesTemp = new Dictionary<string, CommonNode>();
+                    for (int i = 0; i < root.childs.Count; i++)
+                    {
+                        analis(root.childs[i], z_buffer + 1);
+                    }
+                    varTypes = varTypesTemp;
+                    local = false;
+                    break;*/
                 default:
-                    if (root.childs.Count == 0 || root.type == "SIGNATURE" || root.type == "CMP" || root.type == "STRUCT")
+                    if (root.childs.Count == 0 || root.type == "SIGNATURE" || root.type == "CMP" || root.type == "STRUCT" || root.type == "FUNC")
                         break;
                     for (int i = 0; i < root.childs.Count; i++)
                     {
