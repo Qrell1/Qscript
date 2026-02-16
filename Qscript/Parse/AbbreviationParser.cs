@@ -192,6 +192,7 @@ namespace Qscript
                     CommonNode body = take(root, 1);
                     for (int i = 0; i < body.childs.Count; i++)
                     {
+                        body.childs[i] = parse(body.childs[i], z_buffer + 2);
                         if (body.childs[i].type == "RETURN")
                             throw new Exception("Ошибка в инлайн функции не может быть return");
                     }
@@ -248,6 +249,12 @@ namespace Qscript
                     break;
                 case "STRUCT":
                     if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+                    Dictionary<string, CommonNode> typesVar = new Dictionary<string, CommonNode>();
+                    foreach (CommonNode var in root.childs)
+                    {
+                        typesVar.Add(var.token.value, var.childs[0]);
+                    }
+                    ast.structs.Add(root.token.value, typesVar);
                     return root;
                     break;
                 case "CLASS":
@@ -289,12 +296,12 @@ namespace Qscript
                             Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем {root.token.value}!", root);
 
                         CommonNode type = root.childs[0];
-                        if (type.childs.Count > 0)
+                        if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
                         {
                             type.token.value = generationDeclarationStruct(type, type.childs[0]);
                             type.childs.Clear();
                         }
-                        varTypes.Add(root.token.value, type);
+                        if (root.childs[0].type != "OFFSET") varTypes.Add(root.token.value, type);
                     }
                     break;
                 case "MODIFIER":
@@ -376,6 +383,12 @@ namespace Qscript
             newStruct.token.value = newName;
 
             ast.childs.Add(newStruct);
+            /*List<CommonNode> typesVar = new List<CommonNode>();
+            foreach (CommonNode var in newStruct.childs)
+            {
+                typesVar.Add(var.childs[0]);
+            }
+            ast.structs.Add(newStruct.token.value, typesVar);*/
 
             return newName;
         }

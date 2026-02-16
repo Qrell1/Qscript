@@ -185,7 +185,16 @@ namespace Qscript
             }
             if (peek("VAR"))
             {
-                return new CommonNode("VAR", take());
+                CommonNode varNode = new CommonNode("VAR", take());
+                if (peek("LK"))
+                {
+                    CommonNode offsetNode = new CommonNode("OFFSET", take());
+                    offsetNode.childs.Add(parseFormula()); expect("RK"); skip();
+                    varNode.childs.Add(offsetNode);
+                    //varNode = offsetNode;
+                }
+                return varNode;
+                //return new CommonNode("VAR", take());
             }
             if (peek("NUMBER"))
             {
@@ -497,7 +506,15 @@ namespace Qscript
 
             while(peek(type))
             {
-                stackNode.childs.Add(new CommonNode(type, take()));
+                Token varToken = take();
+                while (peek("TS"))
+                {
+                    skip();
+                    varToken.value += "." + take().value;
+                    if (tokens[pos].type.type != "TS")
+                        break;
+                }
+                stackNode.childs.Add(new CommonNode(type, varToken));
                 if (peek("PS")) skip();
             }
 
@@ -545,6 +562,14 @@ namespace Qscript
             CommonNode varNode = new CommonNode("VAR", take());
             varNode.childs.Add(typeNode);
 
+            while (peek("TS"))
+            {
+                skip();
+                varNode.token.value += "." + take().value;
+                if (tokens[pos].type.type != "TS")
+                    break;
+            }
+
             /*if (peek("LK"))
             {
                 skip(); expect("NUMBER");
@@ -554,7 +579,7 @@ namespace Qscript
                 return varNode;
             }*/
 
-            
+
             if (peek("SEM"))
             {
                 skip();
@@ -577,7 +602,7 @@ namespace Qscript
                 operNode.childs.Add(varNode);
                 operNode.childs.Add(rightOperand);
                 //root.varTypes.Add(varNode.token.value, typeNode.token.value);
-                expect("SEM");skip();
+                if (peek("SEM")) { expect("SEM"); skip(); }
                 return operNode;
             }
 
@@ -617,7 +642,15 @@ namespace Qscript
                 varNode = new CommonNode("VAR", take());
             else 
                 varNode = node;
-            expect(new string[] { "OPER", "POSTFIX", "SEM", "LPAR", "TS", "VAR" });
+            expect(new string[] { "OPER", "POSTFIX", "SEM", "LPAR", "TS", "VAR", "LK" });
+
+            if (peek("LK"))
+            {
+                CommonNode offsetNode = new CommonNode("OFFSET", take());
+                offsetNode.childs.Add(parseFormula()); expect("RK"); skip();
+                varNode.childs.Add(offsetNode);
+                //varNode = offsetNode;
+            }
 
             if (peek("OPER") && tokens[pos].value == "<")
             {
@@ -646,7 +679,7 @@ namespace Qscript
                 operNode.childs.Add(varNode);
                 operNode.childs.Add(rightOperand);
 
-                expect("SEM"); skip();
+                if (peek("SEM")) { expect("SEM"); skip(); }
                 return operNode;
             }
             if (peek("POSTFIX") && new string[] { "--", "++" }.Contains(tokens[pos].value))
@@ -711,6 +744,13 @@ namespace Qscript
                 varNode.token.value += "." + take().value;
                 if (tokens[pos].type.type != "TS")
                     break;
+            }
+
+            if (peek("LK"))
+            {
+                CommonNode offsetNode = new CommonNode("OFFSET", take());
+                offsetNode.childs.Add(parseFormula()); expect("RK"); skip();
+                varNode.childs.Add(offsetNode);
             }
 
             //OPERATION
@@ -793,6 +833,13 @@ namespace Qscript
             if (peek("?"))
             {
                 skip(); varNode.type = "INLINECALL";
+            }
+            while (peek("TS"))
+            {
+                skip();
+                varNode.token.value += "." + take().value;
+                if (tokens[pos].type.type != "TS")
+                    break;
             }
             CommonNode declarator = parseDeclarator();
             CommonNode args = parseFormulaSignature();
@@ -1140,6 +1187,13 @@ namespace Qscript
             else if (peek("VAR"))
             {
                 usingNode.childs.Add(new CommonNode("NAME", take()));
+                while (peek("TS"))
+                {
+                    skip();
+                    usingNode.childs[0].token.value += "." + take().value;
+                    if (tokens[pos].type.type != "TS")
+                        break;
+                }
                 if (peek("INLINE")) usingNode.childs.Add(new CommonNode("INLINE", take()));
                 expect("SEM"); skip();
             } else if (peek("LFIG"))

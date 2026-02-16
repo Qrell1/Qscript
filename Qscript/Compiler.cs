@@ -33,6 +33,7 @@ namespace Qscript
 
         public StringBuilder includes = new StringBuilder();
 
+        public StringBuilder stringsConsts = new StringBuilder();
         //public StringBuilder localsData = new StringBuilder();
 
         public bool local;
@@ -450,6 +451,18 @@ namespace Qscript
         }
         public void translationVar (CommonNode root,  int z_buffer)
         {
+            if (root.childs.Count > 0 && root.childs[0].type == "OFFSET")
+            {
+                CommonNode offset = root.childs[0];
+                //_objProg.code.Append($"push eax\n");
+                Translation(offset.childs[0], z_buffer);
+                _objProg.code.Append($"mov ecx, eax\n");
+                //_objProg.code.Append($"pop eax\n");
+                // offset
+                _objProg.code.Append($"imul ecx, {getSize(root.token.value, root)}\n");
+                //_objProg.code.Append($"mov eax, [{root.token.value}+eax]\n");
+                return;
+            }
             if (root.childs.Count == 0 && !types.Keys.Contains(root.token.value))
             {
                 _objProg.code.Append($"mov eax, [{root.token.value}]\n");
@@ -490,13 +503,21 @@ namespace Qscript
                 }
                 if (varChild.childs.Count != 0) 
                     Translation(varChild, z_buffer + 1);
+                if (varChild.childs.Count > 0 && varChild.childs[0].type == "OFFSET")
+                {
+                    //_objProg.data.Append($"mov ebx, [eax]\n");
+                    //translationVar(varChild, z_buffer + 1);
+                    _objProg.code.Append($"mov ebx, [{varChild.token.value}]\n");
+                    varChild.token.value = $"ebx+ecx";
+                    //_objProg.code.Append($"pop eax\n");
+                }
                 //Translation (rightChild, z_buffer + 1);
                 if (rightChild.type == "STRING")
                 {
                     if (!stringConsts.Keys.Contains(rightChild.token.value))
                     {
                         stringConsts.Add(rightChild.token.value, $"str_const_{stringConstsIndex}");
-                        _objProg.data.Append($"str_const_{stringConstsIndex} db {rightChild.token.value}");
+                        _objProg.stringsConsts.Append($"str_const_{stringConstsIndex} db {rightChild.token.value}");
                         stringConstsIndex++;
                     }
 
@@ -514,7 +535,18 @@ namespace Qscript
                 }
                 else if (rightChild.type == "NUMBER")
                 {
-                    _objProg.code.Append($"mov [{varChild.token.value}], {rightChild.token.value}\n");
+                    _objProg.code.Append($"mov [{varChild.token.value}], dword {rightChild.token.value}\n");
+                }
+                else if (rightChild.type == "VAR" && rightChild.childs.Count > 0 && rightChild.childs[0].type == "OFFSET")
+                {
+                    translationVar(rightChild, z_buffer + 1);
+                    //_objProg.code.Append($"push eax\n");
+                    //Translation(rightChild.childs[0].childs[0], z_buffer);
+                    //_objProg.code.Append($"mov ecx, eax\n");
+                    //_objProg.code.Append($"pop eax\n");
+                    _objProg.code.Append($"mov ebx, [{rightChild.token.value}]\n");//{rightChild.token.value}
+                    _objProg.code.Append($"mov eax, [ebx+ecx]\n");
+                    _objProg.code.Append($"mov [{varChild.token.value}], eax\n");
                 }
                 else if (!(rightChild.type == "NUMBER"))
                 {
@@ -529,8 +561,33 @@ namespace Qscript
                 CommonNode rightChild = take(root, 1);
 
                 //string ebx = "ebx"; shr-/ shl-*
+                if (leftChild.type == "VAR" && leftChild.childs.Count > 0 && leftChild.childs[0].type == "OFFSET")
+                {
+                    CommonNode offset = leftChild.childs[0];
+                    //_objProg.code.Append($"push eax\n");
+                    Translation(offset.childs[0], z_buffer);
+                    _objProg.code.Append($"mov ecx, eax\n");
+                    //_objProg.code.Append($"pop eax\n");
+                    // offset
+                    _objProg.code.Append($"imul ecx, {getSize(leftChild.token.value, leftChild)}\n");
+                    _objProg.code.Append($"mov ebx, [{leftChild.token.value}]\n");
 
-                if (rightChild.type == "FLOAT")
+                    leftChild.token.value = $"ebx+ecx";
+                }
+                if (rightChild.type == "VAR" && rightChild.childs.Count > 0 && rightChild.childs[0].type == "OFFSET")
+                {
+                    CommonNode offset = rightChild.childs[0];
+                    //_objProg.code.Append($"push eax\n");
+                    Translation(offset.childs[0], z_buffer);
+                    _objProg.code.Append($"mov ecx, eax\n");
+                    //_objProg.code.Append($"pop eax\n");
+                    // offset
+                    _objProg.code.Append($"imul ecx, {getSize(rightChild.token.value, rightChild)}\n");
+                    _objProg.code.Append($"mov ebx, [{rightChild.token.value}]\n");
+                    rightChild.token.value = $"ebx+ecx";
+                }
+
+                /*if (rightChild.type == "FLOAT")
                 {
                     string floatVar = getFloatConst(rightChild);
                     rightChild.token.value = rightChild.token.value.Replace("f","");
@@ -574,7 +631,7 @@ namespace Qscript
                         }
                         //_objProg.code.Append($"movss [{rightChild}], xmm0\n");
                     }
-                }
+                }*/
                 if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("*") && (Convert.ToInt32(rightChild.token.value)%2) == 0)
                 {
                     _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
@@ -715,6 +772,11 @@ namespace Qscript
                 }
                 if (varChild.childs.Count != 0)
                     Translation(varChild, z_buffer + 1);
+                if (varChild.childs.Count > 0 && varChild.childs[0].type == "OFFSET")
+                {
+                    _objProg.code.Append($"mov ebx, [{varChild.token.value}]\n");
+                    varChild.token.value = $"ebx+ecx";
+                }
                 //Translation (rightChild, z_buffer + 1);
                 if (rightChild.type == "CALL")
                 {
@@ -742,6 +804,13 @@ namespace Qscript
                     _objProg.code.Append($"movss xmm0, eax\n");
                     _objProg.code.Append($"movss [{varChild.token.value}], xmm0\n");
                 }
+                else if (rightChild.type == "VAR" && rightChild.childs.Count > 0 && rightChild.childs[0].type == "OFFSET")
+                {
+                    translationVar(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"mov ebx, [{rightChild.token.value}]\n");
+                    _objProg.code.Append($"mov eax, [ebx+ecx]\n");
+                    _objProg.code.Append($"mov [{varChild.token.value}], eax\n");
+                }
                 else if (!(rightChild.type == "NUMBER"))
                 {
                     Translation(rightChild, z_buffer + 1);
@@ -758,7 +827,31 @@ namespace Qscript
                 string rightString = "xmm1";
 
                 //string ebx = "ebx"; shr-/ shl-*
+                if (leftChild.type == "VAR" && leftChild.childs.Count > 0 && leftChild.childs[0].type == "OFFSET")
+                {
+                    CommonNode offset = leftChild.childs[0];
+                    //_objProg.code.Append($"push eax\n");
+                    Translation(offset.childs[0], z_buffer);
+                    _objProg.code.Append($"mov ecx, eax\n");
+                    //_objProg.code.Append($"pop eax\n");
+                    // offset
+                    _objProg.code.Append($"imul ecx, {getSize(leftChild.token.value, leftChild)}\n");
+                    _objProg.code.Append($"mov ebx, [{leftChild.token.value}]\n");
 
+                    leftChild.token.value = $"ebx+ecx";
+                }
+                if (rightChild.type == "VAR" && rightChild.childs.Count > 0 && rightChild.childs[0].type == "OFFSET")
+                {
+                    CommonNode offset = rightChild.childs[0];
+                    //_objProg.code.Append($"push eax\n");
+                    Translation(offset.childs[0], z_buffer);
+                    _objProg.code.Append($"mov ecx, eax\n");
+                    //_objProg.code.Append($"pop eax\n");
+                    // offset
+                    _objProg.code.Append($"imul ecx, {getSize(rightChild.token.value, rightChild)}\n");
+                    _objProg.code.Append($"mov ebx, [{rightChild.token.value}]\n");
+                    rightChild.token.value = $"ebx+ecx";
+                }
 
                 if (leftChild.type == "VAR")
                 {
@@ -851,7 +944,7 @@ namespace Qscript
             if (!stringConsts.Keys.Contains(root.token.value))
             {
                 stringConsts.Add(root.token.value, $"str_const_{stringConstsIndex}");
-                _objProg.data.Append($"str_const_{stringConstsIndex} db {root.token.value}\n");
+                _objProg.stringsConsts.Append($"str_const_{stringConstsIndex} db {root.token.value}\n");
                 stringConstsIndex++;
             }
         }
@@ -1011,7 +1104,15 @@ namespace Qscript
                     Translation(take(signatureCall, i), z_buffer + 1);
                     _objProg.code.Append($"push {stringConsts[signatureCall.childs[i].token.value]}\n");
                 }
-                else
+                else if (signatureCall.childs[i].type == "VAR" && signatureCall.childs[i].childs.Count > 0 && signatureCall.childs[i].childs[0].type == "OFFSET")
+                {
+                    CommonNode offset = take(signatureCall.childs[i], 0);
+                    Translation(take(signatureCall, i), z_buffer + 1);
+                    _objProg.code.Append($"mov ebx, [{signatureCall.childs[i].token.value}]\n");
+                    //signatureCall.childs[i].token.value = $"ebx+ecx";
+                    _objProg.code.Append($"mov eax, [ebx+ecx]\n");
+                    _objProg.code.Append($"push eax\n");
+                } else
                 {
                     Translation(take(signatureCall, i), z_buffer + 1);
                     _objProg.code.Append($"push eax\n");
@@ -1069,6 +1170,45 @@ namespace Qscript
                 return floatConsts[node.token.value];
             }
         }
+        public string getSize(string name, CommonNode tagError)
+        {
+            CommonNode type;
+            if (name.Contains("."))
+            {
+                int n = 0;
+                string[] strs = name.Split('.');
+                string strct = ProgramAst.varTypes[strs[0]].token.value;
+                start:
+                if (
+                    !ProgramAst.structs.ContainsKey(strct) ||
+                    !ProgramAst.structs[strct].ContainsKey(strs[n+1])
+                    )
+                {
+                    Syntax.SyntaxError($"Ошибка Поле:{strs[n+1]} не существует в {strct}", tagError);
+                }
+                type = ProgramAst.structs[strct][strs[n+1]];
+                strct = type.token.value;
+                //if (n == strs.Length) { }
+                if (!types.ContainsKey(type.token.value)) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
+            } else type = ProgramAst.varTypes[name];
+            //CommonNode type = ProgramAst.varTypes[name];
+            string classes = "";
+            string sizeConst = "";
+            if (types.Keys.Contains(type.token.value))
+            {
+                classes = types[type.token.value];
+                switch (classes)
+                {
+                    case "db": sizeConst = "1"; break;
+                    case "dw": sizeConst = "2"; break;
+                    case "dd": sizeConst = "4"; break;
+                }
+            }
+            else sizeConst = $"SIZE_{type.token.value.ToUpper()}";
+            //classes = type.token.value;
+            //string sizeConst = $"sizeof.{name}";
+            return sizeConst;
+        }
         
         // ВРЕМЕННЫЙ СУПЕР ГОВНОКОД   
         public void parseAsm (CommonNode root)
@@ -1104,10 +1244,11 @@ namespace Qscript
             file += _objProg.includes.ToString();
             file += "\n";
             file += _objProg.macroData.ToString();
-            if (_objProg.data.Length != 0)
+            if (_objProg.data.Length != 0 || _objProg.stringsConsts.Length != 0)
                 file += "\nsection '.data' data readable writable\n";
+            file += _objProg.stringsConsts.ToString();
             file += _objProg.data.ToString();
-            if (_objProg.procData.Length != 0)
+            //if (_objProg.procData.Length != 0)
                 file += "\nsection '.code' code readable executable\n";
             file += _objProg.procData.ToString();
             // section '.code' code readable executable

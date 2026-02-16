@@ -50,7 +50,7 @@ namespace Qscript
                     CommonNode leftNode = take(root, 0);
                     CommonNode rightNode = take(root, 1);
 
-                    if (leftNode.type == "VAR" && leftNode.childs.Count == 1)
+                    if (leftNode.type == "VAR" && leftNode.childs.Count == 1 && leftNode.childs[0].type != "OFFSET")
                     {
                         if (varTypes.Keys.Contains(root.token.value))
                             Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем!", root);

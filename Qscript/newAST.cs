@@ -34,6 +34,8 @@ namespace Qscript
 
         public List<string> declarotiveNames = new List<string>();
 
+        public Dictionary<string, Dictionary<string, CommonNode>> structs = new Dictionary<string, Dictionary<string, CommonNode>>();
+
         public ProgramNode(string type, Token token) : base(type, token)
         {}
     }

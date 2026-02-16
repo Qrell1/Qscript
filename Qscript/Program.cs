@@ -191,8 +191,7 @@ namespace Qscript
             //Console.WriteLine("[DEBUG] -- Debuging TYPE --");
             //PrintListToken(forType);
             //Console.WriteLine("[DEBUG] -- Debuging VAR --");
-            //PrintListToken(forVar);
-
+            //PrintListToken(forVar);                     
             parser = new Parser(list);
             ProgramNode ast = parser.parseCode();
 
