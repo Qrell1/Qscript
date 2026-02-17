@@ -151,41 +151,53 @@ namespace Qscript
         }
         public CommonNode parseVariableOrNumberOrFunction()
         {
-            if (peek("VAR") && tokens[pos + 1].value == "<")
+            CommonNode varNode = null;
+            if (peek("VAR")) { varNode = new CommonNode("VAR", take()); }
+            // Блок сборки полного имени!
+            if (varNode != null){
+            while (peek("TS"))
+            {skip();
+                varNode.token.value += "." + take().value;
+                if (tokens[pos].type.type != "TS") break;
+            }}
+
+            if (varNode != null && tokens[pos].value == "<")
             {
                 int ps = pos+1;
-                int z = -1;
+                int z = 0;
                 try{while (true)
                     {
                         if (tokens[ps].value == "<") { z++; ps++; }
                         else if (tokens[ps].value == ">" && z != 0) { z--; ps++; }
+                        else if (tokens[ps].value == ">" && z == 0) { ps++; break; }
                         else if (tokens[ps].value != ">") { ps++; }
-                        else if (tokens[ps].value == ">" && z == 0) break;
-                    }} catch { SyntaxError("Ну тип ошибка в вызове декларотивной функции"); }
-                ps++;
-                if (tokens[ps].value == "(")
+                    }
+                } catch { SyntaxError("Ну тип ошибка в вызове декларотивной функции"); }
+                if (tokens[ps].type.type == "LPAR")
                 {
                     // CALL
-                    CommonNode varNode = new CommonNode("CALL", take());
+                    varNode = new CommonNode("CALL", varNode.token);
                     varNode = parseCall(varNode);
                     return varNode;
                 }
+                //else Syntax.SyntaxError("ТЕСТ ОШИБКА!", varNode);
             }
-            if (peek("VAR") && tokens[pos + 1].type.type == "LPAR")
+            if (varNode != null && tokens[pos].type.type == "LPAR")
             {
                 // CALL
-                CommonNode varNode = new CommonNode("CALL", take());
+                //varNode = new CommonNode("CALL", take());
+                varNode.type = "CALL";
                 varNode = parseCall(varNode);
                 return varNode;
             }
-            if (peek("VAR") && tokens[pos+1].type.type == "TS")
+            /*if (peek("VAR") && tokens[pos+1].type.type == "TS")
             {
                 CommonNode varNode = new CommonNode("REFVAR", take()); skip();
                 return parseRefvar(varNode);
-            }
-            if (peek("VAR"))
+            }*/
+            if (varNode != null)
             {
-                CommonNode varNode = new CommonNode("VAR", take());
+                //varNode = new CommonNode("VAR", take());
                 if (peek("LK"))
                 {
                     CommonNode offsetNode = new CommonNode("OFFSET", take());
@@ -625,12 +637,12 @@ namespace Qscript
                 if (declarator != null) root.declarotivePatternsFunctions.Add(varNode.token.value, varNode);
                 return varNode;
             }
-            if (peek("TS"))
+            /*if (peek("TS"))
             {
                 skip(); varNode.type = "REFVAR";
                 CommonNode refs = parseRefvar(varNode);
                 return refs;
-            }
+            }*/
 
             SyntaxError($"На позиции Токена:{pos} ожились токены OPER, SEM, LPAR!");
             return null;
@@ -644,12 +656,44 @@ namespace Qscript
                 varNode = node;
             expect(new string[] { "OPER", "POSTFIX", "SEM", "LPAR", "TS", "VAR", "LK" });
 
+            // Блок сборки полного имени!
+            while (peek("TS"))
+            {skip();
+                varNode.token.value += "." + take().value;
+                if (tokens[pos].type.type != "TS") break;
+            }
+
             if (peek("LK"))
             {
                 CommonNode offsetNode = new CommonNode("OFFSET", take());
                 offsetNode.childs.Add(parseFormula()); expect("RK"); skip();
                 varNode.childs.Add(offsetNode);
                 //varNode = offsetNode;
+            }
+
+            if (peek("OPER") && tokens[pos].value == "<")
+            {
+                int ps = pos + 1;
+                int z = 0;
+                try
+                {
+                    while (true)
+                    {
+                        if (tokens[ps].value == "<") { z++; ps++; }
+                        else if (tokens[ps].value == ">" && z != 0) { z--; ps++; }
+                        else if (tokens[ps].value == ">" && z == 0) { ps++; break; }
+                        else if (tokens[ps].value != ">") { ps++; }
+                    }
+                }
+                catch { SyntaxError("Ну тип ошибка в вызове декларотивной функции"); }
+                if (tokens[ps].type.type == "LPAR")
+                {
+                    // CALL
+                    varNode = new CommonNode("CALL", varNode.token);
+                    varNode = parseCall(varNode); expect("SEM"); skip();
+                    return varNode;
+                }
+                //else Syntax.SyntaxError("ТЕСТ ОШИБКА!", varNode);
             }
 
             if (peek("OPER") && tokens[pos].value == "<")
@@ -710,12 +754,12 @@ namespace Qscript
                 return varNode;
             }
 
-            if (peek("TS"))
+            /*if (peek("TS"))
             {
                 skip(); varNode.type = "REFVAR";
                 CommonNode refs = parseRefvar(varNode);
                 return refs;
-            }
+            }*/
 
 
 
@@ -723,7 +767,7 @@ namespace Qscript
             SyntaxError(pos.ToString());
             return null;
         }
-        public CommonNode parseRefvar(CommonNode refvar=null)
+        /*public CommonNode parseRefvar(CommonNode refvar=null)
         {
             //CALL
             //OPERATION
@@ -823,11 +867,11 @@ namespace Qscript
                 refvar.childs = refs.childs;
                 refvar.type = refs.type;
                 return refvar;
-            }*/
+            }
 
             SyntaxError($"На позиции Токена:{pos} ожидался токен VAR");
             return null;
-        }
+        }*/
         public CommonNode parseCall(CommonNode varNode)
         {
             if (peek("?"))
@@ -983,7 +1027,7 @@ namespace Qscript
                     rightNode = parseFormula();
                 //rightNode.type = "VARFORMULA";
                 operNode.childs.Add(rightNode);
-                expect("SEM"); skip();
+                if (peek("SEM")) { expect("SEM"); skip(); }
                 return operNode;
             }
             if (peek("BREAK"))
@@ -1234,7 +1278,7 @@ namespace Qscript
             return root;
         }
 
-        public CommonNode parse()
+        public CommonNode parse() // 17 varkey
         {
             if (peek("VAR"))
             {

@@ -193,7 +193,7 @@ namespace Qscript.Lex
                 }
                 else
                 {
-                    str += code.strings[stringIndex];
+                    str += code.strings[stringIndex] + ";";
                     stringIndex++;
                 }
             }

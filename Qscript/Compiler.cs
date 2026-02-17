@@ -1035,7 +1035,7 @@ namespace Qscript
                 rep movsd
              */
             //_objProg.code.Append($"    ret\n");
-            if (ProgramAst.resualtFunc[root.token.value] == null)
+            if (ProgramAst.resualtFunc[root.token.value] == null || ProgramAst.resualtFunc[root.token.value].token.value == "void")
             {
 
             }

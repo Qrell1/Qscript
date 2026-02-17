@@ -204,7 +204,7 @@ namespace Qscript
                     CommonNode signature = take(root, 1);
                     CommonNode bodyFunc = take(root, 2);
                     List<CommonNode> childs = new List<CommonNode>();
-                    if (ast.resualtFunc[root.token.value] != null && !types.Keys.Contains(ast.resualtFunc[root.token.value].token.value))
+                    if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value!="void" && !types.Keys.Contains(ast.resualtFunc[root.token.value].token.value))
                     {
                         CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", signature.token.pos));
                         resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
@@ -237,7 +237,7 @@ namespace Qscript
                     break;
                 case "CALL":
                     if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) root = generationDeclarationFunc(root);
-                    //if (root.token.value.First() == '?') ast.inlineNames.Add(root.token.value);
+                    if (take(root, 0).type == "DECLARATOR") Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
 
                     CommonNode signatureCall = take(root, 0);
                     for (int j = 0; j < signatureCall.childs.Count; j++)
@@ -417,7 +417,7 @@ namespace Qscript
                 newName += $"_{generationDeclarationType(declarator.childs[i])}";
             }
             root.token.value = newName;
-            root.childs.Remove(declarator);
+            root.childs.RemoveAt(0);
             if (ast.declarotiveNames.Contains(newName)) return root;
 
             Dictionary<string, string> declaratorTypes = new Dictionary<string, string>();
