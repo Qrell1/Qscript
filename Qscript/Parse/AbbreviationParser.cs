@@ -272,23 +272,6 @@ namespace Qscript
                     }
                     return new CommonNode("AIR", root.token);
                     break;
-                /*case "REFVAR":
-                    CommonNode var = take(root, 0);
-                    return root;
-                    if (var.type == "REFVAR")
-                    {
-                        CommonNode vr = parse(var, z_buffer + 1);
-                        var.token.value = root.token.value + "." + vr.token.value;
-                        var.type = vr.type;
-                        var.childs = vr.childs;
-                    }
-                    else
-                    {
-                        CommonNode vr = parse(var, z_buffer + 1);
-                        var.token.value = root.token.value + "." + vr.token.value;
-                    }
-                    return var;
-                    break;*/
                 case "VAR":
                     if (root.childs.Count > 0)
                     {
@@ -324,7 +307,7 @@ namespace Qscript
             return root;
         }
 
-        public CommonNode replaceNodes (CommonNode rootNode, ref Dictionary<string, string> table)
+        private CommonNode replaceNodes (CommonNode rootNode, ref Dictionary<string, string> table)
         {
             CommonNode root = new CommonNode(rootNode.type, new Token(rootNode.token.type, rootNode.token.value, rootNode.token.pos));
             root.childs = new List<CommonNode>();
@@ -338,7 +321,7 @@ namespace Qscript
             return root;
         }
 
-        public string generationDeclarationStruct (CommonNode type, CommonNode declarator)
+        private string generationDeclarationStruct (CommonNode type, CommonNode declarator)
         {
             string secondDeclarator = string.Empty;
             if (declarator.childs.Count > 0 && declarator.childs[0].childs.Count > 0 && declarator.childs[0].childs[0].type == "DECLARATOR")
@@ -366,7 +349,6 @@ namespace Qscript
                     newName = $"{declarator.childs[i].token.value}_" + newName;
                 }
             }
-            //newName += $"_{secondDeclarator}";
             if (ast.declarotiveNames.Contains(newName)) return newName;
 
             Dictionary<string, string> declaratorTypes = new Dictionary<string, string>();
@@ -378,33 +360,20 @@ namespace Qscript
             }
             ast.declarotiveNames.Add(newName);
             CommonNode newStruct = replaceNodes(pattern, ref declaratorTypes);
-            //newStruct.childs.Remove(patternDeclarator);
             newStruct.childs.RemoveAt(0);
             newStruct.token.value = newName;
 
             ast.childs.Add(newStruct);
-            /*List<CommonNode> typesVar = new List<CommonNode>();
-            foreach (CommonNode var in newStruct.childs)
-            {
-                typesVar.Add(var.childs[0]);
-            }
-            ast.structs.Add(newStruct.token.value, typesVar);*/
 
             return newName;
         }
-        public CommonNode generationDeclarationFunc(CommonNode root)
+        private CommonNode generationDeclarationFunc(CommonNode root)
         {
             if (!ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) Syntax.SyntaxError($"Невозможно объявить декларотивный Тип:{root.token.value} так как его не существует!", root);
             CommonNode pattern = ast.declarotivePatternsFunctions[root.token.value];
             CommonNode patternDeclarator = pattern.childs.Last();
 
             CommonNode declarator = take(root, 0);
-
-            /*for (int i = 0; i < declarator.childs.Count; i++)
-            {
-                declarator.childs[i].token.value = generationDeclarationStruct(declarator.childs[i], declarator.childs[i].childs[0]);
-            }*/
-            //declarator.childs[0].token.value = generationDeclarationStruct(declarator, declarator.childs[0]);
 
             if (patternDeclarator.childs.Count != declarator.childs.Count) Syntax.SyntaxError($"Невозможно объявить декларотивный Тип:{root.token.value} так как количесва типов разные!", declarator);
 
@@ -427,10 +396,8 @@ namespace Qscript
             }
             ast.declarotiveNames.Add(newName);
             CommonNode newFunc = replaceNodes(pattern, ref declaratorTypes);
-            //newFunc.childs.Remove(newFunc.childs.Last());
             newFunc.childs.RemoveAt(newFunc.childs.Count-1);
             ast.resualtFunc.Add(newName, take(newFunc, 0));
-            //ast.typesArgsFunc.Add(newName, take(newFunc, 1));
             newFunc.token.value = newName;
 
 
@@ -438,7 +405,7 @@ namespace Qscript
             
             return root;
         }
-        public string generationDeclarationType(CommonNode declarator)
+        private string generationDeclarationType(CommonNode declarator)
         {
             if (declarator.childs.Count == 0)
                 return declarator.token.value;

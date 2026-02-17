@@ -41,13 +41,13 @@ namespace Qscript
                 color = ConsoleColor.Green;
             else if (root.type == "CALL")
                 color = ConsoleColor.Yellow;
-            else if (root.type == "NUMBER" || root.type == "FLOAT")
+            else if (root.type == "NUMBER" || root.type == "FLOAT" || root.type == "BOOL")
                 color = ConsoleColor.Cyan;
-            else if (root.type == "BINOPER" || root.type == "CMP" || root.type == "FLOATBINOPER")
+            else if (root.type == "BINOPER" || root.type == "CMP" || root.type == "FLOATBINOPER" || root.type == "ADDRESS")
                 color = ConsoleColor.Magenta;
-            else if (root.type == "TYPE")
+            else if (root.type == "TYPE" || root.type == "SIZEOF")
                 color = ConsoleColor.Blue;
-            else if (root.type == "SIGNATURE" || root.type == "BODY")
+            else if (root.type == "SIGNATURE" || root.type == "BODY" || root.type == "FUNC")
                 color = ConsoleColor.Yellow;
             else if (root.type == "ASM")
                 color = ConsoleColor.DarkRed;

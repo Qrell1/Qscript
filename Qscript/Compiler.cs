@@ -88,8 +88,9 @@ namespace Qscript
         private int falseTagIndex;
         private int elsesTagIndex;
         private int tempTagIndex;
-
+        
         private int iterTagIndex;
+        private int enumeratorTagIndex;
 
         public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; }
 
@@ -186,11 +187,29 @@ namespace Qscript
                 case "ITER":
                     translationIter(root, z_buffer);
                     break;
+                //case "FOR":
+                //case "WHILE":
+                case "ENUMERATOR":
+                    translationEnumerator(root, z_buffer);
+                    break;
+                //case "REP":
                 case "RETURN":
                     translationReturn(root, z_buffer);
                     break;
                 case "REFVAR":
                     translationRefVar(root, z_buffer);
+                    break;
+                case "SIZEOF":
+                    translationSizeof(root, z_buffer);
+                    break;
+                case "ADDRESS":
+                    translationAddress(root, z_buffer);
+                    break;
+                case "PREUNAROPER":
+                    translationPreUnarOper(root, z_buffer);
+                    break;
+                case "POSTUNAROPER":
+                    translationPostUnarOper(root, z_buffer);
                     break;
                 case "BODY":
                     for (int i = 0; i < root.childs.Count; i++)
@@ -199,15 +218,60 @@ namespace Qscript
                     }
                     break;
                 case "ASM":
-                    //_objProg.code.Append(root.token.value);
-                    //string[] strings = root.token.value.Split(new char[] { ';' });
                     parseAsm(root);
-
                     break;
                 case "USING":
                     _objProg.includes.Append($"include '{take(root,0).token.value}'\n");
                     break;
             }
+        }
+        public void translationEnumerator (CommonNode root, int z_buffer)
+        {
+            CommonNode varNode = take(root, 0);
+            CommonNode stepNode = take(root, 1);
+            CommonNode bodyNode = take(root, 2);
+            /*  local i dd 0
+                enumer0:
+
+                inc [i]
+                cmp [i], 12
+                jne enumer0
+            */
+            translationVar(varNode, z_buffer + 1);
+            _objProg.code.Append($"enumer{enumeratorTagIndex}:\n");
+
+            Translation(bodyNode, z_buffer + 1);
+
+            _objProg.code.Append($"inc [{varNode.token.value}]\n");
+            _objProg.code.Append($"cmp [{varNode.token.value}], {stepNode.token.value}\n");
+            _objProg.code.Append($"jne enumer{enumeratorTagIndex}\n");
+
+            enumeratorTagIndex++;
+        }
+        public void translationPreUnarOper (CommonNode root, int z_buffer)//, bool mov = true)
+        {
+            CommonNode varNode = take(root, 0);
+            string oper = (root.token.value == "++") ? "inc" : "dec" ;
+            _objProg.code.Append($"{oper} [{varNode.token.value}]\n");
+            _objProg.code.Append($"mov eax, [{varNode.token.value}]\n"); // if (mov) 
+        }
+        public void translationPostUnarOper(CommonNode root, int z_buffer)
+        {
+            CommonNode varNode = take(root, 0);
+            string oper = (root.token.value == "++") ? "inc" : "dec";
+            _objProg.code.Append($"mov eax, [{varNode.token.value}]\n");
+            _objProg.code.Append($"{oper} [{varNode.token.value}]\n");
+        }
+        public void translationAddress (CommonNode root, int z_buffer)
+        {
+            CommonNode varNode = take(root, 0);
+            _objProg.code.Append($"lea eax, [{varNode.token.value}]\n");
+        }
+        public void translationSizeof (CommonNode root, int z_buffer)
+        {
+            CommonNode varNode = take(root, 0);
+            string size = getSize(varNode.token.value, varNode);
+            _objProg.code.Append($"mov eax, {size}\n");
         }
         public void translationRefVar (CommonNode root, int z_buffer)
         {
@@ -295,7 +359,7 @@ namespace Qscript
                 falseTagIndex++;
             }
         }
-        public void translationElse(CommonNode root, int z_buffer)
+        public void translationElse (CommonNode root, int z_buffer)
         {
             CommonNode body = take(root, 0);
             Translation(body, z_buffer + 1);
@@ -972,7 +1036,7 @@ namespace Qscript
             //_objProg.code.Append($"    sizeof_{root.token.value}:\n");
             _objProg.code.Append("ends\n");
 
-            _objProg.data.Append($"SIZE_{root.token.value.ToUpper()} = sizeof.{root.token.value} / 4\n");
+            _objProg.data.Append($"SIZE_{root.token.value.ToUpper()} = sizeof.{root.token.value}\n");
             //_objProg.data.Append($"virtual at 0");
             //_objProg.data.Append($"  Point Point");
             //_objProg.data.Append($"  POINT_SIZE = $");
@@ -1055,7 +1119,7 @@ namespace Qscript
                 _objProg.code.Append($"    test edi, edi\n");
                 _objProg.code.Append($"    jz {root.token.value}.retn\n");
                 //_objProg.code.Append($"    mov edi, [resualtPtr]\n");
-                _objProg.code.Append($"    mov ecx, SIZE_{ProgramAst.resualtFunc[root.token.value].token.value.ToUpper()}\n");
+                _objProg.code.Append($"    mov ecx, SIZE_{ProgramAst.resualtFunc[root.token.value].token.value.ToUpper()}/4\n");
                 _objProg.code.Append($"    rep movsd\n");
                 //_objProg.code.Append($"    lea eax, [resualtPtr]\n");
             }

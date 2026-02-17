@@ -84,8 +84,8 @@ namespace Qscript
             //tokenTypes.Add("INC", new TokenType("INC", "[\\--]*"));
             //tokenTypes.Add("DEC", new TokenType("DEC", "[\\++]*"));
             tokenTypes.Add("NUMBER", new TokenType("NUMBER", "-?[0-9]+"));
-            tokenTypes.Add("POSTFIX", new TokenType("POSTFIX", "(\\+\\+|--|\\<>|\\?)"));
-            tokenTypes.Add("OPER", new TokenType("OPER", "(\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-*/%=|!:~])"));
+            tokenTypes.Add("PREFIX", new TokenType("PREFIX", "(\\+\\+|--|\\<>|\\?|&)"));
+            tokenTypes.Add("OPER", new TokenType("OPER", "(\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-/%=|!:~])"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", "<"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", ">"));
 
@@ -106,12 +106,16 @@ namespace Qscript
             tokenTypes.Add("ITER", new TokenType("ITER", @"\biter\b"));
             tokenTypes.Add("FOR", new TokenType("FOR", @"\bfor\b"));
             tokenTypes.Add("WHILE", new TokenType("WHILE", @"\bwhile\b"));
+            tokenTypes.Add("ENUMERATOR", new TokenType("ENUMERATOR", @"\benumerator\b"));
+            tokenTypes.Add("REP", new TokenType("REP", @"\brep\b"));
 
             tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"\bstruct\b"));
             tokenTypes.Add("CLASS", new TokenType("CLASS", @"\bclass\b"));
 
             tokenTypes.Add("INLINE", new TokenType("INLINE", @"\binline\b"));
+            tokenTypes.Add("SIZEOF", new TokenType("SIZEOF", @"\bsizeof\b"));
 
+            tokenTypes.Add("IN", new TokenType("IN", @"\bin\b"));
 
             // modifecator модификаторы 
             //tokenTypes.Add("PUBLIC", new TokenType("PUBLIC", "public"));
