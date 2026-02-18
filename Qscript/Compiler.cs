@@ -192,7 +192,9 @@ namespace Qscript
                 case "ENUMERATOR":
                     translationEnumerator(root, z_buffer);
                     break;
-                //case "REP":
+                case "REPT":
+                    translationRept(root, z_buffer);
+                    break;
                 case "RETURN":
                     translationReturn(root, z_buffer);
                     break;
@@ -225,10 +227,21 @@ namespace Qscript
                     break;
             }
         }
+        public void translationRept(CommonNode root, int z_buffer)
+        {
+            CommonNode signatureNode = take(root, 0);
+            CommonNode bodyNode = take(root, 1);
+
+            _objProg.code.Append($"rept {signatureNode.token.value} {{\n");
+            Translation(bodyNode, z_buffer + 1);
+            _objProg.code.Append("}");
+
+            enumeratorTagIndex++;
+        }
         public void translationEnumerator (CommonNode root, int z_buffer)
         {
             CommonNode varNode = take(root, 0);
-            CommonNode stepNode = take(root, 1);
+            CommonNode countNode = take(root, 1);
             CommonNode bodyNode = take(root, 2);
             /*  local i dd 0
                 enumer0:
@@ -238,12 +251,24 @@ namespace Qscript
                 jne enumer0
             */
             translationVar(varNode, z_buffer + 1);
+
+            string countString = "ecx";
+            switch (countNode.type)
+            {
+                case "NUMBER": countString = countNode.token.value; break;
+                case "VAR": countString = $"[{countNode.token.value}]"; break;
+                case "FLOATBINOPER": Syntax.SyntaxError("Невозможно использовать флотовую операцию в качестве числа енумераций!", countNode); break;
+                case "FLOAT": Syntax.SyntaxError("Невозможно использовать флотовое число в качестве числа енумераций!", countNode); break;
+                default: Translation(countNode, z_buffer + 1); _objProg.code.Append($"mov ecx, eax\n"); break;
+            }
             _objProg.code.Append($"enumer{enumeratorTagIndex}:\n");
 
+            if (countString == "ecx") _objProg.code.Append($"push ecx\n");
             Translation(bodyNode, z_buffer + 1);
-
+            if (countString == "ecx") _objProg.code.Append($"pop ecx\n");
+             
             _objProg.code.Append($"inc [{varNode.token.value}]\n");
-            _objProg.code.Append($"cmp [{varNode.token.value}], {stepNode.token.value}\n");
+            _objProg.code.Append($"cmp [{varNode.token.value}], {countString}\n");
             _objProg.code.Append($"jne enumer{enumeratorTagIndex}\n");
 
             enumeratorTagIndex++;
@@ -936,6 +961,10 @@ namespace Qscript
                 } else if (leftChild.type == "FLOATBINOPER")
                 {
                     Translation(leftChild, z_buffer + 1);
+                } else
+                {
+                    Translation(leftChild, z_buffer + 1);
+                    _objProg.code.Append($"cvtsi2ss xmm0, eax\n");
                 }
 
                 if (rightChild.type == "VAR")
@@ -962,6 +991,10 @@ namespace Qscript
                 else if (rightChild.type == "FLOATBINOPER")
                 {
                     Translation(rightChild, z_buffer + 1);
+                } else
+                {
+                    Translation(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"cvtsi2ss xmm1, eax\n");
                 }
 
                 string str = root.token.value.Replace("=", "");
@@ -977,7 +1010,7 @@ namespace Qscript
                         _objProg.code.Append($"mulss {leftString}, {rightString}\n");
                         break;
                     case "/":
-                        _objProg.code.Append("divss {leftString}, {rightString}\n");
+                        _objProg.code.Append($"divss {leftString}, {rightString}\n");
                         break;
                 }
                 if (leftChild.type == "VAR" && !(new string[] { "+", "-", "*", "/" }.Contains(root.token.value)))

@@ -32,7 +32,7 @@ namespace Qscript
             return new string(' ', count);
         }
 
-        static void PrintAST(CommonNode root, int z_buffer)
+        public static void PrintAST(CommonNode root, int z_buffer)
         {
             ConsoleColor color;
             if (root.type == "ROOT")

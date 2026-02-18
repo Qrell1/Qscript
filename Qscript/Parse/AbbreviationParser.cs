@@ -53,7 +53,7 @@ namespace Qscript
 
 
                     if (
-                        (leftNode.type == "VAR" &&  rightNode.type == "VAR") &&
+                        (leftNode.type == "VAR" && rightNode.type == "VAR") &&
                         varTypes.Keys.Contains(leftNode.token.value) && varTypes.Keys.Contains(rightNode.token.value) &&
                         !(leftNode.token.value.Contains(".") || rightNode.token.value.Contains("."))
                         )
@@ -74,7 +74,12 @@ namespace Qscript
                     {
                         Syntax.SyntaxError($"Нельзя складывать не объявленные Переменные: {leftNode.token.value}, {rightNode.token.value}", leftNode);
                     }
-                    if (leftNode.type == "FLOAT" || rightNode.type == "FLOAT" || (leftNode.type == "CALL" && ast.resualtFunc[leftNode.token.value].token.value == "float") || (rightNode.type == "CALL" && ast.resualtFunc[rightNode.token.value].token.value == "float"))
+                    if (leftNode.type == "FLOAT" || rightNode.type == "FLOAT" || (leftNode.type == "CALL" && ast.resualtFunc[leftNode.token.value].token.value == "float") || (rightNode.type == "CALL" && ast.resualtFunc[rightNode.token.value].token.value == "float") ||
+                        (
+                        (leftNode.type == "VAR" && varTypes.Keys.Contains(leftNode.token.value) && varTypes[leftNode.token.value].token.value == "float") &&
+                        (rightNode.type == "VAR" && varTypes.Keys.Contains(rightNode.token.value) && varTypes[rightNode.token.value].token.value == "float")
+                        )
+                        )
                     {
                         CommonNode leftNodeTemp = parse(leftNode, z_buffer);
                         CommonNode rightNodeTemp = parse(rightNode, z_buffer);
@@ -110,7 +115,7 @@ namespace Qscript
                             return root;
                         }
                     }
-                    
+
 
                     if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
                     {
@@ -181,7 +186,7 @@ namespace Qscript
                     else if (take(root, 0).type != "BINOPER")
                         throw new Exception("Ошибка не верный токен ");
 
-                    root.childs[0] = parse(root.childs[0],z_buffer + 1);
+                    root.childs[0] = parse(root.childs[0], z_buffer + 1);
 
                     break;
                 case "STRING":
@@ -204,13 +209,13 @@ namespace Qscript
                     CommonNode signature = take(root, 1);
                     CommonNode bodyFunc = take(root, 2);
                     List<CommonNode> childs = new List<CommonNode>();
-                    if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value!="void" && !types.Keys.Contains(ast.resualtFunc[root.token.value].token.value))
+                    if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !types.Keys.Contains(ast.resualtFunc[root.token.value].token.value))
                     {
                         CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", signature.token.pos));
                         resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                         childs.Add(resualtVar);
                     }
-                    Dictionary<string, CommonNode>  varTypesTemp = new Dictionary<string, CommonNode>();
+                    Dictionary<string, CommonNode> varTypesTemp = new Dictionary<string, CommonNode>();
                     foreach (var v in varTypes)
                     {
                         varTypesTemp.Add(v.Key, v.Value);
@@ -292,6 +297,34 @@ namespace Qscript
                     {
                         if (root.childs[i].type != "VAR") root.childs[i] = parse(root.childs[i], z_buffer + 1);
                     }
+                    return root;
+                    break;
+                case "FOR":
+
+                    Dictionary<string, CommonNode> varTypesTempFor = new Dictionary<string, CommonNode>();
+                    foreach (var v in varTypes)
+                    {
+                        varTypesTempFor.Add(v.Key, v.Value);
+                    }
+                    CommonNode recurse(CommonNode commonNode)
+                    {
+                        foreach (var child in commonNode.childs)
+                        {
+                            if (child.childs.Count == 1 && child.childs[0].type == "TYPE") return child;
+                            return recurse(child);
+                        }
+                        return null;
+                    }
+                    //parse(take(root, 0), z_buffer + 1);
+                    CommonNode varNode = recurse(take(root, 0));
+                    if (varNode == null) { Program.PrintAST(root, 0);  Syntax.SyntaxError("Ошибка в объявлениии переменной в цикле For", root); }
+                    parse(take(root, 3), z_buffer + 1);
+                    varTypes.Clear();
+                    foreach (var v in varTypesTempFor)
+                    {
+                        varTypes.Add(v.Key, v.Value);
+                    }
+
                     return root;
                     break;
                 default:

@@ -128,7 +128,7 @@ namespace Qscript
                     else if (tokens[ps].value != ">") { ps++; }
                 }
             }
-            catch { SyntaxError("Ну тип ошибка в вызове декларотивной функции"); }
+            catch { return -1; }//SyntaxError("Ну тип ошибка в вызове декларотивной функции"); }
             return ps;
         }
         public CommonNode tryParseVarPath(CommonNode varNode)
@@ -217,7 +217,7 @@ namespace Qscript
                 if (tokens[pos].value == "<")
                 {
                     int ps = tryParseDeclarator();
-                    if (tokens[ps].type.type == "LPAR")
+                    if (ps != -1 && tokens[ps].type.type == "LPAR")
                     {
                         node = new CommonNode("CALL", node.token);
                         node = parseCall(node);
@@ -1053,7 +1053,7 @@ namespace Qscript
 
         public CommonNode parseCycle()
         {
-            expect(new string[] { "FOR", "WHILE", "ITER", "ENUMERATOR" });
+            expect(new string[] { "FOR", "WHILE", "ITER", "ENUMERATOR", "REPT" });
             Token cycleToken = take();
             CommonNode cycleNode = new CommonNode(cycleToken.type.type, cycleToken);
 
@@ -1061,17 +1061,17 @@ namespace Qscript
             if (cycleNode.type == "FOR")
             {
                 // for (int32 i = 0; i < 10; i++)
-                expect("LPAR"); skip();
-                expect("VAR"); Token type = take();
+                if (peek("LPAR")) { expect("LPAR"); skip(); }
+                //expect("VAR"); Token type = take();
                 CommonNode varNode = parse();
-                CommonNode initNode = new CommonNode("INIT", varNode.token);
-                initNode.childs.Add(varNode);
+                CommonNode initNode = varNode;//new CommonNode(varNode.type, varNode.token);
+                //initNode.childs.Add(new CommonNode("TYPE", type));
                 CommonNode ifNode = parseIfSignatureWOther();
                 expect("VAR");
                 CommonNode formulaNode = parseVarOperation();
                 CommonNode stepNode = new CommonNode("STEP", formulaNode.token);
                 stepNode.childs.Add(formulaNode);
-                expect("RPAR"); skip();
+                if (peek("RPAR")) { expect("RPAR"); skip(); }
                 CommonNode bodyNode = parseBody();
                 cycleNode.childs.Add(initNode);
                 cycleNode.childs.Add(ifNode);
@@ -1102,15 +1102,28 @@ namespace Qscript
 
             if (cycleNode.type == "ENUMERATOR")
             {
-                if (peek("LPAR")) { expect("LPAR"); skip(); } expect("VAR");
+                if (peek("LPAR")) { expect("LPAR"); skip(); }
+                expect("VAR");
                 CommonNode typeNode = new CommonNode("TYPE", take()); expect("VAR");
                 CommonNode varNode = new CommonNode("VAR", take()); varNode.childs.Add(typeNode);
-                //expect("IN"); skip();
                 expect("PS"); skip();
-                expect("NUMBER");
+                CommonNode signature = parseFormula();
                 if (peek("RPAR")) { expect("RPAR"); skip(); }
+
                 cycleNode.childs.Add(varNode);
-                cycleNode.childs.Add(new CommonNode("NUMBER", take()));
+                cycleNode.childs.Add(signature);
+                cycleNode.childs.Add(parseBody());
+                return cycleNode;
+            }
+
+            if (cycleNode.type == "REPT")
+            {
+                if (peek("LPAR")) { skip(); }
+                expect("NUMBER");
+                CommonNode signature = new CommonNode("NUMBER", take());
+                if (peek("RPAR")) { skip(); }
+
+                cycleNode.childs.Add(signature);
                 cycleNode.childs.Add(parseBody());
                 return cycleNode;
             }
@@ -1301,7 +1314,7 @@ namespace Qscript
             return root;
         }
 
-        public CommonNode parse() // 18 varkey
+        public CommonNode parse() // 19 varkey
         {
             if (peek("VAR"))
             {
@@ -1315,7 +1328,7 @@ namespace Qscript
             {
                 return parseQueueControlOperator();
             }
-            if (peek("FOR") || peek("WHILE") || peek("ITER") || peek("ENUMERATOR"))
+            if (peek("FOR") || peek("WHILE") || peek("ITER") || peek("ENUMERATOR") || peek("REPT"))
             {
                 return parseCycle();
             }

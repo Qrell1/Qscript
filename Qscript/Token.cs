@@ -83,6 +83,7 @@ namespace Qscript
             //tokenTypes.Add("OPER", new TokenType("OPER", @"(==|!=|<<|>>|<=|>=|=<|=>|=?)"));
             //tokenTypes.Add("INC", new TokenType("INC", "[\\--]*"));
             //tokenTypes.Add("DEC", new TokenType("DEC", "[\\++]*"));
+            tokenTypes.Add("FLOAT", new TokenType("FLOAT", @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)"));
             tokenTypes.Add("NUMBER", new TokenType("NUMBER", "-?[0-9]+"));
             tokenTypes.Add("PREFIX", new TokenType("PREFIX", "(\\+\\+|--|\\<>|\\?|&)"));
             tokenTypes.Add("OPER", new TokenType("OPER", "(\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-/%=|!:~])"));
@@ -107,7 +108,7 @@ namespace Qscript
             tokenTypes.Add("FOR", new TokenType("FOR", @"\bfor\b"));
             tokenTypes.Add("WHILE", new TokenType("WHILE", @"\bwhile\b"));
             tokenTypes.Add("ENUMERATOR", new TokenType("ENUMERATOR", @"\benumerator\b"));
-            tokenTypes.Add("REP", new TokenType("REP", @"\brep\b"));
+            tokenTypes.Add("REPT", new TokenType("REPT", @"\brept\b"));
 
             tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"\bstruct\b"));
             tokenTypes.Add("CLASS", new TokenType("CLASS", @"\bclass\b"));
@@ -128,7 +129,7 @@ namespace Qscript
             //tokenTypes.Add("CONST", new TokenType("CONST", @"\b[A-Z]*\b"));
             tokenTypes.Add("VAR", new TokenType("VAR", @"[a-zA-Z_][a-zA-Z0-9_]*"));
             //tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
-            tokenTypes.Add("FLOAT", new TokenType("FLOAT", @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)"));
+            //tokenTypes.Add("FLOAT", new TokenType("FLOAT", @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)"));
             //tokenTypes.Add("NUMBER", new TokenType("NUMBER", "[0-9]+"));
             tokenTypes.Add("STRING", new TokenType("STRING", @"""[^""]*"""));//@"""[^""//]*[^""\\]*(?:\\.[^""\\]*)*"""));
             //tokenTypes.Add("CHAR", new TokenType("CHAR", @"'[^'\\]*(?:\\.[^'\\]*)*'"));
