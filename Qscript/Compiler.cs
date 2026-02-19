@@ -88,9 +88,9 @@ namespace Qscript
         private int falseTagIndex;
         private int elsesTagIndex;
         private int tempTagIndex;
-        
+
         private int iterTagIndex;
-        private int enumeratorTagIndex;
+        //private int enumeratorTagIndex;
 
         public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; }
 
@@ -187,8 +187,12 @@ namespace Qscript
                 case "ITER":
                     translationIter(root, z_buffer);
                     break;
-                //case "FOR":
-                //case "WHILE":
+                case "FOR":
+                    translationFor(root, z_buffer);
+                    break;
+                case "WHILE":
+                    translationWhile(root, z_buffer);
+                    break;
                 case "ENUMERATOR":
                     translationEnumerator(root, z_buffer);
                     break;
@@ -227,7 +231,43 @@ namespace Qscript
                     break;
             }
         }
-        public void translationRept(CommonNode root, int z_buffer)
+        public void translationWhile (CommonNode root, int z_buffer)
+        {
+            CommonNode cmpNode = take(root, 0);
+            CommonNode bodyNode = take(root, 1);
+
+            _objProg.code.Append($"iter{iterTagIndex}:\n");
+
+            Translation(bodyNode, z_buffer + 1);
+
+            Translation(cmpNode, z_buffer + 1);
+            _objProg.code.Append($"jmp iter{iterTagIndex}\n");
+            _objProg.code.Append($"false{falseTagIndex}:\n");
+            falseTagIndex++;
+
+            iterTagIndex++;
+        }
+        public void translationFor (CommonNode root, int z_buffer)
+        {
+            CommonNode initNode = take(root, 0);
+            CommonNode cmpNode = take(root, 1);
+            CommonNode stepNode = take(take(root, 2),0);
+            CommonNode bodyNode = take(root, 3);
+
+            Translation(initNode, z_buffer + 1);
+            _objProg.code.Append($"iter{iterTagIndex}:\n");
+
+            Translation(bodyNode, z_buffer + 1);
+
+            Translation(stepNode, z_buffer + 1);
+            Translation(cmpNode, z_buffer + 1);
+            _objProg.code.Append($"jmp iter{iterTagIndex}\n");
+            _objProg.code.Append($"false{falseTagIndex}:\n");
+            falseTagIndex++;
+
+            iterTagIndex++;
+        }
+        public void translationRept (CommonNode root, int z_buffer)
         {
             CommonNode signatureNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
@@ -235,8 +275,6 @@ namespace Qscript
             _objProg.code.Append($"rept {signatureNode.token.value} {{\n");
             Translation(bodyNode, z_buffer + 1);
             _objProg.code.Append("}");
-
-            enumeratorTagIndex++;
         }
         public void translationEnumerator (CommonNode root, int z_buffer)
         {
@@ -261,7 +299,7 @@ namespace Qscript
                 case "FLOAT": Syntax.SyntaxError("Невозможно использовать флотовое число в качестве числа енумераций!", countNode); break;
                 default: Translation(countNode, z_buffer + 1); _objProg.code.Append($"mov ecx, eax\n"); break;
             }
-            _objProg.code.Append($"enumer{enumeratorTagIndex}:\n");
+            _objProg.code.Append($"iter{iterTagIndex}:\n");
 
             if (countString == "ecx") _objProg.code.Append($"push ecx\n");
             Translation(bodyNode, z_buffer + 1);
@@ -269,9 +307,9 @@ namespace Qscript
              
             _objProg.code.Append($"inc [{varNode.token.value}]\n");
             _objProg.code.Append($"cmp [{varNode.token.value}], {countString}\n");
-            _objProg.code.Append($"jne enumer{enumeratorTagIndex}\n");
+            _objProg.code.Append($"jne iter{iterTagIndex}\n");
 
-            enumeratorTagIndex++;
+            iterTagIndex++;
         }
         public void translationPreUnarOper (CommonNode root, int z_buffer)//, bool mov = true)
         {
@@ -445,6 +483,10 @@ namespace Qscript
                     Translation(leftChild, z_buffer + 1);
                     floatVar = getFloatConst(rightChild);
                     _objProg.code.Append($"cmp eax, [{floatVar}]\n");
+                } else if (rightChild.type == "BOOL")
+                {
+                    //Translation(leftChild, z_buffer + 1);
+                    //_objProg.code.Append($"and eax, [{floatVar}]\n");
                 }
                 else
                 {

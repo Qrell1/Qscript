@@ -1068,7 +1068,7 @@ namespace Qscript
                 //initNode.childs.Add(new CommonNode("TYPE", type));
                 CommonNode ifNode = parseIfSignatureWOther();
                 expect("VAR");
-                CommonNode formulaNode = parseVarOperation();
+                CommonNode formulaNode = parseFormula();
                 CommonNode stepNode = new CommonNode("STEP", formulaNode.token);
                 stepNode.childs.Add(formulaNode);
                 if (peek("RPAR")) { expect("RPAR"); skip(); }
