@@ -1,12 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Net;
-using System.Reflection.Emit;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Qscript
 {
@@ -114,9 +108,9 @@ namespace Qscript
         /// <summary>
         /// При вызове pos должен указывать на "<" выходе он будет указывать на то что после ">"
         /// </summary>
-        public int tryParseDeclarator()
+        public int tryParseDeclarator(int offset=1)
         {
-            int ps = pos + 1;
+            int ps = pos + offset;
             int z = 0;
             try
             {
@@ -397,7 +391,15 @@ namespace Qscript
             while (true)
             {
                 expect("VAR"); CommonNode typeNode = new CommonNode("TYPE", take());
+                CommonNode declarator = parseDeclarator();
+                if (declarator != null) typeNode.childs.Add(declarator);
+                if (peek("OPER") && tokens[pos].value == "*")
+                {
+                    skip();
+                    typeNode.type = "IDICATOR";
+                }
                 expect("VAR"); CommonNode varNode = new CommonNode("VAR", take());
+                varNode = tryParseVarPath(varNode);
                 varNode.childs.Add(typeNode);
                 root.childs.Add(varNode);
                 if (!peek("PS"))
@@ -592,17 +594,17 @@ namespace Qscript
 
         public CommonNode parseType(CommonNode typeNode)
         {
+            if (peek("OPER") && tokens[pos].value == "*")
+            {
+                CommonNode indicator = new CommonNode("INDICATOR", take());
+                typeNode.type = "IDICATOR";
+            }
+
             expect("VAR");
             CommonNode varNode = new CommonNode("VAR", take());
             varNode.childs.Add(typeNode);
 
-            while (peek("TS"))
-            {
-                skip();
-                varNode.token.value += "." + take().value;
-                if (tokens[pos].type.type != "TS")
-                    break;
-            }
+            varNode = tryParseVarPath(varNode);
 
             if (peek("SEM"))
             {
@@ -626,7 +628,8 @@ namespace Qscript
                 operNode.childs.Add(varNode);
                 operNode.childs.Add(rightOperand);
                 //root.varTypes.Add(varNode.token.value, typeNode.token.value);
-                if (peek("SEM")) { expect("SEM"); skip(); }
+                //if (peek("SEM")) { expect("SEM"); skip(); }
+                expect("SEM"); skip();
                 return operNode;
             }
 
@@ -649,14 +652,8 @@ namespace Qscript
                 if (declarator != null) root.declarotivePatternsFunctions.Add(varNode.token.value, varNode);
                 return varNode;
             }
-            /*if (peek("TS"))
-            {
-                skip(); varNode.type = "REFVAR";
-                CommonNode refs = parseRefvar(varNode);
-                return refs;
-            }*/
 
-            SyntaxError($"На позиции Токена:{pos} ожились токены OPER, SEM, LPAR!");
+            SyntaxError($"На позиции Токена:{pos} ожились токены OPER, SEM, LPAR, OPER!");
             return null;
         }
         public CommonNode parseVarOperation(CommonNode node = null)
@@ -668,18 +665,15 @@ namespace Qscript
                 varNode = node;
             expect(new string[] { "OPER", "PREFIX", "SEM", "LPAR", "TS", "VAR", "LK" });
 
-            // Блок сборки полного имени!
-            while (peek("TS"))
+            varNode = tryParseVarPath(varNode);
+
+            if (peek("OPER") && tokens[pos].value == "*")
             {
-                skip();
-                varNode.token.value += "." + take().value;
-                if (tokens[pos].type.type != "TS") break;
+                //CommonNode indicator = new CommonNode("INDICATOR", take());
+                //varNode.childs.Add(indicator);
+                return parseType(varNode);
             }
 
-            if (peek("PREFIX") && (tokens[pos].value == "++" || tokens[pos].value == "--"))
-            {
-
-            }
             if (peek("LK"))
             {
                 CommonNode offsetNode = new CommonNode("OFFSET", take());
@@ -727,7 +721,6 @@ namespace Qscript
                 operNode.childs.Add(varNode);
                 operNode.childs.Add(rightOperand);
 
-                //if (peek("SEM")) { expect("SEM"); skip(); }
                 expect("SEM"); skip();
                 return operNode;
             }
@@ -739,36 +732,18 @@ namespace Qscript
                 return operNode;
             }
 
-            if (peek("LPAR"))//|| (tokens[pos].value == "?" && tokens[pos+1].value == "(")
+            if (peek("LPAR"))
             {
                 varNode = parseCall(varNode);
-                //expect("SEM"); skip();
-                /*if (peek("TS"))
-                {
-                    Token ts = take(); expect("VAR");
-                    //CommonNode refs = new CommonNode("REFVAR", take());
-                    CommonNode binoper = new CommonNode("CALLRETURN", ts); ;
-                    CommonNode refs = parseRefvar();
-                    binoper.childs.Add(varNode);
-                    binoper.childs.Add(refs);
-
-                    return binoper;
-                }*/
                 expect("SEM"); skip();
                 return varNode;
             }
 
-            /*if (peek("TS"))
-            {
-                skip(); varNode.type = "REFVAR";
-                CommonNode refs = parseRefvar(varNode);
-                return refs;
-            }*/
 
 
 
             //if (peek("OPER") && new string[] { "-=", "+=", "*=", "/=" }.Contains(tokens[pos].value))
-            SyntaxError(pos.ToString());
+            SyntaxError($"Невозможный Токен:{tokens[pos].value}");
             return null;
         }
         /*public CommonNode parseRefvar(CommonNode refvar=null)
@@ -878,17 +853,7 @@ namespace Qscript
         }*/
         public CommonNode parseCall(CommonNode varNode)
         {
-            if (peek("?"))
-            {
-                skip(); varNode.type = "INLINECALL";
-            }
-            while (peek("TS"))
-            {
-                skip();
-                varNode.token.value += "." + take().value;
-                if (tokens[pos].type.type != "TS")
-                    break;
-            }
+            varNode = tryParseVarPath(varNode);
             CommonNode declarator = parseDeclarator();
             CommonNode args = parseFormulaSignature();
             varNode.type = "CALL";
@@ -898,16 +863,7 @@ namespace Qscript
             {
                 skip(); expect("VAR");
                 CommonNode var = new CommonNode("VAR", take());
-                while (peek("TS"))
-                {
-                    skip();
-                    var.token.value += "." + take().value;
-                    if (tokens[pos].type.type != "TS")
-                        break;
-                }
-                //if (peek("PREFIX") || peek("SEM") || peek("LPAR"))
-                //var = parseVarOperation(var);
-                //else
+                var = tryParseVarPath(var);
                 var.type = "REFVAR";
                 var.childs.Add(varNode);
                 varNode = var;

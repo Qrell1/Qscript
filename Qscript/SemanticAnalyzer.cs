@@ -21,7 +21,8 @@ namespace Qscript
             {"string", "STRING"},
             {"char", "CHAR"},
             {"bool", "BOOL"},
-            {"float", "FLOAT"}
+            {"float", "FLOAT"},
+            {"int32_a", "dd"}
         };
 
         static Dictionary<string, CommonNode> varTypes = new Dictionary<string, CommonNode>();

@@ -64,11 +64,13 @@
     <Compile Include="CodeStruct.cs" />
     <Compile Include="Parse\AbbreviationParser.cs" />
     <Compile Include="Compiler.cs" />
+    <Compile Include="PostGen.cs" />
+    <Compile Include="StringData.cs" />
     <Compile Include="Syntax.cs" />
     <Compile Include="Lex\CommentLexer.cs" />
     <Compile Include="Lex\IncludeLexer.cs" />
     <Compile Include="Lex\Lexer.cs" />
-    <Compile Include="newAST.cs" />
+    <Compile Include="AST.cs" />
     <Compile Include="Parse\Parser.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

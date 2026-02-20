@@ -23,18 +23,16 @@ namespace Qscript
     }
     public class objProgram
     {
-        //public List<CommonNode> functions;
-        public StringBuilder data = new StringBuilder();
-        public StringBuilder code;
+        public StringData data = new StringData();
+        public StringData code;
 
-        public StringBuilder codeData = new StringBuilder();
-        public StringBuilder procData = new StringBuilder();
-        public StringBuilder macroData = new StringBuilder();
+        public StringData codeData = new StringData();
+        public StringData procData = new StringData();
+        public StringData macroData = new StringData();
 
         public StringBuilder includes = new StringBuilder();
 
         public StringBuilder stringsConsts = new StringBuilder();
-        //public StringBuilder localsData = new StringBuilder();
 
         public bool local;
     }
@@ -90,7 +88,6 @@ namespace Qscript
         private int tempTagIndex;
 
         private int iterTagIndex;
-        //private int enumeratorTagIndex;
 
         public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; }
 
@@ -594,6 +591,7 @@ namespace Qscript
                 //_objProg.code.Append($"mov eax, [{root.token.value}+eax]\n");
                 return;
             }
+            
             if (root.childs.Count == 0 && !types.Keys.Contains(root.token.value))
             {
                 _objProg.code.Append($"mov eax, [{root.token.value}]\n");
@@ -610,6 +608,8 @@ namespace Qscript
                 classes = types[type.token.value];
             else
                 classes = type.token.value;
+            if (root.childs.Count > 0 && root.childs[0].type == "INDICATOR")
+            { classes = "dd"; }
             if (!vars.Contains(root.token.value) && type != null && _objProg.local == false)
             {
                 _objProg.data.Append($"{root.token.value} {classes} 0\n");

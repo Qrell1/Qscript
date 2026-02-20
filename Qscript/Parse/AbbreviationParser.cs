@@ -349,6 +349,16 @@ namespace Qscript
                 root.token.value = table[root.token.value];
             for (int i = 0; i < rootNode.childs.Count; i++)
             {
+                if (root.type == "TYPE" && rootNode.childs[i].type == "DECLARATOR")
+                {
+                    CommonNode replace = replaceNodes(rootNode.childs[i], ref table);
+                    string name = generationDeclarationStruct(root, replace);
+                    replace.token.value = name;
+                    root = replace;
+                    root.type = "TYPE";
+                    root.childs.Clear();
+                    continue;
+                }
                 root.childs.Add(replaceNodes(rootNode.childs[i], ref table));
             }
             return root;
