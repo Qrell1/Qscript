@@ -34,7 +34,7 @@ namespace Qscript
             //{ "r", "(eax|edx|ebx|ecx|esi|edi|esp|ebp)"},
             { "t", " "},
             { "r", "(rax|rdx|rbx|rcx|rsi|rdi|rsp|rbp|eax|edx|ebx|ecx|esi|edi|esp|ebp|al|dx|bx|cx|si|di|sp|bp)"},
-            { "c", "[A-Z_A-Z_]+[0-9]*"},
+            { "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
             { "i", "\\.?[a-z\\\\.A-Z_][a-z\\\\.A-Z\\\\.0-9_]*\\:" },
             { "m", "\\[[^\\[\\]]+\\]" },
             { "v", ".?[a-z\\.A-Z_][a-z\\.A-Z\\.0-9_]*" },
@@ -63,12 +63,31 @@ namespace Qscript
             objProgramResualt.includes = _objProgram.includes;
             objProgramResualt.data = _objProgram.data;
 
+            int line;
+
             StringData procData = new StringData();
             List<instruct> procList = LexInstructs(_objProgram.procData);
-            objProgramResualt.procData = Translation(procList);
+            line = procList.Count;
+            while (true)
+            {
+                objProgramResualt.procData = Translation(procList);
+                procList = LexInstructs(objProgramResualt.procData);
+                if (line == procList.Count) break;
+                line = procList.Count;
+            }
 
-            objProgramResualt.codeData = Translation(LexInstructs(_objProgram.codeData));
+            List<instruct> codeList = LexInstructs(_objProgram.codeData);
+            objProgramResualt.codeData = Translation(codeList);
+            line = codeList.Count;
+            while (true)
+            {
+                objProgramResualt.codeData = Translation(codeList);
+                codeList = LexInstructs(objProgramResualt.codeData);
+                if (line == codeList.Count) break;
+                line = codeList.Count;
+            }
 
+            //objProgramResualt.codeData = _objProgram.codeData;
 
 
             return objProgramResualt;
@@ -85,7 +104,7 @@ namespace Qscript
                 str = str.Trim();
                 instruct = str.Split(' ')[0];
                 if (str.StartsWith(";")) continue;
-                int pos = instruct.Length+1;
+                int pos = instruct.Length;
                 instruct patt = new instruct();
                 patt.value = instruct.Replace("\t", "").Replace("\n", "");
                 while (true)
@@ -141,73 +160,89 @@ namespace Qscript
                         //resualt.Append(InstructConcat(_instuct)); i++;
                         //continue;
                     //}
-
+                    if (pattern1[0].value == "[i]" || pattern2[0].value == "[i]")
+                    {
+                        pattern1 = pattern1;
+                    }
                     // |case1| -- cmp
-                    if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "cmp|r?") && InstructCmpReg(pattern1, pattern2))
+                    if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "cmp|rn") && InstructCmpReg(pattern1, pattern2))
                     {
                         resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "m"))); i++;
                         continue;
                     }
-                    // |case2| - cmp
+                    // |case2| -- cmp
+                    if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "cmp|rc") && InstructCmpReg(pattern1, pattern2))
+                    {
+                        //resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "m"))); i++;
+                        //continue;
+                    }
+                    // |case3| - cmp
                     if (InstructPattern(str, "mov|rn") && InstructPattern(str2, "cmp|r?") && InstructCmpReg(pattern1, pattern2))
                     {
                         resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "n"))); i++;
                         continue;
                     }
-                    // |case3| - cmp - not realistic
+                    // |case4| - cmp - not realistic
                     if (InstructPattern(str, "mov|rr") && InstructPattern(str2, "cmp|r?") && InstructCmpReg(pattern1, pattern2))
                     {
                         resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "r", 1))); i++;
                         continue;
                     }
-                    // |case4| - cmp
+                    // |case5| - cmp
                     if (InstructPattern(str, "mov|rc") && InstructPattern(str2, "cmp|r?") && InstructCmpReg(pattern1, pattern2))
                     {
-                        resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "c"))); i++;
-                        continue;
-                    }
-                    // |case5| - call
-                    if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "push|r") && InstructCmpReg(pattern1, pattern2))
-                    {
-                        resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "m"))); i++;
-                        continue;
+                        //resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "c"))); i++;
+                        //continue;
                     }
                     // |case6| - call
+                    if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "push|r") && InstructCmpReg(pattern1, pattern2))
+                    {
+                        //resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "m"))); i++;
+                        //continue;
+                    }
+                    // |case7| - call
                     if (InstructPattern(str, "mov|rc") && InstructPattern(str2, "push|r") && InstructCmpReg(pattern1, pattern2))
                     {
                         resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "c"))); i++;
                         continue;
                     }
-                    // |case7| - call
+                    // |case8| - call
                     if (InstructPattern(str, "mov|rn") && InstructPattern(str2, "push|r") && InstructCmpReg(pattern1, pattern2))
                     {
-                        resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "m"))); i++;
-                        continue;
-                    }
-                    // |case8| - void
-                    if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "mov|rr") && InstructCmpReg(pattern1, pattern2, 1))
-                    {
-                        resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "m"))); i++;
+                        resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "n"))); i++;
                         continue;
                     }
                     // |case9| - void
-                    if (InstructPattern(str, "mov|rc") && InstructPattern(str2, "mov|rr") && InstructCmpReg(pattern1, pattern2, 1))
+                    if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "mov|rr") && InstructCmpReg(pattern1, pattern2, 1))
                     {
-                        resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "c"))); i++;
-                        continue;
+                        //resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "r"))); i++;
+                        //continue;
                     }
                     // |case10| - void
+                    if (InstructPattern(str, "mov|rc") && InstructPattern(str2, "mov|rr") && InstructCmpReg(pattern1, pattern2, 1))
+                    {
+                        resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "r"))); i++;
+                        continue;
+                    }
+                    // |case11| - void
                     if (InstructPattern(str, "pop|r") && InstructPattern(str2, "mov|mr") && InstructCmpReg(pattern1, pattern2, 1))
                     {
                         //resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "m"))); i++;
                         //continue;
                     }
-                    // |case11| - void
+                    // |case12| - void
                     if (InstructPattern(str, "mov|rr") && InstructPattern(str2, "mov|rr") && InstructCmpReg(pattern1, pattern2, 1))
                     {
                         resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "r"))); i++;
                         continue;
                     }
+
+                    // inline macro
+                    //if (InstructPattern(str, "?|~"))
+                    //{
+                        //resualt.Append(InstructConcat(_instuct));
+                        //continue;
+                    //}
 
                 }
                 catch { }
@@ -224,19 +259,26 @@ namespace Qscript
                 if (right.pattern[i].key == patt && index == 0) { pos = i; break; }
                 else if (right.pattern[i].key == patt && index != 0) index--;
             }
-
-            left.pattern[0] = right.pattern[pos];
+            int pos2 = 0;
+            while (true)
+            {
+                if (left.pattern[pos2].key.Equals("t") || left.pattern[pos2].key.Equals("ts")) pos2++;
+                else break;
+            }
+            left.pattern[pos2] = right.pattern[pos];
             return left;
         }
-        public static bool InstructPattern (string str, string patt)
+        public static bool InstructPattern(string str, string patt)
         {
             string istr = str.Split('|')[0];
             string ipatt = patt.Split('|')[0];
-            if (ipatt != istr) return false;
+            if (ipatt == "?") ipatt = "?";
+            else if (ipatt != istr) return false;
 
             char[] cstr = str.Split('|')[1].ToCharArray();
             char[] cpatt = patt.Split('|')[1].ToCharArray();
 
+            if (cpatt[0] == '~') return true;
             for (int i = 0; i < cstr.Length; i++)
             {
                 if (cpatt[i] == '?') continue;

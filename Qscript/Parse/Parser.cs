@@ -244,6 +244,7 @@ namespace Qscript
 
             if (token.type.type == "NUMBER") return new CommonNode("NUMBER", token);
             if (token.type.type == "STRING") return new CommonNode("STRING", token);
+            if (token.type.type == "CHAR")   return new CommonNode("CHAR",   token);
             if (token.type.type == "CONST")  return new CommonNode("CONST" , token);
             if (token.type.type == "BOOL")   return new CommonNode("BOOL"  , token);
             if (token.type.type == "FLOAT")  return new CommonNode("FLOAT" , token);
@@ -671,7 +672,10 @@ namespace Qscript
             {
                 //CommonNode indicator = new CommonNode("INDICATOR", take());
                 //varNode.childs.Add(indicator);
-                return parseType(varNode);
+                CommonNode typeNode = parseType(varNode);
+                //typeNode.type = "INDICATOR";
+                typeNode.childs[0].type = "INDICATOR";
+                return typeNode;
             }
 
             if (peek("LK"))

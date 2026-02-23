@@ -229,6 +229,7 @@ namespace QASM
             char[] cstr = str.Split('|')[1].ToCharArray();
             char[] cpatt = patt.Split('|')[1].ToCharArray();
 
+            if (cpatt[0] == '~') return true;
             for (int i = 0; i < cstr.Length; i++)
             {
                 if (cpatt[i] == '?') continue;
