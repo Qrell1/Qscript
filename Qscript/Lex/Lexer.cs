@@ -21,6 +21,10 @@ namespace Qscript.Lex
         {
             code = Syntax.code;
         }
+        public Lexer(CodeStruct codeStruct)
+        {
+            code = codeStruct;
+        }
 
         public List<Token> lexAnalysis()
         {

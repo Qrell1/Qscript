@@ -19,7 +19,7 @@ namespace Qscript
     }
     public enum TypeApp
     {
-        dll, program32, program64, asmmodule
+        dll, program32, program64, asmmodule, h
     }
     public class objProgram
     {
@@ -409,16 +409,16 @@ namespace Qscript
             Translation(body, z_buffer + 1);
             if (elses != null)
             {
-                _objProg.code.Append($"jmp elses{elsesTagIndex}\n");
-                _objProg.code.Append($"false{falseTagIndex}:\n");
+                _objProg.code.Append($"jmp .elses{elsesTagIndex}\n");
+                _objProg.code.Append($".false{falseTagIndex}:\n");
                 falseTagIndex++;
                 Translation(elses.childs[0], z_buffer + 2);
-                _objProg.code.Append($"elses{elsesTagIndex}:\n");
+                _objProg.code.Append($".elses{elsesTagIndex}:\n");
                 elsesTagIndex++;
             }
             else
             {
-                _objProg.code.Append($"false{falseTagIndex}:\n");
+                _objProg.code.Append($".false{falseTagIndex}:\n");
                 falseTagIndex++;
             }
         }
@@ -448,8 +448,8 @@ namespace Qscript
                 translationCmp(leftChild, z_buffer + 1, true);
                 translationCmp(rightChild, z_buffer + 1, true);
 
-                _objProg.code.Append($"jmp false{falseTagIndex}\n");
-                _objProg.code.Append($"true{trueTagIndex}:\n");
+                _objProg.code.Append($"jmp .false{falseTagIndex}\n");
+                _objProg.code.Append($".true{trueTagIndex}:\n");
                 trueTagIndex++;
             }
             if (new string[] { "==", "!=", ">=", "<=", "<", ">" }.Contains(root.token.value))
@@ -516,22 +516,22 @@ namespace Qscript
                     switch (root.token.value)
                     {
                         case "==":
-                            _objProg.code.Append($"jne false{falseTagIndex}\n");
+                            _objProg.code.Append($"jne .false{falseTagIndex}\n");
                             break;
                         case "!=":
-                            _objProg.code.Append($"je false{falseTagIndex}\n");
+                            _objProg.code.Append($"je .false{falseTagIndex}\n");
                             break;
                         case ">=":
-                            _objProg.code.Append($"jl false{falseTagIndex}\n");
+                            _objProg.code.Append($"jl .false{falseTagIndex}\n");
                             break;
                         case "<=":
-                            _objProg.code.Append($"jg false{falseTagIndex}\n");
+                            _objProg.code.Append($"jg .false{falseTagIndex}\n");
                             break;
                         case ">":
-                            _objProg.code.Append($"jle false{falseTagIndex}\n");
+                            _objProg.code.Append($"jle .false{falseTagIndex}\n");
                             break;
                         case "<":
-                            _objProg.code.Append($"jge false{falseTagIndex}\n");
+                            _objProg.code.Append($"jge .false{falseTagIndex}\n");
                             break;
                     }
                 } else
@@ -539,22 +539,22 @@ namespace Qscript
                     switch (root.token.value)
                     {
                         case "==":
-                            _objProg.code.Append($"je true{trueTagIndex}\n");
+                            _objProg.code.Append($"je .true{trueTagIndex}\n");
                             break;
                         case "!=":
-                            _objProg.code.Append($"jne true{trueTagIndex}\n");
+                            _objProg.code.Append($"jne .true{trueTagIndex}\n");
                             break;
                         case ">=":
-                            _objProg.code.Append($"jge true{trueTagIndex}\n");
+                            _objProg.code.Append($"jge .true{trueTagIndex}\n");
                             break;
                         case "<=":
-                            _objProg.code.Append($"jle true{trueTagIndex}\n");
+                            _objProg.code.Append($"jle .true{trueTagIndex}\n");
                             break;
                         case ">":
-                            _objProg.code.Append($"jg true{trueTagIndex}\n");
+                            _objProg.code.Append($"jg .true{trueTagIndex}\n");
                             break;
                         case "<":
-                            _objProg.code.Append($"jl true{trueTagIndex}\n");
+                            _objProg.code.Append($"jl .true{trueTagIndex}\n");
                             break;
                     }
                 }
@@ -779,15 +779,15 @@ namespace Qscript
                 }*/
                 if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("*") && (Convert.ToInt32(rightChild.token.value)%2) == 0)
                 {
-                    _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
-                    _objProg.code.Append($"shl eax, {Convert.ToInt32(rightChild.token.value)/2}\n");
-                    return;
+                    //_objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
+                    //_objProg.code.Append($"shl eax, {Convert.ToInt32(rightChild.token.value)/2}\n");
+                    //return;
                 }
                 if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("/") && (Convert.ToInt32(rightChild.token.value)%2) == 0)
                 {
-                    _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
-                    _objProg.code.Append($"shr eax, {Convert.ToInt32(rightChild.token.value)/2}\n");
-                    return;
+                    //_objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
+                    //_objProg.code.Append($"shr eax, {Convert.ToInt32(rightChild.token.value)/2}\n");
+                    //return;
                 }
                 if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("+") && !(root.token.value == "+="))
                 {
@@ -1394,7 +1394,6 @@ namespace Qscript
             str = string.Empty;
 
             string[] strings = temp.Split(new char[] { ';'}, StringSplitOptions.RemoveEmptyEntries);
-
             for (int i = 0; i < strings.Length; i++)
                 _objProg.code.Append(strings[i] + "\n");
         }
@@ -1416,6 +1415,12 @@ namespace Qscript
             // section '.code' code readable executable
             // section '.data' data readable writable
 
+            ///if (typeApp == TypeApp.h)
+            //{
+                //file += "start: ;START MAIN\n";
+                //file += _objProg.codeData.ToString();
+                //return file;
+            ///}
             if (typeApp == TypeApp.asmmodule)
             {
             }
@@ -1430,21 +1435,48 @@ namespace Qscript
                 //file += "\nsection '.code' code readable executable\n";
                 file += "start: ;START MAIN\n";
                 file += _objProg.codeData.ToString();
-            }else if (typeApp == TypeApp.program64)
+            }
+            else if (typeApp == TypeApp.program64)
             {
                 file = "format PE console\n\nentry start\n" + file;
                 //file += "\nsection '.code' code readable executable\n";
                 file += "start: ;START MAIN\n";
                 file += _objProg.codeData.ToString();
             }
+            foreach (CommonNode section in ProgramAst.sectionNodes)
+            {
+                StringBuilder chars = new StringBuilder();
+                char[] strs = section.token.value.ToCharArray();
+                string str = section.token.value;
+                int pos = 0;
+
+                while (pos < str.Length)
+                {
+                    Match regx = Regex.Match(str.Substring(pos), "^" + TokenTypeList.tokenTypes["STRING"].regx);
+                    if (regx.Success && !string.IsNullOrEmpty(regx.Value))
+                        pos += regx.Length;
+                    else
+                    {
+                        chars.Append(strs[pos]);
+                        pos++;
+                    }
+                }
+                string temp = chars.ToString();
+                str = string.Empty;
+
+                string[] strings = temp.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 0; i < strings.Length; i++)
+                    file += strings[i] + "\n";
+
+            }
             return file;
         }
         public void WriteCode (string data, string nameFile, string pathCompile, string extend = "asm")
         {
-            string path = $"{pathCompile}\\{nameFile}\\{nameFile}.{extend}";
+            string path = $"{pathCompile}\\bin\\{nameFile}.{extend}";
             //File.Delete(path);
-            Console.WriteLine($"{pathCompile}\\{nameFile}\\");
-            Directory.CreateDirectory($"{pathCompile}\\{nameFile}\\");
+            Console.WriteLine($"{pathCompile}\\bin\\");
+            Directory.CreateDirectory($"{pathCompile}\\bin\\");
             FileStream fileStream = File.Create(path);
             fileStream.Close();
             File.WriteAllText(path, data);

@@ -68,7 +68,7 @@
     <Compile Include="StringData.cs" />
     <Compile Include="Syntax.cs" />
     <Compile Include="Lex\CommentLexer.cs" />
-    <Compile Include="Lex\IncludeLexer.cs" />
+    <Compile Include="Lex\Preproccessor.cs" />
     <Compile Include="Lex\Lexer.cs" />
     <Compile Include="AST.cs" />
     <Compile Include="Parse\Parser.cs" />

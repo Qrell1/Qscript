@@ -36,6 +36,8 @@ namespace Qscript
 
         public Dictionary<string, Dictionary<string, CommonNode>> structs = new Dictionary<string, Dictionary<string, CommonNode>>();
 
+        public List<CommonNode> sectionNodes = new List<CommonNode>();
+
         public ProgramNode(string type, Token token) : base(type, token)
         {}
     }

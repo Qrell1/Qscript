@@ -750,111 +750,7 @@ namespace Qscript
             SyntaxError($"Невозможный Токен:{tokens[pos].value}");
             return null;
         }
-        /*public CommonNode parseRefvar(CommonNode refvar=null)
-        {
-            //CALL
-            //OPERATION
-            //REFVAR
-
-            expect("VAR");
-            CommonNode varNode = new CommonNode("VAR", take());
-            if (refvar != null)
-            {
-                varNode.token.value = refvar.token.value + "." + varNode.token.value;
-                varNode.childs = refvar.childs;
-            }
-
-            //REFVAR
-            while (peek("TS"))
-            {
-                skip();
-                varNode.token.value += "." + take().value;
-                if (tokens[pos].type.type != "TS")
-                    break;
-            }
-
-            if (peek("LK"))
-            {
-                CommonNode offsetNode = new CommonNode("OFFSET", take());
-                offsetNode.childs.Add(parseFormula()); expect("RK"); skip();
-                varNode.childs.Add(offsetNode);
-            }
-
-            //OPERATION
-            if (peek("OPER"))
-            {
-                Token oper = take();
-                CommonNode rightOperand = parseFormula();
-                CommonNode operNode = new CommonNode("BINOPER", oper);
-                operNode.childs.Add(varNode);
-                operNode.childs.Add(rightOperand);
-                varNode = operNode;
-            } else if (peek("OPER"))
-            {
-                SyntaxError($"На позиции Токена:{pos} после вызова функции не может идти  оператор {tokens[pos].value}");
-            }
-
-            //CALL
-            if (peek("LPAR"))
-            {
-                varNode = parseCall(varNode);
-            }
-
-            //SEM
-            if (peek("SEM"))
-                skip();
-
-
-            return varNode;
-
-            /*if (peek("VAR") && tokens[pos + 1].type.type == "LPAR")
-            {
-                CommonNode varNode = new CommonNode("CALL", take());
-                CommonNode args = parseFormulaSignature(); expect("SEM"); skip();
-                varNode.childs.Add(args);
-                //varNode.token.value =  refvar.token.value +  "." + varNode.token.value;
-                refvar.token.value = refvar.token.value + "." + varNode.token.value;
-                refvar.childs = varNode.childs;//childs[0].childs;
-                refvar.type = varNode.type;//childs[0].type;
-                return varNode;
-            }
-            //REFVAR
-            if (peek("VAR") && tokens[pos + 1].type.type == "TS")
-            {
-                CommonNode varNode = new CommonNode("REFVAR", take()); skip();
-                varNode = parseRefvar(varNode);
-                if (refvar.type != "BINOPER")
-                    refvar.token.value = refvar.token.value + "." + varNode.token.value;
-                else
-                    refvar.token.value = refvar.token.value + "." + varNode.childs[0].token.value;
-                refvar.childs = varNode.childs;//childs[0].childs;
-                refvar.type = varNode.type;//childs[0].type;
-                return refvar;
-            }
-            //VAROPERATION
-            if (peek("VAR") && (tokens[pos+1].type.type=="OPER" || tokens[pos + 1].type.type == "POSFIX"))
-            {
-                CommonNode operationNode = parseVarOperation(); //expect("SEM"); skip();
-                refvar.token.value = refvar.token.value + "." + operationNode.childs[0].token.value;
-                refvar.childs = operationNode.childs[0].childs;
-                refvar.type = "VAR";
-                operationNode.childs[0] = refvar;
-                return operationNode;
-            }
-            //VAR
-            if (peek("VAR"))
-            {
-                //CommonNode refs = parseVarOperation();
-                CommonNode refs = new CommonNode("VAR", take());
-                refvar.token.value =  refvar.token.value + "." + refs.token.value;
-                refvar.childs = refs.childs;
-                refvar.type = refs.type;
-                return refvar;
-            }
-
-            SyntaxError($"На позиции Токена:{pos} ожидался токен VAR");
-            return null;
-        }*/
+       
         public CommonNode parseCall(CommonNode varNode)
         {
             varNode = tryParseVarPath(varNode);
@@ -1236,12 +1132,56 @@ namespace Qscript
                 if (peek("INLINE")) usingNode.childs.Add(new CommonNode("INLINE", take()));
                 expect("SEM"); skip();
             }
-            else if (peek("LFIG"))
+            else if (peek("INLINE"))
             {
+                //usingNode.childs.Add(new CommonNode("INLINE", take()));
+                skip();
                 CommonNode stack = parseStack("VAR");
-                usingNode.childs.Add(stack);
-                if (peek("INLINE")) usingNode.childs.Add(new CommonNode("INLINE", take()));
-                expect("SEM"); skip();
+                foreach (var child in stack.childs)
+                {
+                    root.inlineNames.Add(child.token.value);
+                }
+                //expect("SEM"); skip();
+                return null;
+            }
+            else if (peek("NATIVE"))
+            {
+                //usingNode.childs.Add(new CommonNode("INLINE", take()));
+                //CommonNode stack = parseStack("VAR");
+                skip();
+                expect("LFIG"); skip();
+
+                while (true)
+                {
+                    CommonNode typeNode = new CommonNode("TYPE", take());
+                    CommonNode varNode = new CommonNode("FUNC", take());
+                    varNode = tryParseVarPath(varNode);
+                    varNode.childs.Add(typeNode);
+
+                    //if (varNode.childs[0].childs.Count > 0 && varNode.childs[0].type == "TYPE") Syntax.SyntaxError("После возвращаемого типа функции не может идти Декларотивный Кортеж!", varNode.childs[0].childs[0]);
+                    CommonNode args = parseVarWTypeSignature();
+
+                    if (varNode.childs[0].token.value == "void")
+                        root.resualtFunc.Add(varNode.token.value, null);
+                    else
+                        root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
+                    root.typesArgsFunc.Add(varNode.token.value, args);
+
+                    if (peek("RFIG")) break;
+                    else if (!peek("PS")) break;
+                    else if (peek("PS")) skip();
+                }
+                expect("RFIG"); skip();
+                //expect("SEM"); skip();
+                return null;
+            }
+            else if (peek("SECTION"))
+            {
+                skip(); expect("LFIG"); skip();
+                expect("ASM");
+                root.sectionNodes.Add(new CommonNode("SECTION", take()));
+                expect("RFIG"); skip();
+                return null;
             }
 
             return usingNode;

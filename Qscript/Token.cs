@@ -113,6 +113,8 @@ namespace Qscript
             tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"\bstruct\b"));
             tokenTypes.Add("CLASS", new TokenType("CLASS", @"\bclass\b"));
 
+            tokenTypes.Add("SECTION", new TokenType("SECTION", @"\bsection\b"));
+            tokenTypes.Add("NATIVE", new TokenType("NATIVE", @"\bnative\b"));
             tokenTypes.Add("INLINE", new TokenType("INLINE", @"\binline\b"));
             tokenTypes.Add("SIZEOF", new TokenType("SIZEOF", @"\bsizeof\b"));
 

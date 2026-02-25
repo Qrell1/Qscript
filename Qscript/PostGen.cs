@@ -37,6 +37,8 @@ namespace Qscript
             { "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
             { "i", "\\.?[a-z\\\\.A-Z_][a-z\\\\.A-Z\\\\.0-9_]*\\:" },
             { "m", "\\[[^\\[\\]]+\\]" },
+            //{ "m", @"\b\[^\[\]+\]\b" },
+            //{ "m", @"\[^\[\]+\]" },
             { "v", ".?[a-z\\.A-Z_][a-z\\.A-Z\\.0-9_]*" },
             { "n", "-?[0-9]+" },
             { "o", "(/|\\*|\\-|\\+)"},
@@ -234,6 +236,23 @@ namespace Qscript
                     if (InstructPattern(str, "mov|rr") && InstructPattern(str2, "mov|rr") && InstructCmpReg(pattern1, pattern2, 1))
                     {
                         resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "r"))); i++;
+                        continue;
+                    }
+
+                    if (InstructPattern(str, "mov|rm"))
+                    {
+                        int pos = 0;
+                        int posDword = 0;
+                        bool dword = false;
+                        while (true)
+                        {
+                            if (_instuct.pattern[pos].value.Trim() == "dword") { posDword = pos; pos++; dword = true; }
+                            if (_instuct.pattern[pos].key == "m") break;
+                            else pos++;
+                        }
+
+                        if (!dword) { _instuct.pattern[pos].value = " dword " + _instuct.pattern[pos].value; _instuct.pattern[pos].key = "Q"; }
+                        resualt.Append(InstructConcat(_instuct));
                         continue;
                     }
 

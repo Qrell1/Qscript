@@ -11,7 +11,7 @@ namespace Qscript
     {
         public static Lexer lexer;
         public static CommentLexer commentLexer = new CommentLexer();
-        public static IncludeLexer includeLexer = new IncludeLexer();
+        public static Preproccessor preproccessor = new Preproccessor();
         public static Parser parser;
 
         static void PrintListToken (List<Token> list)
@@ -139,9 +139,10 @@ namespace Qscript
                 pathCompile = args[0].Replace(refs[refs.Length-1], "");
                 Console.WriteLine(pathCompile);
                 Console.WriteLine(filename);
+                Console.WriteLine("args[1] = " + args[1]);
                 //Console.Read();
                 fileStream.Close();
-                if (args[1] == "-asmmodule")
+                if (args[1] == "-asm")
                     typeApp = TypeApp.asmmodule;
                 else if (args[1] == "-dll")
                     typeApp = TypeApp.dll;
@@ -157,41 +158,17 @@ namespace Qscript
                 codes = File.ReadAllLines("codes\\" + filename + ".qs");
             }
 
-            string code = commentLexer.lexCodes(codes);
+            (string code, CodeStruct codeStruct) = commentLexer.lexCodes(codes);
+            Syntax.code = codeStruct;
 
             lexer = new Lexer();
-            //stringLexer = new StringLexer(lexer.lexAnalysis());
-            //List<List<Token>> tokens =  stringLexer.LexStrings();
-            //tokens = tokens;
+
+
             List<Token> list = lexer.lexAnalysis();
-            List<Token> list2 = includeLexer.lexIncludes(list);
-            list = includeLexer.destroyIncludes(list);
-            list2.AddRange(list);
-            list = list2;
+            list = preproccessor.lexIncludes(list);
 
-            List<Token> forType = new List<Token>();
-            List<Token> forVar = new List<Token>();
 
-            int index = 0;
-            /*foreach (Token token in list2)
-            {
-                string spaces = "";
-                for (int i = 0; i < 16 - token.type.type.Length; i++)
-                {
-                    spaces += " ";
-                }
-                if (token.type.type == "TYPE")
-                    forType.Add(token);
-                else if (token.type.type == "VAR")
-                    forVar.Add(token);
-                Console.WriteLine($"[DEBUG] Токен позиция:{token.pos} в списке:{index} тип:{token.type.type}" + spaces + $"значение:{token.value}");
-                index++;
-            }*/
-
-            //Console.WriteLine("[DEBUG] -- Debuging TYPE --");
-            //PrintListToken(forType);
-            //Console.WriteLine("[DEBUG] -- Debuging VAR --");
-            //PrintListToken(forVar);                     
+            //int index = 0;                  
             parser = new Parser(list);
             ProgramNode ast = parser.parseCode();
 
@@ -214,24 +191,8 @@ namespace Qscript
 
             Compiler compiler = new Compiler("dsd", ast);
             compiler.Translation(ast, 0);
-            /*Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("[DEBUG] SECTION DATA");
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine(compiler._objProg.data.ToString());
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("[DEBUG] SECTION codeData");
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.WriteLine(compiler._objProg.codeData.ToString());
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.WriteLine("[DEBUG] SECTION procData");
-            Console.ForegroundColor = ConsoleColor.Magenta;
-            Console.WriteLine(compiler._objProg.procData.ToString());
-            Console.WriteLine("[DEBUG] SECTION macroData");
-            Console.ForegroundColor = ConsoleColor.DarkGreen;
-            Console.WriteLine(compiler._objProg.macroData.ToString());
-            Console.ResetColor();*/
 
-            string data = compiler.ConcatData(TypeApp.program32);
+            string data = compiler.ConcatData(typeApp);
             compiler.WriteCode(data, filename, pathCompile, "qsr");
 
             if (args.Length != 0)
