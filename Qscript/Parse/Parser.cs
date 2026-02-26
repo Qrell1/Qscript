@@ -157,6 +157,15 @@ namespace Qscript
 
         public CommonNode parsePar()
         {
+            if (tokens[pos].type.type == "LPAR" && tokens[pos + 1].type.type == "VAR" && tokens[pos + 2].type.type == "RPAR")
+            {
+                skip();
+                CommonNode typeOper = new CommonNode("TYPEOPER", take());
+                skip();
+                CommonNode parNode = parsePar();
+                typeOper.childs.Add(parNode);
+                return typeOper;
+            }
             if (peek("LPAR"))
             {
                 skip();
@@ -178,6 +187,24 @@ namespace Qscript
         {
             Token token = take();
 
+            /*if (token.type.type == "LPAR" && tokens[pos + 1].type.type == "VAR" && tokens[pos + 2].type.type == "RPAR")
+            {
+                CommonNode typeOper = new CommonNode("TYPEOPER", take());
+                skip();
+                token = take();
+            }*/
+            if (token.value == "-" && peek("NUMBER"))
+            {
+                Token number = take();
+                number.value = token.value + number.value;
+                return new CommonNode("NUMBER", number);
+            }
+            if (token.value == "-" && peek("FLOAT"))
+            {
+                Token floatn = take();
+                floatn.value = token.value + floatn.value;
+                return new CommonNode("FLOAT", floatn);
+            }
             if (token.type.type == "PREFIX" && (token.value == "++" || token.value == "--"))
             {
                 CommonNode unarNode = new CommonNode("PREUNAROPER", token); expect("VAR");

@@ -100,12 +100,18 @@ namespace Qscript.Lex
                 {
                     continue;
                 }*/
-
                 Match regx = Regex.Match(code.strings[stringIndex].Substring(pos), "^" + tokenType.regx);
                 if (regx.Success && !string.IsNullOrEmpty(regx.Value))
                 {
                     //tokenValue = regx.Value.Length;
                     //Console.WriteLine($"[LEXER] Найден токен: {tokenType.type} значение: {regx.Value}");
+                    if (regx.Value == "&" && code.strings[stringIndex][pos+1] == '&')
+                    {
+                        Token tokenCmp = new Token(TokenTypeList.tokenTypes["OPER"], "&&", pos);
+                        tokenList.Add(tokenCmp);
+                        pos+=2;
+                        return true;
+                    }
                     int length = regx.Value.Length;
                     Token token;
                     if (tokenType.type == "STRING")

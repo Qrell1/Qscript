@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.11.35327.3
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Qscript", "Qscript\Qscript.csproj", "{F48CB488-6A63-4C50-AF73-B81CF0E96F05}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QscriptNt", "Qscript\QscriptNt.csproj", "{F48CB488-6A63-4C50-AF73-B81CF0E96F05}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QSicon", "QSicon\QSicon.csproj", "{6F3F287F-A383-44DE-BBDB-540DB3DB1D1F}"
 EndProject
@@ -12,7 +12,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Элементы решен
 		doc.txt = doc.txt
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QASM", "QASM\QASM.csproj", "{076939A8-35B9-48DE-B8A3-42865ADE88A9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "QASM", "QASM\QASM.csproj", "{076939A8-35B9-48DE-B8A3-42865ADE88A9}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

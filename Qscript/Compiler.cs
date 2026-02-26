@@ -306,6 +306,7 @@ namespace Qscript
             if (countString == "ecx") _objProg.code.Append($"pop ecx\n");
              
             _objProg.code.Append($"inc [{varNode.token.value}]\n");
+            if (countString.First() == '[') countString = "eax";
             _objProg.code.Append($"cmp [{varNode.token.value}], {countString}\n");
             _objProg.code.Append($"jne iter{iterTagIndex}\n");
 

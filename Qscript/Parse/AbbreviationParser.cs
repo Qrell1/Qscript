@@ -35,24 +35,225 @@ namespace Qscript
             return null;
         }
 
-        public ProgramNode abbParse (ProgramNode root)
+        public ProgramNode abbParse(ProgramNode root)
         {
             ast = root;
-            ast.childs = parse(root, 0).childs;
+            CommonNode astNode = copyNodes(root);
+            // BinOper Cheak Float
+            astNode = binOperCheak(astNode);
+            // Constant BinOper ReFresh
+            astNode = binOperReFresh(astNode);
+            // Cmp ReFresh
+            astNode = cmpReFresh(astNode);
+            // If destroy
+            astNode = ifCheakDelete(astNode);
+            // General Parse
+            ast.childs.Clear();
+            for (int i = 0; i < astNode.childs.Count; i++) ast.childs.Add(astNode.childs[i]);
+            ast.childs = parse(ast, 0).childs;
             ast.varTypes = varTypes;
             return ast;
         }
 
-        public CommonNode parse (CommonNode root, int z_buffer)
+        private CommonNode binOperCheak (CommonNode root)
+        {
+            /*
+             * Как и по каким признакам мы выявляем присутствие флотовых операций
+             * Некоторые признаки основной узел TYPEOPER и его значени float и ещё конечно переменные флотовые
+             * Ещё функции с результатом флота или же сами флот числа
+             */
+            if (root.type != "BINOPER")
+            {
+                for (int i = 0; i < root.childs.Count; i++) root.childs[i] = binOperCheak(root.childs[i]);
+                return root;
+            }
+            root.childs[0] = binOperCheak(root.childs[0]);
+            root.childs[1] = binOperCheak(root.childs[1]);
+
+            CommonNode leftNode = take(root, 0);
+            CommonNode rightNode = take(root, 1);
+
+            bool flagFloat = false;
+
+            if (leftNode.type == "VAR" && varTypes.ContainsKey(leftNode.token.value) && varTypes[leftNode.token.value].token.value == "float") flagFloat = true;
+            if (rightNode.type == "VAR" && varTypes.ContainsKey(rightNode.token.value) && varTypes[rightNode.token.value].token.value == "float") flagFloat = true;
+
+            if (leftNode.type == "VAR" && ast.resualtFunc.ContainsKey(leftNode.token.value) && ast.resualtFunc[leftNode.token.value].token.value == "float") flagFloat = true;
+            if (rightNode.type == "VAR" && ast.resualtFunc.ContainsKey(rightNode.token.value) && ast.resualtFunc[rightNode.token.value].token.value == "float") flagFloat = true;
+
+
+            if (leftNode.type == "FLOATBINOPER") flagFloat = true;
+            if (rightNode.type == "FLOATBINOPER") flagFloat = true;
+
+
+            if (leftNode.type == "TYPEOPER")
+            {
+                if (leftNode.token.value == "float") flagFloat = true;
+                leftNode = leftNode.childs[0];
+            }
+
+            if (rightNode.type == "TYPEOPER")
+            {
+                if (rightNode.token.value == "float") flagFloat = true;
+                rightNode = rightNode.childs[0];
+            }
+
+            if (flagFloat) root.type = "FLOATBINOPER";
+
+            return root;
+        }
+
+        private CommonNode binOperReFresh(CommonNode root)
+        {
+            /*
+             * Как и по каким признакам мы выявляем что можно сокротить константы
+             * Ну конечно во первых если 2 оператора числа или флоты но это для флотовых
+             * 
+             */
+            if (root.type != "BINOPER" && root.type != "FLOATBINOPER")
+            {
+                for (int i = 0; i < root.childs.Count; i++) root.childs[i] = binOperReFresh(root.childs[i]);
+                return root;
+            }
+            root.childs[0] = binOperReFresh(root.childs[0]);
+            root.childs[1] = binOperReFresh(root.childs[1]);
+
+            CommonNode leftNode = take(root, 0);
+            CommonNode rightNode = take(root, 1);
+
+            CommonNode reFreshNode = null;
+
+            if (root.type == "FLOATBINOPER")
+            {
+                if (leftNode.type == "FLOAT" && rightNode.type == "FLOAT")
+                    switch (root.token.value)
+                    {
+                        case "+": reFreshNode = new CommonNode("FLOAT", new Token(leftNode.token.type,
+                    Convert.ToString(Convert.ToDouble(leftNode.token.value) + Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
+                        case "-":
+                            reFreshNode = new CommonNode("FLOAT", new Token(leftNode.token.type,
+                    Convert.ToString(Convert.ToDouble(leftNode.token.value) - Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
+                        case "*":
+                            reFreshNode = new CommonNode("FLOAT", new Token(leftNode.token.type,
+                    Convert.ToString(Convert.ToDouble(leftNode.token.value) * Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
+                        case "/":
+                            reFreshNode = new CommonNode("FLOAT", new Token(leftNode.token.type,
+                    Convert.ToString(Convert.ToDouble(leftNode.token.value) / Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
+                        case "%":
+                            reFreshNode = new CommonNode("FLOAT", new Token(leftNode.token.type,
+                    Convert.ToString(Convert.ToDouble(leftNode.token.value) % Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
+                    }
+            } else if (root.type == "BINOPER")
+            {
+                if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
+                    switch (root.token.value)
+                    {
+                        case "+":
+                            reFreshNode = new CommonNode("NUMBER", new Token(leftNode.token.type,
+                    Convert.ToString(Convert.ToInt32(leftNode.token.value) + Convert.ToInt32(rightNode.token.value)), root.token.pos)); break;
+                        case "-":
+                            reFreshNode = new CommonNode("NUMBER", new Token(leftNode.token.type,
+                    Convert.ToString(Convert.ToInt32(leftNode.token.value) - Convert.ToInt32(rightNode.token.value)), root.token.pos)); break;
+                        case "*":
+                            reFreshNode = new CommonNode("NUMBER", new Token(leftNode.token.type,
+                    Convert.ToString(Convert.ToInt32(leftNode.token.value) * Convert.ToInt32(rightNode.token.value)), root.token.pos)); break;
+                        case "/":
+                            reFreshNode = new CommonNode("NUMBER", new Token(leftNode.token.type,
+                    Convert.ToString(Convert.ToInt32(leftNode.token.value) / Convert.ToInt32(rightNode.token.value)), root.token.pos)); break;
+                        case "%":
+                            reFreshNode = new CommonNode("NUMBER", new Token(leftNode.token.type,
+                    Convert.ToString(Convert.ToInt32(leftNode.token.value) % Convert.ToInt32(rightNode.token.value)), root.token.pos)); break;
+                    }
+            }
+
+            if (reFreshNode != null) return reFreshNode;
+
+            return root;
+        }
+
+        private CommonNode cmpReFresh(CommonNode root)
+        {
+            /*
+             * //Как и по каким признакам мы выявляем что можно сокротить константы
+             * //Ну конечно во первых если 2 оператора числа или флоты но это для флотовых
+             * 
+             */
+            if (root.type != "CMP")
+            {
+                for (int i = 0; i < root.childs.Count; i++) root.childs[i] = cmpReFresh(root.childs[i]);
+                return root;
+            }
+            root.childs[0] = cmpReFresh(root.childs[0]);
+            root.childs[1] = cmpReFresh(root.childs[1]);
+
+            CommonNode leftNode = take(root, 0);
+            CommonNode rightNode = take(root, 1);
+
+            if (leftNode.type == "CMP" && (leftNode.token.value == "true") &&
+                rightNode.type == "CMP" && (rightNode.token.value == "true")) return new CommonNode(root.type, new Token(root.token.type, "true", root.token.pos));
+            if (leftNode.type == "CMP" && (leftNode.token.value == "false") &&
+                rightNode.type == "CMP" && (rightNode.token.value == "false")) return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
+            if (leftNode.type == "CMP" && rightNode.type == "CMP") return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
+
+
+            bool cmpB = false;
+            bool cmp = false;
+            decimal leftValue = decimal.Zero;
+            decimal rightValue = decimal.Zero;
+
+            leftNode.token.value = leftNode.token.value.Replace("f", "").Replace(".", ",");
+            rightNode.token.value = rightNode.token.value.Replace("f", "").Replace(".", ",");
+
+            if (leftNode.type == "NUMBER" || leftNode.type == "FLOAT") leftValue = Convert.ToDecimal(leftNode.token.value);
+            if (rightNode.type == "NUMBER" || rightNode.type == "FLOAT") rightValue = Convert.ToDecimal(rightNode.token.value);
+
+            if (leftValue != decimal.Zero && rightValue != decimal.Zero)
+            {
+                switch (root.token.value)
+                {
+                    case "==": cmp = (leftValue == rightValue) ? true : false; cmpB = true; break;
+                    case "!=": cmp = (leftValue != rightValue) ? true : false; cmpB = true; break;
+                    case "<=": cmp = (leftValue <= rightValue) ? true : false; cmpB = true; break;
+                    case ">=": cmp = (leftValue >= rightValue) ? true : false; cmpB = true; break;
+                    case "<": cmp = (leftValue < rightValue) ? true : false; cmpB = true; break;
+                    case ">": cmp = (leftValue > rightValue) ? true : false; cmpB = true; break;
+                }
+            }
+            if (cmpB == true) return new CommonNode(root.type, new Token(root.token.type, (cmp) ? "true" : "false", root.token.pos));
+
+            return root;
+        }
+
+        private CommonNode ifCheakDelete(CommonNode root)
+        {
+            if (root.type != "IF")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = ifCheakDelete(root.childs[i]);
+                }
+                return root;
+            }
+
+            CommonNode cmpNode = take(root, 0);
+            CommonNode bodyNode = take(root, 1);
+
+            if (cmpNode.token.value == "false") return new CommonNode("AIR", root.token);
+            if (cmpNode.token.value == "true") return bodyNode;
+
+            return root;
+        }
+
+        public CommonNode parse(CommonNode root, int z_buffer)
         {
             switch (root.type)
             {
                 case "BINOPER":
-                    CommonNode leftNode = take(root, 0);
-                    CommonNode rightNode = take(root, 1);
+                    parseBinOper(root, z_buffer);
+                    //CommonNode leftNode = take(root, 0);
+                    //CommonNode rightNode = take(root, 1);
 
-
-                    if (
+                    /*if (
                         (leftNode.type == "VAR" && rightNode.type == "VAR") &&
                         varTypes.Keys.Contains(leftNode.token.value) && varTypes.Keys.Contains(rightNode.token.value) &&
                         !(leftNode.token.value.Contains(".") || rightNode.token.value.Contains("."))
@@ -169,163 +370,42 @@ namespace Qscript
                         root.token.type.type = "NUMBER";
                         root.token.value = resualt.ToString();
                         break;
-                    }
-
+                    }*/
                     break;
                 case "CONST":
-                    if (take(root, 0).type == "NUMBER")
-                    {
-                        root.childs[0] = parse(root.childs[0], z_buffer + 1);
-                        return root;
-                    }
-                    else if (take(root, 0).type == "STRING")
-                    {
-                        root.childs[0] = parse(root.childs[0], z_buffer + 1);
-                        return root;
-                    }
-                    else if (take(root, 0).type != "BINOPER")
-                        throw new Exception("Ошибка не верный токен ");
-
-                    root.childs[0] = parse(root.childs[0], z_buffer + 1);
-
+                    parseConst(root, z_buffer);
                     break;
                 case "STRING":
                     root.token.value = $"'{root.token.value}', 0";
                     return root;
                     break;
                 case "INLINE":
-                    CommonNode body = take(root, 1);
-                    for (int i = 0; i < body.childs.Count; i++)
-                    {
-                        body.childs[i] = parse(body.childs[i], z_buffer + 2);
-                        if (body.childs[i].type == "RETURN")
-                            throw new Exception("Ошибка в инлайн функции не может быть return");
-                    }
-                    ast.inlineNames.Add(root.token.value);
-                    return root;
+                    return parseInline(root, z_buffer);
                     break;
                 case "FUNC":
-                    if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
-                    CommonNode signature = take(root, 1);
-                    CommonNode bodyFunc = take(root, 2);
-                    List<CommonNode> childs = new List<CommonNode>();
-                    if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !types.Keys.Contains(ast.resualtFunc[root.token.value].token.value))
-                    {
-                        CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", signature.token.pos));
-                        resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
-                        childs.Add(resualtVar);
-                    }
-                    Dictionary<string, CommonNode> varTypesTemp = new Dictionary<string, CommonNode>();
-                    foreach (var v in varTypes)
-                    {
-                        varTypesTemp.Add(v.Key, v.Value);
-                    }
-                    foreach (CommonNode child in signature.childs)
-                    {
-                        varTypes.Add(child.token.value, child.childs[0]);
-                    }
-                    for (int i = 0; i < bodyFunc.childs.Count; i++)
-                    {
-                        bodyFunc.childs[i] = parse(bodyFunc.childs[i], z_buffer + 2);
-                    }
-                    varTypes.Clear();
-                    foreach (var v in varTypesTemp)
-                    {
-                        varTypes.Add(v.Key, v.Value);
-                    }
-                    childs.AddRange(signature.childs);
-                    ast.typesArgsFunc.Add(root.token.value, signature);
-                    signature.childs = childs;
-                    root.childs[1] = signature;
-                    root.childs[2] = bodyFunc;
-                    return root;
+                    return parseFunc(root, z_buffer);
                     break;
                 case "CALL":
-                    if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) root = generationDeclarationFunc(root);
-                    if (take(root, 0).type == "DECLARATOR") Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
-
-                    CommonNode signatureCall = take(root, 0);
-                    for (int j = 0; j < signatureCall.childs.Count; j++)
-                    {
-                        signatureCall.childs[j] = parse(signatureCall.childs[j], z_buffer + 2);
-                    }
-                    root.childs[0] = signatureCall;
-                    return root;
+                    return parseCall(root, z_buffer);
                     break;
                 case "STRUCT":
-                    if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
-                    Dictionary<string, CommonNode> typesVar = new Dictionary<string, CommonNode>();
-                    foreach (CommonNode var in root.childs)
-                    {
-                        typesVar.Add(var.token.value, var.childs[0]);
-                    }
-                    ast.structs.Add(root.token.value, typesVar);
-                    return root;
+                    return parseStruct(root, z_buffer);
                     break;
                 case "CLASS":
                     if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
                     return root;
                     break;
                 case "USING":
-                    if (root.childs.Count != 2) return root;
-                    CommonNode name = take(root, 0);
-                    CommonNode mode = take(root, 1);
-                    if (mode.type == "INLINE" && name.childs.Count == 0) ast.inlineNames.Add(name.token.value);
-                    else if (mode.type == "INLINE")
-                    {
-                        foreach (CommonNode childName in name.childs) ast.inlineNames.Add(childName.token.value);
-                    }
-                    return new CommonNode("AIR", root.token);
+                    return parseUsing(root, z_buffer);
                     break;
                 case "VAR":
-                    if (root.childs.Count > 0)
-                    {
-                        if (varTypes.Keys.Contains(root.token.value))
-                            Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем {root.token.value}!", root);
-
-                        CommonNode type = root.childs[0];
-                        if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
-                        {
-                            type.token.value = generationDeclarationStruct(type, type.childs[0]);
-                            type.childs.Clear();
-                        }
-                        if (root.childs[0].type != "OFFSET") varTypes.Add(root.token.value, type);
-                    }
+                    return parseVar(root, z_buffer);
                     break;
                 case "MODIFIER":
-                    for (int i = 0; i < root.childs.Count; i++)
-                    {
-                        if (root.childs[i].type != "VAR") root.childs[i] = parse(root.childs[i], z_buffer + 1);
-                    }
-                    return root;
+                    return parseModifier(root, z_buffer);
                     break;
                 case "FOR":
-
-                    Dictionary<string, CommonNode> varTypesTempFor = new Dictionary<string, CommonNode>();
-                    foreach (var v in varTypes)
-                    {
-                        varTypesTempFor.Add(v.Key, v.Value);
-                    }
-                    CommonNode recurse(CommonNode commonNode)
-                    {
-                        foreach (var child in commonNode.childs)
-                        {
-                            if (child.childs.Count == 1 && child.childs[0].type == "TYPE") return child;
-                            return recurse(child);
-                        }
-                        return null;
-                    }
-                    //parse(take(root, 0), z_buffer + 1);
-                    CommonNode varNode = recurse(take(root, 0));
-                    if (varNode == null) { Program.PrintAST(root, 0);  Syntax.SyntaxError("Ошибка в объявлениии переменной в цикле For", root); }
-                    parse(take(root, 3), z_buffer + 1);
-                    varTypes.Clear();
-                    foreach (var v in varTypesTempFor)
-                    {
-                        varTypes.Add(v.Key, v.Value);
-                    }
-
-                    return root;
+                    return parseCycle(root, z_buffer);
                     break;
                 default:
                     if (root.childs.Count == 0)
@@ -339,7 +419,191 @@ namespace Qscript
             }
             return root;
         }
+        private CommonNode parseBinOper(CommonNode root, int z_buffer)
+        {
+            CommonNode body = take(root, 1);
+            for (int i = 0; i < body.childs.Count; i++)
+            {
+                body.childs[i] = parse(body.childs[i], z_buffer + 2);
+                if (body.childs[i].type == "RETURN")
+                    throw new Exception("Ошибка в инлайн функции не может быть return");
+            }
+            ast.inlineNames.Add(root.token.value);
+            return root;
+        }
+        private CommonNode parseInline(CommonNode root, int z_buffer)
+        {
+            CommonNode body = take(root, 1);
+            for (int i = 0; i < body.childs.Count; i++)
+            {
+                body.childs[i] = parse(body.childs[i], z_buffer + 2);
+                if (body.childs[i].type == "RETURN")
+                    throw new Exception("Ошибка в инлайн функции не может быть return");
+            }
+            ast.inlineNames.Add(root.token.value);
+            return root;
+        }
+        private CommonNode parseFunc(CommonNode root, int z_buffer)
+        {
+            if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+            CommonNode signature = take(root, 1);
+            CommonNode bodyFunc = take(root, 2);
+            List<CommonNode> childs = new List<CommonNode>();
+            if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !types.Keys.Contains(ast.resualtFunc[root.token.value].token.value))
+            {
+                CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", signature.token.pos));
+                resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
+                childs.Add(resualtVar);
+            }
+            Dictionary<string, CommonNode> varTypesTemp = new Dictionary<string, CommonNode>();
+            foreach (var v in varTypes)
+            {
+                varTypesTemp.Add(v.Key, v.Value);
+            }
+            foreach (CommonNode child in signature.childs)
+            {
+                varTypes.Add(child.token.value, child.childs[0]);
+            }
+            for (int i = 0; i < bodyFunc.childs.Count; i++)
+            {
+                bodyFunc.childs[i] = parse(bodyFunc.childs[i], z_buffer + 2);
+            }
+            varTypes.Clear();
+            foreach (var v in varTypesTemp)
+            {
+                varTypes.Add(v.Key, v.Value);
+            }
+            childs.AddRange(signature.childs);
+            ast.typesArgsFunc.Add(root.token.value, signature);
+            signature.childs = childs;
+            root.childs[1] = signature;
+            root.childs[2] = bodyFunc;
+            return root;
+        }
+        private CommonNode parseModifier(CommonNode root, int z_buffer)
+        {
+            for (int i = 0; i < root.childs.Count; i++)
+            {
+                if (root.childs[i].type != "VAR") root.childs[i] = parse(root.childs[i], z_buffer + 1);
+            }
+            return root;
+        }
+        private CommonNode parseStruct(CommonNode root, int z_buffer)
+        {
+            if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+            Dictionary<string, CommonNode> typesVar = new Dictionary<string, CommonNode>();
+            foreach (CommonNode var in root.childs)
+            {
+                typesVar.Add(var.token.value, var.childs[0]);
+            }
+            ast.structs.Add(root.token.value, typesVar);
+            return root;
+        }
+        private CommonNode parseUsing(CommonNode root, int z_buffer)
+        {
+            if (root.childs.Count != 2) return root;
+            CommonNode name = take(root, 0);
+            CommonNode mode = take(root, 1);
+            if (mode.type == "INLINE" && name.childs.Count == 0) ast.inlineNames.Add(name.token.value);
+            else if (mode.type == "INLINE")
+            {
+                foreach (CommonNode childName in name.childs) ast.inlineNames.Add(childName.token.value);
+            }
+            return new CommonNode("AIR", root.token);
+        }
+        private CommonNode parseCall(CommonNode root, int z_buffer)
+        {
+            if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) root = generationDeclarationFunc(root);
+            if (take(root, 0).type == "DECLARATOR") Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
 
+            CommonNode signatureCall = take(root, 0);
+            for (int j = 0; j < signatureCall.childs.Count; j++)
+            {
+                signatureCall.childs[j] = parse(signatureCall.childs[j], z_buffer + 2);
+            }
+            root.childs[0] = signatureCall;
+            return root;
+        }
+        private CommonNode parseVar(CommonNode root, int z_buffer)
+        {
+            if (root.childs.Count > 0)
+            {
+                if (varTypes.Keys.Contains(root.token.value))
+                    Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем {root.token.value}!", root);
+
+                CommonNode type = root.childs[0];
+                if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
+                {
+                    type.token.value = generationDeclarationStruct(type, type.childs[0]);
+                    type.childs.Clear();
+                }
+                if (root.childs[0].type != "OFFSET") varTypes.Add(root.token.value, type);
+            }
+            return root;
+        }
+        private CommonNode parseConst(CommonNode root, int z_buffer)
+        {
+            if (take(root, 0).type == "NUMBER")
+            {
+                root.childs[0] = parse(root.childs[0], z_buffer + 1);
+                return root;
+            }
+            else if (take(root, 0).type == "STRING")
+            {
+                root.childs[0] = parse(root.childs[0], z_buffer + 1);
+                return root;
+            }
+            else if (take(root, 0).type != "BINOPER")
+                throw new Exception("Ошибка не верный токен ");
+
+            root.childs[0] = parse(root.childs[0], z_buffer + 1);
+            return root;
+        }
+        private CommonNode parseCycle(CommonNode root, int z_buffer)
+        {
+            if (root.type == "FOR")
+            {
+                Dictionary<string, CommonNode> varTypesTempFor = new Dictionary<string, CommonNode>();
+                foreach (var v in varTypes)
+                {
+                    varTypesTempFor.Add(v.Key, v.Value);
+                }
+                CommonNode recurse(CommonNode commonNode)
+                {
+                    foreach (var child in commonNode.childs)
+                    {
+                        if (child.childs.Count == 1 && child.childs[0].type == "TYPE") return child;
+                        return recurse(child);
+                    }
+                    return null;
+                }
+                //parse(take(root, 0), z_buffer + 1);
+                CommonNode varNode = recurse(take(root, 0));
+                if (varNode == null) { Program.PrintAST(root, 0); Syntax.SyntaxError("Ошибка в объявлениии переменной в цикле For", root); }
+                parse(take(root, 3), z_buffer + 1);
+                varTypes.Clear();
+                foreach (var v in varTypesTempFor)
+                {
+                    varTypes.Add(v.Key, v.Value);
+                }
+            }
+            return root;
+        }
+
+
+
+        private CommonNode copyNodes (CommonNode root)
+        {
+            CommonNode rootNode = new CommonNode(root.type, new Token(root.token.type, root.token.value, root.token.pos));
+            List<CommonNode> nodes = new List<CommonNode>();
+
+            for (int i = 0; i < root.childs.Count; i++)
+            {
+                nodes.Add(copyNodes(root.childs[i]));
+            }
+            rootNode.childs = nodes;
+            return rootNode;
+        }
         private CommonNode replaceNodes (CommonNode rootNode, ref Dictionary<string, string> table)
         {
             CommonNode root = new CommonNode(rootNode.type, new Token(rootNode.token.type, rootNode.token.value, rootNode.token.pos));
