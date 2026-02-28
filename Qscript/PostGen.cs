@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Qscript
 {
@@ -33,13 +34,13 @@ namespace Qscript
         {
             //{ "r", "(eax|edx|ebx|ecx|esi|edi|esp|ebp)"},
             { "t", " "},
-            { "r", "(rax|rdx|rbx|rcx|rsi|rdi|rsp|rbp|eax|edx|ebx|ecx|esi|edi|esp|ebp|al|dx|bx|cx|si|di|sp|bp)"},
+            { "r", @"\b(rax|rdx|rbx|rcx|rsi|rdi|rsp|rbp|eax|edx|ebx|ecx|esi|edi|esp|ebp|al|dx|bx|cx|si|di|sp|bp)\b"},
             { "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
             { "i", "\\.?[a-z\\\\.A-Z_][a-z\\\\.A-Z\\\\.0-9_]*\\:" },
             { "m", "\\[[^\\[\\]]+\\]" },
             //{ "m", @"\b\[^\[\]+\]\b" },
             //{ "m", @"\[^\[\]+\]" },
-            { "v", ".?[a-z\\.A-Z_][a-z\\.A-Z\\.0-9_]*" },
+            { "v", "[a-z\\.A-Z_][a-z\\.A-Z\\.0-9_]*" },
             { "n", "-?[0-9]+" },
             { "o", "(/|\\*|\\-|\\+)"},
             { "s", "'[^'']*'" },
@@ -49,6 +50,8 @@ namespace Qscript
             //{ "cm", @";^\[\]"}
         };
 
+        public static ProgramNode ProgramAst;
+
         //public static  pattern1;// = {{  }, {" mov","m","eax" }};
         //public static List<> patterns;
         static PostGen ()
@@ -56,7 +59,7 @@ namespace Qscript
 
         }
 
-        public static objProgram PostTranslation(objProgram _objProgram)
+        public static objProgram PostTranslation(objProgram _objProgram, ProgramNode _ProgramAst)
         {
             objProgram objProgramResualt = new objProgram();
             objProgramResualt.stringsConsts = _objProgram.stringsConsts;
@@ -64,6 +67,8 @@ namespace Qscript
             objProgramResualt.codeData = _objProgram.codeData;
             objProgramResualt.includes = _objProgram.includes;
             objProgramResualt.data = _objProgram.data;
+            
+            ProgramAst = _ProgramAst;
 
             int line;
 
@@ -138,7 +143,8 @@ namespace Qscript
         public static StringData Translation (List<instruct> instructs)
         {
             StringData resualt = new StringData();
-
+            bool func = false;
+            Dictionary<string, string> varLocal = new Dictionary<string, string>();
             for (int i = 0; i < instructs.Count; i++)
             {
                 instruct _instuct = instructs[i];
@@ -148,6 +154,8 @@ namespace Qscript
                 {
                     _instructSecond = instructs[i + 1];
 
+
+
                     List<patternNode> pattern1 = new List<patternNode>();
                     List<patternNode> pattern2 = new List<patternNode>();
 
@@ -156,16 +164,73 @@ namespace Qscript
                     string str2 = _instructSecond.value + "|";
                     foreach (var key in _instructSecond.pattern) { if (key.key == "ts" || key.key == "t") continue; str2 += key.key; pattern2.Add(key); }
 
+                    if (_instuct.value == "proc")
+                    {
+                        func = true;
+                        int pos = 1;
+                        while (true)
+                        {
+                            if (pattern1[pos].key == "i") {
+                                varLocal.Add(pattern1[pos].value.Remove(pattern1[pos].value.Length-1,1), pattern1[pos + 1].value);
+                                pattern1[pos + 1].value = "DWORD";
+                                pos += 2;
+                            } else { break; }
+                        }
+                        pos = 0;
+                        while (true) { if (_instuct.pattern[pos].key == "v") break; else pos++; }
+                        pos++;
+                        for (int j = pos; j < _instuct.pattern.Count; j++)
+                            if (_instuct.pattern[j].key == "v") 
+                                _instuct.pattern[j].value = "DWORD";
+                        resualt.Append(InstructConcat(_instuct));
+                        continue;
+                    }
+                    else if (_instuct.value == "endp") { func = false; varLocal.Clear(); resualt.Append("endp\n"); continue; }
+
+                    if (func)
+                    {
+                        bool flag = false;
+                        for (int j = 0; j < _instuct.pattern.Count; j++)
+                        {
+                            if (_instuct.pattern[j].key == "m")
+                            {
+                                CommonNode type;
+                                string v1 = _instuct.pattern[j].value.Trim();
+                                v1 = v1.Remove(v1.Length - 1, 1);//.Remove(0, 1);
+                                v1 = v1.Remove(0, 1);
+                                int n = 0;
+                                string[] strs = v1.Split('.');
+                                if (!varLocal.ContainsKey(strs[0])) break;
+                                if (Compiler.typesarg.ContainsValue(varLocal[strs[0]])) break;
+                                string var = string.Empty;
+                                for (int k = 1; k < strs.Length; k++)
+                                {
+                                    var += "." + strs[k];
+                                }
+                                resualt.Append($"mov eax, [{strs[0]}]");
+                                string resualtStr = "[" + "eax" + " + " + varLocal[strs[0]] + var + "]";
+                                _instuct.pattern[j].value = resualtStr;
+                                flag = true;
+                            }
+                        }
+                        if (flag)
+                        {
+                            resualt.Append(InstructConcat(_instuct));
+                            continue;
+                        }
+                    }
+
                     // |case1| -- global
                     //if (InstructPattern(str, str2) && _instuct.value == "mov")
                     //{
-                        //resualt.Append(InstructConcat(_instuct)); i++;
-                        //continue;
+                    //resualt.Append(InstructConcat(_instuct)); i++;
+                    //continue;
                     //}
                     if (pattern1[0].value == "[i]" || pattern2[0].value == "[i]")
                     {
                         pattern1 = pattern1;
                     }
+
                     // |case1| -- cmp
                     if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "cmp|rn") && InstructCmpReg(pattern1, pattern2))
                     {

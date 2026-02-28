@@ -19,7 +19,7 @@ namespace Qscript
     }
     public enum TypeApp
     {
-        dll, program32, program64, asmmodule, h
+        dll, program32, program64, asmmodule, h, gui
     }
     public class objProgram
     {
@@ -45,7 +45,10 @@ namespace Qscript
 
         private List<string> vars = new List<string>();
 
-        private Dictionary<string, string> types = new Dictionary<string, string>()
+        private Dictionary<string, CommonNode> tempVars;
+        private bool localVars = false;
+
+        public static Dictionary<string, string> types = new Dictionary<string, string>()
         {
             {"int32", "dd"},
             {"int16", "dw"},
@@ -56,7 +59,7 @@ namespace Qscript
             {"float", "dd"},
             {"int32_a", "dd"}
         };
-        private Dictionary<string, string> typesarg = new Dictionary<string, string>()
+        public static Dictionary<string, string> typesarg = new Dictionary<string, string>()
         {
             {"int32", "DWORD"},
             {"int16", "WORD"},
@@ -89,6 +92,7 @@ namespace Qscript
 
         private int iterTagIndex;
 
+
         public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; }
 
 
@@ -99,6 +103,30 @@ namespace Qscript
                 return node.childs[i];
             }
             return null;
+        }
+
+        private Dictionary<string, CommonNode> copyVars(Dictionary<string, CommonNode> copy)
+        {
+            Dictionary<string, CommonNode> ts = new Dictionary<string, CommonNode>();
+
+            foreach (var var in copy)
+                ts.Add(var.Key, var.Value);
+
+            return ts;
+        }
+
+        public void localVarTypes (CommonNode vars = null)
+        {
+            if (!localVars)
+            {
+                tempVars = copyVars(ProgramAst.varTypes);
+                localVars = true;
+                foreach (var var in vars.childs) ProgramAst.varTypes.Add(var.token.value, var.childs[0]);
+            } else
+            {
+                ProgramAst.varTypes = copyVars(tempVars);
+                localVars = false;
+            }
         }
 
         public void setWriteData (CodeData data)
@@ -1171,14 +1199,14 @@ namespace Qscript
             string args = string.Empty;
             for (int i = 0; i < signature.childs.Count; i++)
             {
-                if (i != 0) args += ",";
+                if (i != 0) args += " , ";
                 //if (signature.childs[i].token.value == "resualtPtr")
                     //args += $"{signature.childs[i].token.value}:DWORD";
                 if (typesarg.ContainsKey(signature.childs[i].childs[0].token.value))
                     args += $"{signature.childs[i].token.value}:{typesarg[signature.childs[i].childs[0].token.value]}";
                 else
-                    //args += $"{signature.childs[i].token.value}:{signature.childs[i].childs[0].token.value}";
-                    args += $"{signature.childs[i].token.value}:DWORD";
+                    args += $"{signature.childs[i].token.value}:{signature.childs[i].childs[0].token.value}";
+                    //args += $"{signature.childs[i].token.value}:DWORD";
                 args += " ";
             }
             if (args.Length != 0)
@@ -1189,7 +1217,9 @@ namespace Qscript
             returnType = take(root, 0);
             funcName = root.token.value;
             func = true;
+            localVarTypes(signature);
             Translation(take(root, 2), z_buffer + 1);
+            localVarTypes();
             func = false;
             /*
                 mov edi, mc2
@@ -1371,7 +1401,54 @@ namespace Qscript
             //string sizeConst = $"sizeof.{name}";
             return sizeConst;
         }
-        
+
+        /*public string getSize(string name)
+        {
+            CommonNode type;
+            string namePtr;
+            if (name.Contains("."))
+            {
+                int n = 0;
+                string[] strs = name.Split('.');
+                string strct = ProgramAst.varTypes[strs[0]].token.value;
+            start:
+                if (
+                    !ProgramAst.structs.ContainsKey(strct) ||
+                    !ProgramAst.structs[strct].ContainsKey(strs[n + 1])
+                    )
+                {
+                    Syntax.SyntaxError($"Ошибка Поле:{strs[n + 1]} не существует в {strct}", ProgramAst);
+                }
+                type = ProgramAst.structs[strct][strs[n + 1]];
+                strct = type.token.value;
+                //if (n == strs.Length) { }
+                if (!types.ContainsKey(type.token.value)) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
+            }
+            else type = ProgramAst.varTypes[name];
+            //CommonNode type = ProgramAst.varTypes[name];
+            //string classes = "";
+            //string sizeConst = "";
+            if (types.Keys.Contains(type.token.value))
+            {
+                //classes = types[type.token.value];
+                /*switch (classes)
+                {
+                    case "db": sizeConst = "1"; break;
+                    case "dw": sizeConst = "2"; break;
+                    case "dd": sizeConst = "4"; break;
+                }
+                return name;
+            }
+            else
+            {
+                return  type.token.value;
+            }
+            //sizeConst = $"SIZE_{type.token.value.ToUpper()}";
+            //classes = type.token.value;
+            //string sizeConst = $"sizeof.{name}";
+            return sizeConst;
+        }*/
+
         // ВРЕМЕННЫЙ СУПЕР ГОВНОКОД   
         public void parseAsm (CommonNode root)
         {
@@ -1401,7 +1478,7 @@ namespace Qscript
 
         public string ConcatData (TypeApp typeApp)
         {
-            _objProg = PostGen.PostTranslation(_objProg);
+            _objProg = PostGen.PostTranslation(_objProg, ProgramAst);
             string file = string.Empty;
             file += _objProg.includes.ToString();
             file += "\n";
@@ -1422,7 +1499,14 @@ namespace Qscript
                 //file += _objProg.codeData.ToString();
                 //return file;
             ///}
-            if (typeApp == TypeApp.asmmodule)
+            ///
+            if (typeApp == TypeApp.gui)
+            {
+                file = "format PE GUI 4.0\n\nentry start\n" + file;
+                file += "start: ;START MAIN\n";
+                file += _objProg.codeData.ToString();
+            }
+            else if (typeApp == TypeApp.asmmodule)
             {
             }
             else if (typeApp == TypeApp.dll)

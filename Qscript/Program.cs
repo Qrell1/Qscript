@@ -144,6 +144,8 @@ namespace Qscript
                 fileStream.Close();
                 if (args[1] == "-asm")
                     typeApp = TypeApp.asmmodule;
+                if (args[1] == "-gui")
+                    typeApp = TypeApp.gui;
                 else if (args[1] == "-dll")
                     typeApp = TypeApp.dll;
                 else if (args[1] == "-program32")

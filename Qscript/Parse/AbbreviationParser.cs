@@ -39,10 +39,14 @@ namespace Qscript
         {
             ast = root;
             CommonNode astNode = copyNodes(root);
+            // Replace Constant Var Value
+            astNode = replaceConstantVarValue(astNode);
             // BinOper Cheak Float
             astNode = binOperCheak(astNode);
             // Constant BinOper ReFresh
             astNode = binOperReFresh(astNode);
+            // Second Repcale Constant Var Value
+            astNode = replaceConstantVarValue(astNode);
             // Cmp ReFresh
             astNode = cmpReFresh(astNode);
             // If destroy
@@ -55,7 +59,88 @@ namespace Qscript
             return ast;
         }
 
-        private CommonNode binOperCheak (CommonNode root)
+        // Вспомогательные функции
+        private Dictionary<CommonNode, CommonNode> cheakAllVarInLocal(CommonNode root)
+        {
+            if (root == null) return null;
+            if (root.type == "VAR" && root.childs.Count != 0 && root.childs[0].type == "TYPE")
+                return new Dictionary<CommonNode, CommonNode> { { root, null } };
+
+            Dictionary<CommonNode, CommonNode> resualt = new Dictionary<CommonNode, CommonNode>();
+            for (int i = 0; i < root.childs.Count; i++)
+            {
+                Dictionary<CommonNode, CommonNode> vars = cheakAllVarInLocal(root.childs[i]);
+                if (vars != null && vars.Count != 0) foreach (var child in vars) resualt.Add(child.Key, child.Value);
+            }
+            if (resualt.Count != 0) return resualt;
+            else return null;
+        }
+        private bool varContains (CommonNode root, Dictionary<CommonNode, CommonNode> vars)
+        {
+            foreach (var var in vars) if (var.Key.token.value == root.token.value) return true;
+            return false;
+        }
+        private CommonNode getVar (CommonNode root, Dictionary<CommonNode, CommonNode> vars)
+        {
+            foreach (var var in vars) if (var.Key.token.value == root.token.value) return var.Key;
+            return null;
+        }
+        private CommonNode getVarValue (CommonNode root, Dictionary<CommonNode, CommonNode> vars)
+        {
+            foreach (var var in vars) if (var.Key.token.value == root.token.value) return var.Value;
+            return null;
+        }
+
+        private CommonNode replaceConstantVarValue(CommonNode root, Dictionary<CommonNode, CommonNode> varsLocal = null)
+        {
+            if (root.token.value == "=" && root.childs[0].type == "VAR"
+                && varsLocal != null && varContains(root.childs[0], varsLocal)
+                && (root.childs[1].type == "NUMBER" || root.childs[1].type == "FLOAT" || root.childs[1].type == "STRING" || root.childs[1].type == "CHAR")
+                )
+            {
+                varsLocal[getVar(root.childs[0], varsLocal)] = root.childs[1];
+            }
+            if (root.type == "BINOPER" && root.token.value != "=" && root.childs[0].type == "VAR" && varsLocal != null
+                && varContains(root.childs[0], varsLocal) && getVarValue(root.childs[0], varsLocal) != null)
+            {
+                varsLocal[getVar(root.childs[0], varsLocal)] = null;
+            }
+            if (root.type == "BINOPER" && root.token.value != "=" && root.childs[1].type == "VAR" && varsLocal != null
+                && varContains(root.childs[1], varsLocal) && getVarValue(root.childs[1], varsLocal) != null)
+            {
+                varsLocal[getVar(root.childs[1], varsLocal)] = null;
+            }
+            if (root.type == "BINOPER" && root.token.value != "=" && root.childs[0].type == "VAR" && varsLocal != null
+                && varContains(root.childs[0], varsLocal) && getVarValue(root.childs[0], varsLocal) != null)
+            {
+                root.childs[0] = getVarValue(root.childs[0], varsLocal);
+            }
+            if (root.type == "BINOPER" && root.childs[1].type == "VAR" && varsLocal != null
+                && varContains(root.childs[1], varsLocal) && getVarValue(root.childs[1], varsLocal) != null)
+            {
+                root.childs[1] = getVarValue(root.childs[1], varsLocal);
+            }
+            for (int i = 0; i < root.childs.Count; i++)
+            {
+                if (root.type != "BINOPER" && root.type != "FLOATBINOPER" && root.childs[i].type == "VAR"
+                    && root.childs[i].childs.Count == 0 && varsLocal != null
+                    && varContains(root.childs[i], varsLocal) && getVarValue(root.childs[i], varsLocal) != null)
+                    root.childs[i] = getVarValue(root.childs[i], varsLocal);
+            }
+            try
+            {
+                Dictionary<CommonNode, CommonNode> vars = cheakAllVarInLocal(root);
+                if (varsLocal != null && vars != null) foreach (var child in varsLocal)
+                        if (!vars.ContainsKey(child.Key)) vars.Add(child.Key, child.Value);
+
+                for (int i = 0; i < root.childs.Count; i++)
+                    root.childs[i] = replaceConstantVarValue(root.childs[i], vars);
+            }
+            catch { Console.WriteLine("CONSTANT VAR ERROR"); }
+
+            return root;
+        }
+        private CommonNode binOperCheak(CommonNode root)
         {
             /*
              * Как и по каким признакам мы выявляем присутствие флотовых операций
@@ -81,6 +166,8 @@ namespace Qscript
             if (leftNode.type == "VAR" && ast.resualtFunc.ContainsKey(leftNode.token.value) && ast.resualtFunc[leftNode.token.value].token.value == "float") flagFloat = true;
             if (rightNode.type == "VAR" && ast.resualtFunc.ContainsKey(rightNode.token.value) && ast.resualtFunc[rightNode.token.value].token.value == "float") flagFloat = true;
 
+            if (leftNode.type == "VAR" && ast.typesArgsFunc.ContainsKey(leftNode.token.value) && ast.typesArgsFunc[leftNode.token.value].token.value == "float") flagFloat = true;
+            if (rightNode.type == "VAR" && ast.typesArgsFunc.ContainsKey(rightNode.token.value) && ast.typesArgsFunc[rightNode.token.value].token.value == "float") flagFloat = true;
 
             if (leftNode.type == "FLOATBINOPER") flagFloat = true;
             if (rightNode.type == "FLOATBINOPER") flagFloat = true;
@@ -193,16 +280,19 @@ namespace Qscript
                 rightNode.type == "CMP" && (rightNode.token.value == "true")) return new CommonNode(root.type, new Token(root.token.type, "true", root.token.pos));
             if (leftNode.type == "CMP" && (leftNode.token.value == "false") &&
                 rightNode.type == "CMP" && (rightNode.token.value == "false")) return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
-            if (leftNode.type == "CMP" && rightNode.type == "CMP") return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
-
+            if (leftNode.type == "CMP" && rightNode.type == "CMP" && root.token.value == "&&") return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
+            if (leftNode.type == "CMP" && rightNode.type == "CMP" && root.token.value == "||") return new CommonNode(root.type, new Token(root.token.type, "true", root.token.pos));
 
             bool cmpB = false;
             bool cmp = false;
             decimal leftValue = decimal.Zero;
             decimal rightValue = decimal.Zero;
 
-            leftNode.token.value = leftNode.token.value.Replace("f", "").Replace(".", ",");
-            rightNode.token.value = rightNode.token.value.Replace("f", "").Replace(".", ",");
+            leftNode.token.value = leftNode.token.value.Replace(".", ",");
+            rightNode.token.value = rightNode.token.value.Replace(".", ",");
+
+            if (leftNode.type == "FLOAT") leftNode.token.value = leftNode.token.value.Replace("f", "");
+            if (rightNode.type == "FLOAT") rightNode.token.value = rightNode.token.value.Replace("f", "");
 
             if (leftNode.type == "NUMBER" || leftNode.type == "FLOAT") leftValue = Convert.ToDecimal(leftNode.token.value);
             if (rightNode.type == "NUMBER" || rightNode.type == "FLOAT") rightValue = Convert.ToDecimal(rightNode.token.value);
@@ -248,8 +338,8 @@ namespace Qscript
         {
             switch (root.type)
             {
-                case "BINOPER":
-                    parseBinOper(root, z_buffer);
+                //case "BINOPER":
+                    //parseBinOper(root, z_buffer);
                     //CommonNode leftNode = take(root, 0);
                     //CommonNode rightNode = take(root, 1);
 
@@ -371,7 +461,7 @@ namespace Qscript
                         root.token.value = resualt.ToString();
                         break;
                     }*/
-                    break;
+                    //break;
                 case "CONST":
                     parseConst(root, z_buffer);
                     break;
