@@ -85,13 +85,13 @@ namespace Qscript
             StringData procData = new StringData();
             List<instruct> procList = LexInstructs(_objProgram.procData);
             line = procList.Count;
-            while (true)
-            {
+            //while (true)
+            //{
                 objProgramResualt.procData = Translation(procList, varGlobal);
                 procList = LexInstructs(objProgramResualt.procData);
-                if (line == procList.Count) break;
+                //if (line <= procList.Count) break;
                 line = procList.Count;
-            }
+            //}
 
             List<instruct> codeList = LexInstructs(_objProgram.codeData);
             objProgramResualt.codeData = Translation(codeList, varGlobal);
@@ -100,7 +100,7 @@ namespace Qscript
             //{
                 objProgramResualt.codeData = Translation(codeList, varGlobal);
                 codeList = LexInstructs(objProgramResualt.codeData);
-                //if (line == codeList.Count) break;
+                //if (line <= codeList.Count) break;
                 line = codeList.Count;
             //}
 
@@ -217,7 +217,7 @@ namespace Qscript
                                 {
                                     var += "." + strs[k];
                                 }
-                                resualt.Append($"mov ecx, [{strs[0]}]");
+                                resualt.Append($"mov ecx, [{strs[0]}]\n");
                                 string resualtStr;
                                 if (strs.Length < 2) resualtStr = "[ecx]";//$"[{strs[0]}]";
                                 else resualtStr = "[" + $"ecx" + " + " + varLocal[strs[0]] + var + "]";
@@ -361,6 +361,13 @@ namespace Qscript
                     if (InstructPattern(str, "mov|rn") && InstructPattern(str2, "push|n") && pattern1[1].value == pattern2[0].value)
                     {
                         resualt.Append(InstructConcat(_instructSecond)); i++;
+                        continue;
+                    }
+
+                    // |case14| - void
+                    if (InstructPattern(str, "mov|mr") && InstructPattern(str2, "mov|rm") && pattern1[1].value == pattern2[0].value)
+                    {
+                        resualt.Append(InstructConcat(_instuct)); i++;
                         continue;
                     }
 
