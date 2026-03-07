@@ -622,6 +622,7 @@ namespace Qscript
                     Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем {root.token.value}!", root);
 
                 CommonNode type = root.childs[0];
+                
                 if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
                 {
                     type.token.value = generationDeclarationStruct(type, type.childs[0]);

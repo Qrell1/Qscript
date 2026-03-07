@@ -66,33 +66,43 @@ namespace Qscript
             objProgramResualt.macroData = _objProgram.macroData;
             objProgramResualt.codeData = _objProgram.codeData;
             objProgramResualt.includes = _objProgram.includes;
-            objProgramResualt.data = _objProgram.data;
             
             ProgramAst = _ProgramAst;
 
             int line;
+            Dictionary<string, string> varGlobal = new Dictionary<string, string>();
+            objProgramResualt.data = new StringData();
+            for (int i = 0; i < _objProgram.data.Length; i++)
+            {
+                string[] strs = _objProgram.data.Data[i].Split(' ');
+                if (!varGlobal.ContainsKey(strs[0])) varGlobal.Add(strs[0], strs[1]);
+                if (strs[1].First() == '*') strs[1] = "dd";
+                string str = string.Empty;
+                foreach (string s in strs) str += s + " ";
+                objProgramResualt.data.Append(str);
+            }
 
             StringData procData = new StringData();
             List<instruct> procList = LexInstructs(_objProgram.procData);
             line = procList.Count;
             while (true)
             {
-                objProgramResualt.procData = Translation(procList);
+                objProgramResualt.procData = Translation(procList, varGlobal);
                 procList = LexInstructs(objProgramResualt.procData);
                 if (line == procList.Count) break;
                 line = procList.Count;
             }
 
             List<instruct> codeList = LexInstructs(_objProgram.codeData);
-            objProgramResualt.codeData = Translation(codeList);
+            objProgramResualt.codeData = Translation(codeList, varGlobal);
             line = codeList.Count;
-            while (true)
-            {
-                objProgramResualt.codeData = Translation(codeList);
+            //while (true)
+            //{
+                objProgramResualt.codeData = Translation(codeList, varGlobal);
                 codeList = LexInstructs(objProgramResualt.codeData);
-                if (line == codeList.Count) break;
+                //if (line == codeList.Count) break;
                 line = codeList.Count;
-            }
+            //}
 
             //objProgramResualt.codeData = _objProgram.codeData;
 
@@ -140,7 +150,7 @@ namespace Qscript
             return resualtList;
         }
 
-        public static StringData Translation (List<instruct> instructs)
+        public static StringData Translation (List<instruct> instructs, Dictionary<string, string> varGlobal)
         {
             StringData resualt = new StringData();
             bool func = false;
@@ -207,8 +217,10 @@ namespace Qscript
                                 {
                                     var += "." + strs[k];
                                 }
-                                resualt.Append($"mov eax, [{strs[0]}]");
-                                string resualtStr = "[" + "eax" + " + " + varLocal[strs[0]] + var + "]";
+                                resualt.Append($"mov ecx, [{strs[0]}]");
+                                string resualtStr;
+                                if (strs.Length < 2) resualtStr = "[ecx]";//$"[{strs[0]}]";
+                                else resualtStr = "[" + $"ecx" + " + " + varLocal[strs[0]] + var + "]";
                                 _instuct.pattern[j].value = resualtStr;
                                 flag = true;
                             }
@@ -216,20 +228,61 @@ namespace Qscript
                         if (flag)
                         {
                             resualt.Append(InstructConcat(_instuct));
+                            flag = false;
+                            continue;
+                        }
+                        //if (flag) continue;
+                    }
+
+                    bool flagM = false;
+                    for (int j = 0; j < _instuct.pattern.Count; j++)
+                    {
+                        if (_instuct.pattern[j].key == "m")
+                        {
+                            CommonNode type;
+                            string v1 = _instuct.pattern[j].value.Trim();
+                            v1 = v1.Remove(v1.Length - 1, 1);//.Remove(0, 1);
+                            v1 = v1.Remove(0, 1);
+                            int n = 0;
+                            string[] strs = v1.Split('.');
+                            if (varGlobal.ContainsKey(strs[0]) && varGlobal[strs[0]].First() != '*') break;
+                            if (Compiler.types.ContainsValue(varGlobal[strs[0]])) break;
+                            string var = string.Empty;
+                            for (int k = 1; k < strs.Length; k++)
+                            {
+                                var += "." + strs[k];
+                            }
+                            //resualt.Append($"mov ecx, [{strs[0]}]");
+                            string resualtStr;
+                            if (strs.Length < 2)
+                            {
+                                resualtStr = $"[{strs[0]}]";
+                                _instuct.pattern[j].value = resualtStr;
+                                //_instuct.value = $"mov ecx, [{strs[0]}]\n" + _instuct.value;
+                            }
+                            else
+                            {
+                                resualtStr = "[" + $"ecx" + " + " + varGlobal[strs[0]].Remove(0, 1) + var + "]";
+                                _instuct.pattern[j].value = resualtStr;
+                                _instuct.value = $"mov ecx, [{strs[0]}]\n" + _instuct.value;
+                            }
+                            flagM = true;
+                        }
+                        if (flagM)
+                        {
+                            resualt.Append(InstructConcat(_instuct));
+                            flagM = false;
                             continue;
                         }
                     }
-
+                    if (flagM) continue;
                     // |case1| -- global
                     //if (InstructPattern(str, str2) && _instuct.value == "mov")
                     //{
                     //resualt.Append(InstructConcat(_instuct)); i++;
                     //continue;
                     //}
-                    if (pattern1[0].value == "[i]" || pattern2[0].value == "[i]")
-                    {
-                        pattern1 = pattern1;
-                    }
+                    
 
                     // |case1| -- cmp
                     if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "cmp|rn") && InstructCmpReg(pattern1, pattern2))
@@ -304,6 +357,13 @@ namespace Qscript
                         continue;
                     }
 
+                    // |case13| - void
+                    if (InstructPattern(str, "mov|rn") && InstructPattern(str2, "push|n") && pattern1[1].value == pattern2[0].value)
+                    {
+                        resualt.Append(InstructConcat(_instructSecond)); i++;
+                        continue;
+                    }
+
                     if (InstructPattern(str, "mov|rm"))
                     {
                         int pos = 0;
@@ -361,6 +421,8 @@ namespace Qscript
 
             char[] cstr = str.Split('|')[1].ToCharArray();
             char[] cpatt = patt.Split('|')[1].ToCharArray();
+
+            if (cstr.Length != cpatt.Length) return false;
 
             if (cpatt[0] == '~') return true;
             for (int i = 0; i < cstr.Length; i++)

@@ -219,12 +219,22 @@ namespace Qscript
                 expect("VAR");
                 CommonNode node = new CommonNode("VAR", take());
                 node = tryParseVarPath(node);
+                node = parseCall(node);
                 addr.childs.Add(node);
                 return addr;
             }
             if (token.type.type == "SIZEOF")
             {
                 CommonNode sizeofNode = new CommonNode("SIZEOF", token);
+                expect("TS"); skip(); expect("VAR");
+                CommonNode node = new CommonNode("VAR", take());
+                node = tryParseVarPath(node);
+                sizeofNode.childs.Add(node);
+                return sizeofNode;
+            }
+            if (token.type.type == "TYPEOF")
+            {
+                CommonNode sizeofNode = new CommonNode("TYPEOF", token);
                 expect("TS"); skip(); expect("VAR");
                 CommonNode node = new CommonNode("VAR", take());
                 node = tryParseVarPath(node);
@@ -424,7 +434,7 @@ namespace Qscript
                 if (peek("OPER") && tokens[pos].value == "*")
                 {
                     skip();
-                    typeNode.type = "IDICATOR";
+                    typeNode.type = "INDICATOR";
                 }
                 expect("VAR"); CommonNode varNode = new CommonNode("VAR", take());
                 varNode = tryParseVarPath(varNode);
@@ -625,7 +635,7 @@ namespace Qscript
             if (peek("OPER") && tokens[pos].value == "*")
             {
                 CommonNode indicator = new CommonNode("INDICATOR", take());
-                typeNode.type = "IDICATOR";
+                typeNode.type = "INDICATOR";
             }
 
             expect("VAR");
@@ -699,9 +709,10 @@ namespace Qscript
             {
                 //CommonNode indicator = new CommonNode("INDICATOR", take());
                 //varNode.childs.Add(indicator);
+                //skip();
                 CommonNode typeNode = parseType(varNode);
                 //typeNode.type = "INDICATOR";
-                typeNode.childs[0].type = "INDICATOR";
+                //typeNode.childs[0].type = "INDICATOR";
                 return typeNode;
             }
 
@@ -782,6 +793,7 @@ namespace Qscript
         {
             varNode = tryParseVarPath(varNode);
             CommonNode declarator = parseDeclarator();
+            if (!peek("LPAR")) return varNode;
             CommonNode args = parseFormulaSignature();
             varNode.type = "CALL";
             if (declarator != null) varNode.childs.Add(declarator);

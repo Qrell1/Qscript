@@ -117,6 +117,7 @@ namespace Qscript
             tokenTypes.Add("NATIVE", new TokenType("NATIVE", @"\bnative\b"));
             tokenTypes.Add("INLINE", new TokenType("INLINE", @"\binline\b"));
             tokenTypes.Add("SIZEOF", new TokenType("SIZEOF", @"\bsizeof\b"));
+            tokenTypes.Add("TYPEOF", new TokenType("TYPEOF", @"\btypeof\b"));
 
             tokenTypes.Add("IN", new TokenType("IN", @"\bin\b"));
 
