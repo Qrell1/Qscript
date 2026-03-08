@@ -8,6 +8,7 @@ namespace Qscript
     {
         public List<Token> tokens;
         public int pos = 0;
+        public bool sem = false;
 
         private ProgramNode root;
 
@@ -501,7 +502,7 @@ namespace Qscript
         public CommonNode parseFormulaSignature(string leftType = "LPAR")
         {
             string rightType = TokenTypeList.rightPar[leftType];
-            if (peek(leftType)) expect(leftType); skip();
+            expect(leftType); skip();
             if (peek(rightType))
             {
                 skip();
@@ -514,7 +515,7 @@ namespace Qscript
                 root.childs.Add(formulaNode);
                 if (!peek("PS"))
                 {
-                    if (peek(rightType)) expect(rightType); skip();
+                    expect(rightType); skip();
                     return root;
                 }
                 skip();
@@ -569,7 +570,7 @@ namespace Qscript
                 else
                     operatpor = null;
             }
-            expect("SEM"); skip();
+            if (sem || peek("SEM")) { expect("SEM"); skip(); }
 
             return left;
         }
@@ -709,7 +710,7 @@ namespace Qscript
             if (peek("PREFIX") && tokens[pos].value == "?")
             {
                 CommonNode initMemStaticObject = new CommonNode("ALLOCMEMSTATICOBJECT", take());
-                initMemStaticObject.childs.Add(varNode); expect("SEM"); skip();
+                initMemStaticObject.childs.Add(varNode); if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 //root.varTypes.Add(varNode.token.value, typeNode.token.value);
                 return initMemStaticObject;
             }
@@ -723,7 +724,7 @@ namespace Qscript
                 operNode.childs.Add(rightOperand);
                 //root.varTypes.Add(varNode.token.value, typeNode.token.value);
                 //if (peek("SEM")) { expect("SEM"); skip(); }
-                expect("SEM"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return operNode;
             }
 
@@ -747,7 +748,8 @@ namespace Qscript
                 return varNode;
             }
 
-            SyntaxError($"На позиции Токена:{pos} ожились токены OPER, SEM, LPAR, OPER!");
+            if (!sem) { return varNode; }
+            Syntax.SyntaxError($"На позиции Токена:{pos} ожились токены OPER, SEM, LPAR, OPER! {tokens[pos].value} {tokens[pos].type.type}", tokens[pos]);
             return null;
         }
         public CommonNode parseVarOperation(CommonNode node = null)
@@ -787,7 +789,7 @@ namespace Qscript
                 {
                     // CALL
                     varNode = new CommonNode("CALL", varNode.token);
-                    varNode = parseCall(varNode); expect("SEM"); skip();
+                    varNode = parseCall(varNode); if (sem || peek("SEM")) { expect("SEM"); skip(); }
                     return varNode;
                 }
             }
@@ -819,21 +821,21 @@ namespace Qscript
                 operNode.childs.Add(varNode);
                 operNode.childs.Add(rightOperand);
 
-                expect("SEM"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return operNode;
             }
             if (peek("PREFIX") && (tokens[pos].value == "++" || tokens[pos].value == "--"))
             {
                 Token oper = take();
                 CommonNode operNode = new CommonNode("PREUNAROPER", oper);
-                operNode.childs.Add(varNode); expect("SEM"); skip();
+                operNode.childs.Add(varNode); if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return operNode;
             }
 
             if (peek("LPAR"))
             {
                 varNode = parseCall(varNode);
-                expect("SEM"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return varNode;
             }
 
@@ -894,6 +896,7 @@ namespace Qscript
                 nameNode.childs.Add(args);
                 nameNode.childs.Add(body);
                 //expect("SEM"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return nameNode;
             }
 
@@ -923,7 +926,7 @@ namespace Qscript
                     CommonNode operNode = new CommonNode("BINOPER", oper);
                     operNode.childs.Add(signature);
                     operNode.childs.Add(rightOperand);
-                    expect("SEM"); skip();
+                    if (sem || peek("SEM")) { expect("SEM"); skip(); }
                     return operNode;
                 }
                 if (peek("SEM"))
@@ -982,19 +985,19 @@ namespace Qscript
                     rightNode = parseFormula();
                 //rightNode.type = "VARFORMULA";
                 operNode.childs.Add(rightNode);
-                if (peek("SEM")) { expect("SEM"); skip(); }
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return operNode;
             }
             if (peek("BREAK"))
             {
                 CommonNode operNode = new CommonNode("BREAK", take());
-                expect("SEM"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return operNode;
             }
             if (peek("CONTINUE"))
             {
                 CommonNode operNode = new CommonNode("CONTINUE", take());
-                expect("SEM"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return operNode;
             }
 
@@ -1216,7 +1219,7 @@ namespace Qscript
             if (peek("STRING"))
             {
                 expect("STRING"); usingNode.childs.Add(new CommonNode("NAME", take()));
-                expect("SEM"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
             }
             else if (peek("VAR"))
             {
@@ -1229,7 +1232,7 @@ namespace Qscript
                         break;
                 }
                 if (peek("INLINE")) usingNode.childs.Add(new CommonNode("INLINE", take()));
-                expect("SEM"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
             }
             else if (peek("INLINE"))
             {
@@ -1241,6 +1244,7 @@ namespace Qscript
                     root.inlineNames.Add(child.token.value);
                 }
                 //expect("SEM"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return null;
             }
             else if (peek("NATIVE"))
@@ -1272,6 +1276,7 @@ namespace Qscript
                 }
                 expect("RFIG"); skip();
                 //expect("SEM"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return null;
             }
             else if (peek("SECTION"))
@@ -1280,6 +1285,7 @@ namespace Qscript
                 expect("ASM");
                 root.sectionNodes.Add(new CommonNode("SECTION", take()));
                 expect("RFIG"); skip();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return null;
             }
 
@@ -1295,7 +1301,7 @@ namespace Qscript
             skip();
             CommonNode valueNode = parseFormula();
             constNode.childs.Add(valueNode);
-            expect("SEM"); skip();
+            if (sem || peek("SEM")) { expect("SEM"); skip(); }
             return constNode;
         }
 
@@ -1307,6 +1313,7 @@ namespace Qscript
                 if (pos >= tokens.Count) break;
 
                 CommonNode node = parse();
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 if (node == null) continue;
                 root.childs.Add(node);
             }
