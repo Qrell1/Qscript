@@ -86,7 +86,7 @@ namespace Qscript
             tokenTypes.Add("FLOAT", new TokenType("FLOAT", @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)"));
             tokenTypes.Add("NUMBER", new TokenType("NUMBER", "[0-9]+"));
             tokenTypes.Add("PREFIX", new TokenType("PREFIX", "(\\+\\+|--|\\<>|\\?|&)"));
-            tokenTypes.Add("OPER", new TokenType("OPER", "(\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-\\*/%=|!:~])"));
+            tokenTypes.Add("OPER", new TokenType("OPER", "(@|\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-\\*/%=|!:~])"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", "<"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", ">"));
 

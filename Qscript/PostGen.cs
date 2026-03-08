@@ -69,7 +69,7 @@ namespace Qscript
             
             ProgramAst = _ProgramAst;
 
-            int line;
+            int line = 0;
             Dictionary<string, string> varGlobal = new Dictionary<string, string>();
             objProgramResualt.data = new StringData();
             for (int i = 0; i < _objProgram.data.Length; i++)
@@ -84,25 +84,27 @@ namespace Qscript
 
             StringData procData = new StringData();
             List<instruct> procList = LexInstructs(_objProgram.procData);
-            line = procList.Count;
-            //while (true)
-            //{
+            //line = procList.Count;
+            while (true)
+            {
                 objProgramResualt.procData = Translation(procList, varGlobal);
                 procList = LexInstructs(objProgramResualt.procData);
-                //if (line <= procList.Count) break;
-                line = procList.Count;
-            //}
+                objProgramResualt.procData = Translation(procList, varGlobal);
+                if (line <= objProgramResualt.procData.Data.Count) break;
+                line = objProgramResualt.procData.Data.Count;
+            }
 
+            StringData codeData = new StringData();
             List<instruct> codeList = LexInstructs(_objProgram.codeData);
             objProgramResualt.codeData = Translation(codeList, varGlobal);
-            line = codeList.Count;
-            //while (true)
-            //{
-                objProgramResualt.codeData = Translation(codeList, varGlobal);
+            //line = objProgramResualt.codeData.Data.Count;
+            while (true)
+            {
                 codeList = LexInstructs(objProgramResualt.codeData);
-                //if (line <= codeList.Count) break;
-                line = codeList.Count;
-            //}
+                objProgramResualt.codeData = Translation(codeList, varGlobal);
+                if (line <= objProgramResualt.codeData.Data.Count) break;
+                line = objProgramResualt.codeData.Data.Count;
+            }
 
             //objProgramResualt.codeData = _objProgram.codeData;
 
@@ -173,6 +175,23 @@ namespace Qscript
                     foreach (var key in _instuct.pattern) { if (key.key == "ts" || key.key == "t") continue; str += key.key; pattern1.Add(key); }
                     string str2 = _instructSecond.value + "|";
                     foreach (var key in _instructSecond.pattern) { if (key.key == "ts" || key.key == "t") continue; str2 += key.key; pattern2.Add(key); }
+
+                    bool flagI = true;
+                    if (pattern1.Count == pattern2.Count)
+                    {
+                        for (int p = 0; p < pattern1.Count; p++)
+                        {
+                            if (pattern1[p].value == pattern2[p].value) { }
+                            else { flagI = false; }
+                        }
+
+                        if (flagI && _instuct.value == _instructSecond.value)
+                        {
+                            resualt.Append(InstructConcat(_instuct));
+                            i++;
+                            continue;
+                        }
+                    }
 
                     if (_instuct.value == "proc")
                     {
@@ -268,21 +287,20 @@ namespace Qscript
                             }
                             flagM = true;
                         }
-                        if (flagM)
-                        {
-                            resualt.Append(InstructConcat(_instuct));
-                            flagM = false;
-                            continue;
-                        }
                     }
-                    if (flagM) continue;
+                    if (flagM)
+                    {
+                        resualt.Append(InstructConcat(_instuct));
+                        //flagM = false;
+                        continue;
+                    }
                     // |case1| -- global
                     //if (InstructPattern(str, str2) && _instuct.value == "mov")
                     //{
                     //resualt.Append(InstructConcat(_instuct)); i++;
                     //continue;
                     //}
-                    
+
 
                     // |case1| -- cmp
                     if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "cmp|rn") && InstructCmpReg(pattern1, pattern2))
@@ -371,7 +389,7 @@ namespace Qscript
                         continue;
                     }
 
-                    if (InstructPattern(str, "mov|rm"))
+                    /*if (InstructPattern(str, "mov|rm"))
                     {
                         int pos = 0;
                         int posDword = 0;
@@ -386,7 +404,7 @@ namespace Qscript
                         if (!dword) { _instuct.pattern[pos].value = " dword " + _instuct.pattern[pos].value; _instuct.pattern[pos].key = "Q"; }
                         resualt.Append(InstructConcat(_instuct));
                         continue;
-                    }
+                    }*/
 
                     // inline macro
                     //if (InstructPattern(str, "?|~"))

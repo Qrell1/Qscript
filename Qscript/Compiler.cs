@@ -1594,7 +1594,7 @@ namespace Qscript
                 file += "start: ;START MAIN\n";
                 file += _objProg.codeData.ToString();
             }
-            file += "section '.idata' import data readable\n";
+            if (TypeApp.asmmodule != typeApp) file += "section '.idata' import data readable\n";
             foreach (CommonNode section in ProgramAst.sectionNodes)
             {
                 StringBuilder chars = new StringBuilder();
