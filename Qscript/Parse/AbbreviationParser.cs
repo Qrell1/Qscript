@@ -51,10 +51,28 @@ namespace Qscript
             astNode = cmpReFresh(astNode);
             // If destroy
             astNode = ifCheakDelete(astNode);
+            // Class ReFresh
+            astNode = classReFresh(astNode);
+            // Var Cheak
+            astNode = varDeclaratorCheak(astNode, ref astNode);
+            // Struct Cheak
+            astNode = structCheak(astNode);
+            // General Parse
+            //astNode = 
+            // Call Cheak
+            //astNode = callCheak(astNode);
+            foreach (var cl in ast.classMethods.Values)
+                astNode.childs.AddRange(cl);
             // General Parse
             ast.childs.Clear();
             for (int i = 0; i < astNode.childs.Count; i++) ast.childs.Add(astNode.childs[i]);
             ast.childs = parse(ast, 0).childs;
+            for (int i = 0; i < ast.childs.Count; i++)
+            {
+                if (ast.declarotivePatternsStruct.ContainsKey(ast.childs[i].token.value)
+                    ) ast.childs[i] = new CommonNode("AIR", astNode.childs[i].token);
+            }
+            //ast.childs = new List<CommonNode>() { callCheak(ast) };
             ast.varTypes = varTypes;
             return ast;
         }
@@ -75,17 +93,17 @@ namespace Qscript
             if (resualt.Count != 0) return resualt;
             else return null;
         }
-        private bool varContains (CommonNode root, Dictionary<CommonNode, CommonNode> vars)
+        private bool varContains(CommonNode root, Dictionary<CommonNode, CommonNode> vars)
         {
             foreach (var var in vars) if (var.Key.token.value == root.token.value) return true;
             return false;
         }
-        private CommonNode getVar (CommonNode root, Dictionary<CommonNode, CommonNode> vars)
+        private CommonNode getVar(CommonNode root, Dictionary<CommonNode, CommonNode> vars)
         {
             foreach (var var in vars) if (var.Key.token.value == root.token.value) return var.Key;
             return null;
         }
-        private CommonNode getVarValue (CommonNode root, Dictionary<CommonNode, CommonNode> vars)
+        private CommonNode getVarValue(CommonNode root, Dictionary<CommonNode, CommonNode> vars)
         {
             foreach (var var in vars) if (var.Key.token.value == root.token.value) return var.Value;
             return null;
@@ -334,6 +352,127 @@ namespace Qscript
             return root;
         }
 
+        private CommonNode classReFresh(CommonNode root)
+        {
+            if (root.type != "CLASS")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = classReFresh(root.childs[i]);
+                }
+                return root;
+            }
+
+            List<CommonNode> varNodes = new List<CommonNode>();
+            List<CommonNode> methodNodes = new List<CommonNode>();
+
+            CommonNode constructorNode = null;
+            CommonNode destructorNode = null;
+
+            foreach (CommonNode node in root.childs)
+            {
+                if (node.type == "VAR") varNodes.Add(node);
+                else if (node.type == "FUNC") methodNodes.Add(node);
+                else if (node.type == "CONSTRUCTOR") constructorNode = node;
+                else if (node.type == "DESTRUCTOR") constructorNode = node;
+            }
+            
+            
+            // Что мы тут должны сделать с членами класса
+            // * Все переменные переместить в структуру
+            // * методы преобразовать в void print () {}   -> void print (ClASS this) {}
+            // * Конструкторы и деструкторы пока что не трогаем
+
+            CommonNode strt = new CommonNode("STRUCT", root.token);
+            foreach (CommonNode node in varNodes) strt.childs.Add(node);
+            if (strt.childs.Count == 0)
+            {
+                strt.childs.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], "value", strt.token.pos)));
+                strt.childs[0].childs.Add(new CommonNode("TYPE", new Token(TokenTypeList.tokenTypes["VAR"], "int32", strt.token.pos)));
+            }
+
+            foreach (CommonNode node in methodNodes)
+            {
+                node.token.value += "_" + root.token.value;
+                CommonNode signatureFuncNode = node.childs[1];
+                List<CommonNode> commonNodes = new List<CommonNode>();
+                commonNodes.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], "this", signatureFuncNode.token.pos)));
+                commonNodes[0].childs.Add(new CommonNode("TYPE", new Token(TokenTypeList.tokenTypes["VAR"], root.token.value, signatureFuncNode.token.pos)));
+                foreach (CommonNode cn in signatureFuncNode.childs) commonNodes.Add(cn);
+                signatureFuncNode.childs = commonNodes;
+                ast.resualtFunc.Add(node.token.value, node.childs[0]);
+                //ast.typesArgsFunc.Add(node.token.value, signatureFuncNode);
+            }
+            ast.classMethods.Add(root.token.value, methodNodes);
+            
+            return strt;
+        }
+
+        private CommonNode structCheak(CommonNode root)
+        {
+            if (root.type != "STRUCT")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = structCheak(root.childs[i]);
+                }
+                return root;
+            }
+            //ast.structs.Add
+            //parseStruct(root, 0);
+            if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+            //if (ast.declarotiveNames.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+            Dictionary<string, CommonNode> typesVar = new Dictionary<string, CommonNode>();
+            foreach (CommonNode var in root.childs)
+            {
+                typesVar.Add(var.token.value, var.childs[0]);
+            }
+            ast.structs.Add(root.token.value, typesVar);
+            return root;
+            //return parseStruct(root, 0);
+        }
+        private CommonNode varDeclaratorCheak(CommonNode root, ref CommonNode _ast)
+        {
+            if (root.type != "VAR")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = varDeclaratorCheak(root.childs[i], ref _ast);
+                }
+                return root;
+            }
+
+            if (root.childs.Count > 0)
+            {
+                CommonNode type = root.childs[0];
+
+                if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
+                {
+                    type.token.value = generationDeclarationStruct(type, type.childs[0]);
+                    _ast.childs.Add(ast.childs[ast.childs.Count - 1]);
+                    ast.childs.RemoveAt(ast.childs.Count - 1);
+                    type.childs.Clear();
+                    root.childs[0].childs.Clear();
+                    root.childs[0].token.value = type.token.value;
+                }
+            }
+            if (ast.declarotivePatternsStruct.ContainsKey(root.token.value)) return new CommonNode("AIR", root.token);
+            return root;
+        }
+        private CommonNode callCheak(CommonNode root)
+        {
+            if (root.type != "CALL")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = callCheak(root.childs[i]);
+                }
+                return root;
+            }
+
+            return parseCall(root, 0);
+        }
+
         public CommonNode parse(CommonNode root, int z_buffer)
         {
             switch (root.type)
@@ -479,7 +618,8 @@ namespace Qscript
                     return parseCall(root, z_buffer);
                     break;
                 case "STRUCT":
-                    return parseStruct(root, z_buffer);
+                    //return parseStruct(root, z_buffer);
+                    return root;
                     break;
                 case "CLASS":
                     if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
@@ -490,6 +630,7 @@ namespace Qscript
                     break;
                 case "VAR":
                     return parseVar(root, z_buffer);
+                    //return root;
                     break;
                 case "MODIFIER":
                     return parseModifier(root, z_buffer);
@@ -586,7 +727,7 @@ namespace Qscript
             {
                 typesVar.Add(var.token.value, var.childs[0]);
             }
-            ast.structs.Add(root.token.value, typesVar);
+            if (!ast.structs.ContainsKey(root.token.value)) ast.structs.Add(root.token.value, typesVar);
             return root;
         }
         private CommonNode parseUsing(CommonNode root, int z_buffer)
@@ -603,6 +744,34 @@ namespace Qscript
         }
         private CommonNode parseCall(CommonNode root, int z_buffer)
         {
+            try
+            {
+                string[] strs = root.token.value.Split('.');
+                //Console.WriteLine(strs[0]);
+                //Console.WriteLine(strs[1]);
+                string type = string.Empty;
+                type = varTypes[strs[0]].token.value;
+                for (int i = 1; i < strs.Length-1; i++)
+                {
+                    type = ast.structs[type][strs[i]].token.value;
+                    //Console.WriteLine(type, " : ", i);
+                }
+                //type = ast.structs[type][strs[strs.Length-1]].token.value;
+                int n = 0;
+                //type = struc;
+                if (ast.classMethods.ContainsKey(type))
+                {
+                    string name = string.Empty;
+                    for (int i = 1; i < strs.Length; i++) name += strs[i];
+                    name += "_" + type;
+                    name.Remove(0, 1);
+                    List<CommonNode> argsNew = new List<CommonNode>();
+                     argsNew.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], strs[0], root.childs[0].token.pos)));
+                    foreach (CommonNode node in root.childs[0].childs) argsNew.Add(node);
+                    root.childs[0].childs = argsNew;
+                    root.token.value = name;
+                }
+            } catch { }
             if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) root = generationDeclarationFunc(root);
             if (take(root, 0).type == "DECLARATOR") Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
 
@@ -625,6 +794,7 @@ namespace Qscript
                 
                 if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
                 {
+                    CommonNode _ast = ast;
                     type.token.value = generationDeclarationStruct(type, type.childs[0]);
                     type.childs.Clear();
                 }

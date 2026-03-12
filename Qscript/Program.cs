@@ -47,9 +47,9 @@ namespace Qscript
                 color = ConsoleColor.Magenta;
             else if (root.type == "TYPE" || root.type == "SIZEOF")
                 color = ConsoleColor.Blue;
-            else if (root.type == "SIGNATURE" || root.type == "BODY" || root.type == "FUNC")
+            else if (root.type == "SIGNATURE" || root.type == "BODY" )//|| root.type == "FUNC")
                 color = ConsoleColor.Yellow;
-            else if (root.type == "ASM")
+            else if (root.type == "ASM" || root.type == "FUNC")
                 color = ConsoleColor.DarkRed;
             else
                 color = ConsoleColor.White;
@@ -178,7 +178,11 @@ namespace Qscript
 
             AbbreviationParser addParser = new AbbreviationParser();
             ast = addParser.abbParse(ast);
-            SemanticAnalyzer.startAnalis(ast);
+            try
+            {
+                SemanticAnalyzer.startAnalis(ast);
+            }
+            catch { }
             foreach (var item in ast.declarotivePatternsStruct.Values)
             {
                 PrintAST(item, 0);

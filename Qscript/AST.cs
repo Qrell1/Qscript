@@ -32,6 +32,10 @@ namespace Qscript
         public Dictionary<string, CommonNode> declarotivePatternsFunctions = new Dictionary<string, CommonNode>();
         public Dictionary<string, CommonNode> declarotivePatternsStruct = new Dictionary<string, CommonNode>();
 
+        public Dictionary<string, List<CommonNode>> classMethods = new Dictionary<string, List<CommonNode>>();
+        public Dictionary<string, List<CommonNode>> classVars = new Dictionary<string, List<CommonNode>>();
+        public Dictionary<string, List<CommonNode>> classConstructors = new Dictionary<string, List<CommonNode>>();
+
         public List<string> declarotiveNames = new List<string>();
 
         public Dictionary<string, Dictionary<string, CommonNode>> structs = new Dictionary<string, Dictionary<string, CommonNode>>();

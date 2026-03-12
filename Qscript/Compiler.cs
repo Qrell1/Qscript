@@ -57,7 +57,10 @@ namespace Qscript
             {"string", "db"},
             {"char", "db"},
             {"float", "dd"},
-            {"int32_a", "dd"}
+            {"int32_a", "dd"},
+            {"dd", "dd"},
+            {"dw", "dw"},
+            {"db", "db"}
         };
         public static Dictionary<string, string> typesarg = new Dictionary<string, string>()
         {
@@ -781,7 +784,7 @@ namespace Qscript
 
                 return;
             }
-            if (new string[] { "+=", "-=", "*=", "/=", "+", "-", "*", "/" }.Contains(root.token.value))
+            if (new string[] { "+=", "-=", "*=", "/=", "%=", "+", "-", "*", "/", "%" }.Contains(root.token.value))
             {
                 CommonNode leftChild = take(root, 0); // eax
                 CommonNode rightChild = take(root, 1);
@@ -976,6 +979,11 @@ namespace Qscript
                         _objProg.code.Append("cdq\n");
                         _objProg.code.Append("idiv ebx\n");
                         break;
+                    case "%":
+                        _objProg.code.Append("xor edx, edx\n");
+                        _objProg.code.Append("div ebx\n");
+                        _objProg.code.Append("mov eax, edx\n");
+                        break;
                 }
                 if (leftChild.type == "VAR" && !(new string[] { "+", "-", "*", "/" }.Contains(root.token.value)))
                     _objProg.code.Append($"mov [{leftChild.token.value}], eax\n");
@@ -1045,7 +1053,7 @@ namespace Qscript
                 }
                 return;
             }
-            if (new string[] { "+=", "-=", "*=", "/=", "+", "-", "*", "/" }.Contains(root.token.value))
+            if (new string[] { "+=", "-=", "*=", "/=", "%=", "+", "-", "*", "/", "%" }.Contains(root.token.value))
             {
                 CommonNode leftChild = take(root, 0); // eax
                 CommonNode rightChild = take(root, 1);
@@ -1149,6 +1157,11 @@ namespace Qscript
                         break;
                     case "/":
                         _objProg.code.Append($"divss {leftString}, {rightString}\n");
+                        break;
+                    case "%":
+                        _objProg.code.Append("xor edx, edx\n");
+                        _objProg.code.Append("div ebx\n");
+                        _objProg.code.Append("mov eax, edx\n");
                         break;
                 }
                 if (leftChild.type == "VAR" && !(new string[] { "+", "-", "*", "/" }.Contains(root.token.value)))
@@ -1561,11 +1574,12 @@ namespace Qscript
 
             ///if (typeApp == TypeApp.h)
             //{
-                //file += "start: ;START MAIN\n";
-                //file += _objProg.codeData.ToString();
-                //return file;
+            //file += "start: ;START MAIN\n";
+            //file += _objProg.codeData.ToString();
+            //return file;
             ///}
             ///
+            Console.ReadLine();
             if (typeApp == TypeApp.gui)
             {
                 file = "format PE GUI 4.0\n\nentry start\n" + file;
