@@ -157,6 +157,7 @@ namespace Qscript
             StringData resualt = new StringData();
             bool func = false;
             Dictionary<string, string> varLocal = new Dictionary<string, string>();
+            List<string> args = new List<string>();
             for (int i = 0; i < instructs.Count; i++)
             {
                 instruct _instuct = instructs[i];
@@ -176,62 +177,6 @@ namespace Qscript
                     string str2 = _instructSecond.value + "|";
                     foreach (var key in _instructSecond.pattern) { if (key.key == "ts" || key.key == "t") continue; str2 += key.key; pattern2.Add(key); }
 
-                    if (InstructPattern(str, "?|rm") && _instuct.value != "lea" && !_instuct.value.EndsWith("zx"))
-                    {
-                        string pstr = pattern1[1].value;
-                        pstr = pstr.Remove(pstr.Length - 1, 1);
-                        pstr = pstr.Remove(0, 1); pstr = pstr.Trim();
-                        if (!pstr.Contains(" ") &&
-                            !pstr.Contains("+") &&
-                            !pstr.Contains("-") &&
-                            !pstr.Contains("*") &&
-                            !pstr.Contains("/")
-                            )
-                        {
-                            string[] strs = pstr.Split('.');
-                            int n = 1;
-
-                            string type = string.Empty;
-
-                            if (!func) type = varGlobal[strs[0]];
-                            else if (varLocal.ContainsKey(strs[0])) type = varLocal[strs[0]];
-                            else type = varGlobal[strs[0]];
-
-                            if (type.First() == '*') type.Remove(0, 1);
-                            while (n < strs.Length)
-                            {
-                                type = ProgramAst.structs[type][strs[n]].token.value;
-                                //if (n + 1 == strs.Length) {  }
-                                n++;
-                            }
-                            int pos = 0;
-                            while (pos < _instuct.pattern.Count)
-                            {
-                                if (_instuct.pattern[pos].key == "r") break;
-                                pos++;
-                            }
-
-                            Dictionary<string, string> keys = new Dictionary<string, string>()
-                            {
-                                {"eax",    "a"},
-                                {"ebx",    "b"},
-                                {"edx",    "d"},
-                                {"ecx",    "c"}
-                            };
-                            string reg = _instuct.pattern[pos].value;
-                            if (type == "int32") _instuct.pattern[pos].value = $"e{keys[_instuct.pattern[pos].value]}x";
-                            if (type == "int16") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}x";
-                            if (type == "int8") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}l";
-
-                            if (type == "dd") _instuct.pattern[pos].value = $"e{keys[_instuct.pattern[pos].value]}x";
-                            if (type == "dw") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}x";
-                            if (type == "db") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}l";
-
-                            //resualt.Append($"xor {reg}, {reg}\n");
-                            //resualt.Append(InstructConcat(_instuct));
-                            //continue;
-                        }
-                    }
 
                     bool flagI = true;
                     if (pattern1.Count == pattern2.Count)
@@ -259,6 +204,7 @@ namespace Qscript
                             if (pattern1[pos].key == "i")
                             {
                                 varLocal.Add(pattern1[pos].value.Remove(pattern1[pos].value.Length - 1, 1), pattern1[pos + 1].value);
+                                args.Add(pattern1[pos].value.Remove(pattern1[pos].value.Length - 1, 1));
                                 pattern1[pos + 1].value = "DWORD";
                                 pos += 2;
                             }
@@ -273,7 +219,7 @@ namespace Qscript
                         resualt.Append(InstructConcat(_instuct));
                         continue;
                     }
-                    else if (_instuct.value == "endp") { func = false; varLocal.Clear(); resualt.Append("endp\n"); continue; }
+                    else if (_instuct.value == "endp") { func = false; varLocal.Clear(); args.Clear(); resualt.Append("endp\n"); continue; }
 
                     if (func && _instuct.value == "local")
                     {
@@ -281,9 +227,65 @@ namespace Qscript
                         resualt.Append(InstructConcat(_instuct));
                         continue;
                     }
-                        
+                    
                     if (func)
                     {
+                        if (InstructPattern(str, "?|rm") && _instuct.value != "lea" && !_instuct.value.EndsWith("zx") && func)
+                        {
+                            string pstr = pattern1[1].value;
+                            pstr = pstr.Remove(pstr.Length - 1, 1);
+                            pstr = pstr.Remove(0, 1); pstr = pstr.Trim();
+                            if (!pstr.Contains(" ") &&
+                                !pstr.Contains("+") &&
+                                !pstr.Contains("-") &&
+                                !pstr.Contains("*") &&
+                                !pstr.Contains("/")
+                                )
+                            {
+                                string[] strs = pstr.Split('.');
+                                int n = 1;
+
+                                string type = string.Empty;
+
+                                if (!func) type = varGlobal[strs[0]];
+                                else if (varLocal.ContainsKey(strs[0])) type = varLocal[strs[0]];
+                                else type = varGlobal[strs[0]];
+
+                                if (type.First() == '*') type = type.Remove(0, 1);
+                                while (n < strs.Length)
+                                {
+                                    type = ProgramAst.structs[type][strs[n]].token.value;
+                                    //if (n + 1 == strs.Length) {  }
+                                    n++;
+                                }
+                                int pos = 0;
+                                while (pos < _instuct.pattern.Count)
+                                {
+                                    if (_instuct.pattern[pos].key == "r") break;
+                                    pos++;
+                                }
+
+                                Dictionary<string, string> keys = new Dictionary<string, string>()
+                            {
+                                {"eax",    "a"},
+                                {"ebx",    "b"},
+                                {"edx",    "d"},
+                                {"ecx",    "c"}
+                            };
+                                string reg = _instuct.pattern[pos].value;
+                                if (type == "int32") _instuct.pattern[pos].value = $"e{keys[_instuct.pattern[pos].value]}x";
+                                if (type == "int16") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}x";
+                                if (type == "int8") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}l";
+
+                                if (type == "dd") _instuct.pattern[pos].value = $"e{keys[_instuct.pattern[pos].value]}x";
+                                if (type == "dw") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}x";
+                                if (type == "db") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}l";
+
+                                //resualt.Append($"xor {reg}, {reg}\n");
+                                //resualt.Append(InstructConcat(_instuct));
+                                //continue;
+                            }
+                        }
                         bool flag = false;
                         for (int j = 0; j < _instuct.pattern.Count; j++)
                         {
@@ -295,7 +297,7 @@ namespace Qscript
                                 v1 = v1.Remove(0, 1);
                                 int n = 0;
                                 string[] strs = v1.Split('.');
-                                if (!varLocal.ContainsKey(strs[0]) || strs.Length < 2) break;
+                                if (!varLocal.ContainsKey(strs[0]) || (!args.Contains(strs[0]) && strs[0].First() != '*') || strs.Length < 2) break;
                                 if (Compiler.typesarg.ContainsValue(varLocal[strs[0]])) break;
                                 string var = string.Empty;
                                 for (int k = 1; k < strs.Length; k++)
@@ -457,8 +459,63 @@ namespace Qscript
                         //continue;
                     }
 
+                    if (InstructPattern(str, "?|rm") && _instuct.value != "lea" && !_instuct.value.EndsWith("zx"))
+                    {
+                        string pstr = pattern1[1].value;
+                        pstr = pstr.Remove(pstr.Length - 1, 1);
+                        pstr = pstr.Remove(0, 1); pstr = pstr.Trim();
+                        if (!pstr.Contains(" ") &&
+                            !pstr.Contains("+") &&
+                            !pstr.Contains("-") &&
+                            !pstr.Contains("*") &&
+                            !pstr.Contains("/")
+                            )
+                        {
+                            string[] strs = pstr.Split('.');
+                            int n = 1;
 
-                    
+                            string type = string.Empty;
+
+                            if (!func) type = varGlobal[strs[0]];
+                            else if (varLocal.ContainsKey(strs[0])) type = varLocal[strs[0]];
+                            else type = varGlobal[strs[0]];
+
+                            if (type.First() == '*') type.Remove(0, 1);
+                            while (n < strs.Length)
+                            {
+                                type = ProgramAst.structs[type][strs[n]].token.value;
+                                //if (n + 1 == strs.Length) {  }
+                                n++;
+                            }
+                            int pos = 0;
+                            while (pos < _instuct.pattern.Count)
+                            {
+                                if (_instuct.pattern[pos].key == "r") break;
+                                pos++;
+                            }
+
+                            Dictionary<string, string> keys = new Dictionary<string, string>()
+                            {
+                                {"eax",    "a"},
+                                {"ebx",    "b"},
+                                {"edx",    "d"},
+                                {"ecx",    "c"}
+                            };
+                            string reg = _instuct.pattern[pos].value;
+                            if (type == "int32") _instuct.pattern[pos].value = $"e{keys[_instuct.pattern[pos].value]}x";
+                            if (type == "int16") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}x";
+                            if (type == "int8") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}l";
+
+                            if (type == "dd") _instuct.pattern[pos].value = $"e{keys[_instuct.pattern[pos].value]}x";
+                            if (type == "dw") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}x";
+                            if (type == "db") _instuct.pattern[pos].value = $"{keys[_instuct.pattern[pos].value]}l";
+
+                            //resualt.Append($"xor {reg}, {reg}\n");
+                            //resualt.Append(InstructConcat(_instuct));
+                            //continue;
+                        }
+                    }
+
                     if (InstructPattern(str, "mov|rm"))
                     {
                         string pstr = pattern1[1].value;
