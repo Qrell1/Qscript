@@ -12,6 +12,8 @@ namespace Qscript
         public Dictionary<string, CommonNode> varTypes = new Dictionary<string, CommonNode>();
         public Dictionary<string, CommonNode> varTypesLocal = new Dictionary<string, CommonNode>();
 
+        public List<string> strings = new List<string>();
+
         private Dictionary<string, string> types = new Dictionary<string, string>()
         {
             {"int32", "dd"},
@@ -54,9 +56,9 @@ namespace Qscript
             // Class ReFresh
             astNode = classReFresh(astNode);
             // Var Cheak
-            astNode = varDeclaratorCheak(astNode, ref astNode);
+            //astNode = varDeclaratorCheak(astNode, ref astNode);
             // Struct Cheak
-            astNode = structCheak(astNode);
+            //astNode = structCheak(astNode);
             // General Parse
             //astNode = 
             // Call Cheak
@@ -73,6 +75,8 @@ namespace Qscript
                     ) ast.childs[i] = new CommonNode("AIR", astNode.childs[i].token);
             }
             //ast.childs = new List<CommonNode>() { callCheak(ast) };
+            CommonNode newAst = callCheak(ast);
+            ast.childs = new List<CommonNode>(newAst.childs);
             ast.varTypes = varTypes;
             return ast;
         }
@@ -605,7 +609,11 @@ namespace Qscript
                     parseConst(root, z_buffer);
                     break;
                 case "STRING":
-                    root.token.value = $"'{root.token.value}', 0";
+                    if (!strings.Contains(root.token.value))
+                    {
+                        root.token.value = $"'{root.token.value}', 0";
+                        strings.Add(root.token.value);
+                    }
                     return root;
                     break;
                 case "INLINE":
@@ -618,7 +626,7 @@ namespace Qscript
                     return parseCall(root, z_buffer);
                     break;
                 case "STRUCT":
-                    //return parseStruct(root, z_buffer);
+                    return parseStruct(root, z_buffer);
                     return root;
                     break;
                 case "CLASS":
@@ -744,6 +752,14 @@ namespace Qscript
         }
         private CommonNode parseCall(CommonNode root, int z_buffer)
         {
+            foreach (var library in ast.externLibrarys)
+            {
+                if (ast.externFuncs[library.Key].Contains(root.token.value))
+                {
+                    //root.type = "EXTERNCALL";
+                    return root;
+                }
+            }
             try
             {
                 string[] strs = root.token.value.Split('.');
@@ -762,14 +778,14 @@ namespace Qscript
                 if (ast.classMethods.ContainsKey(type))
                 {
                     string name = string.Empty;
-                    for (int i = 1; i < strs.Length; i++) name += strs[i];
+                    for (int i = 1; i < strs.Length-1; i++) name += strs[i];
                     name += "_" + type;
                     name.Remove(0, 1);
                     List<CommonNode> argsNew = new List<CommonNode>();
-                     argsNew.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], strs[0], root.childs[0].token.pos)));
+                    argsNew.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], strs[0], root.childs[0].token.pos)));
                     foreach (CommonNode node in root.childs[0].childs) argsNew.Add(node);
                     root.childs[0].childs = argsNew;
-                    root.token.value = name;
+                    root.token.value = strs[strs.Length-1] + "_" + type;
                 }
             } catch { }
             if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) root = generationDeclarationFunc(root);

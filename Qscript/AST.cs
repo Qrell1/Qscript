@@ -42,6 +42,8 @@ namespace Qscript
 
         public List<CommonNode> sectionNodes = new List<CommonNode>();
 
+        public Dictionary<string, string> externLibrarys = new Dictionary<string, string>();
+        public Dictionary<string, List<string>> externFuncs = new Dictionary<string, List<string>>();
         public ProgramNode(string type, Token token) : base(type, token)
         {}
     }

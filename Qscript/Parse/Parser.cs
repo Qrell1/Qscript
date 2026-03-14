@@ -1319,6 +1319,68 @@ namespace Qscript
             return usingNode;
         }
 
+        public CommonNode parseExtern()
+        {
+            expect(new string[] { "EXTERN", "EXTERNLIBRARY", "EXTERNFUNC" });
+            CommonNode externNode = new CommonNode(tokens[pos].type.type, take());
+
+            if (externNode.type == "EXTERN")
+            {
+                List<string> listFuncNode = new List<string> ();
+                string libraryString = string.Empty;
+                while (true)
+                {
+                    if (peek("EXTERN"))
+                    {
+                        skip(); expect("FROM"); skip();
+                        expect("VAR");
+                        libraryString = take().value;
+                        break;
+                    }
+                    else listFuncNode.Add(parseExtern().token.value);
+                }
+                if (!root.externFuncs.ContainsKey(libraryString)) root.externFuncs.Add(libraryString, listFuncNode);
+                else root.externFuncs[libraryString].AddRange(listFuncNode);
+                return null;
+            }
+            if (externNode.type == "EXTERNLIBRARY")
+            {
+                expect("VAR");
+                CommonNode libraryNode = new CommonNode("VAR", take()); expect("STRING");
+                root.externLibrarys.Add(libraryNode.token.value, take().value);
+                root.externFuncs.Add(libraryNode.token.value, new List<string>());
+                return null;
+            }
+            if (externNode.type == "EXTERNFUNC")
+            {
+                expect("VAR");
+                CommonNode typeNode = new CommonNode("TYPE", take());
+                expect("VAR");
+                CommonNode varNode = new CommonNode("FUNC", take());
+                varNode = tryParseVarPath(varNode);
+                varNode.childs.Add(typeNode);
+
+
+                CommonNode args = parseVarWTypeSignature();
+
+                if (varNode.childs[0].token.value == "void")
+                    root.resualtFunc.Add(varNode.token.value, null);
+                else
+                    root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
+                root.typesArgsFunc.Add(varNode.token.value, args);
+                //root.resualtFunc.Add(varNode.token.value, typeNode);
+                if (!peek("FROM")) return varNode;
+
+                expect("FROM"); skip(); expect("VAR");
+                string libraryString = take().value;
+                if (!root.externFuncs.ContainsKey(libraryString)) root.externFuncs.Add(libraryString, new List<string>() { varNode.token.value });
+                else root.externFuncs[libraryString].Add(varNode.token.value);
+
+                return varNode;
+            }
+            return null;
+        }
+
         public CommonNode parseConst()
         {
             expect("CONST");
@@ -1347,7 +1409,7 @@ namespace Qscript
             return root;
         }
 
-        public CommonNode parse() // 19 varkey
+        public CommonNode parse() // 22 keywords
         {
             if (peek("VAR"))
             {
@@ -1376,6 +1438,11 @@ namespace Qscript
             if (peek("USING"))
             {
                 return parseUsing();
+            }
+            if (peek("EXTERN") || peek("EXTERNLIBRARY") || peek("EXTERNFUNC"))
+            {
+                parseExtern();
+                return null;
             }
             if (peek("ASM"))
             {

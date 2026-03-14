@@ -1220,7 +1220,7 @@ namespace Qscript
                             if (types.Keys.Contains(take(child, 0).token.value))
                                 _objProg.code.Append($"    {child.token.value} {types[take(child, 0).token.value]} 0\n");
                             else
-                                _objProg.code.Append($"    {child.token.value} {take(child, 0).token.value}\n");
+                                _objProg.code.Append($"    {child.token.value} {take(child, 0).token.value} 0\n");
                         }
                     }
                 //}
@@ -1403,11 +1403,28 @@ namespace Qscript
                 //_objProg.code.Append("mov eax, 0\n");
                 //_objProg.code.Append($"push eax\n");
             }
-            _objProg.code.Append($"call {root.token.value}\n");
+            bool flag = false;
+            foreach (var library in ProgramAst.externLibrarys.Keys)
+                if (ProgramAst.externFuncs[library].Contains(root.token.value)) flag = true;
+            if (flag)
+            {
+                _objProg.code.Append($"call [{root.token.value}]\n");
+                int size = 0;
+                foreach (var child in signatureCall.childs)
+                {
+                    if (child.childs[0].type == "INDICATOR") size += 4;
+                    else if (child.childs[0].token.value == "int8" || child.childs[0].token.value == "char" || child.childs[0].token.value == "string") size += 1;
+                    else if (child.childs[0].token.value == "int16" || child.childs[0].token.value == "short") size += 2;
+                    else if (child.childs[0].token.value == "byte") size += 1;
+                    else size += 4;
+                }
+                _objProg.code.Append($"add esp, {size}\n");
+            }
+            else _objProg.code.Append($"call {root.token.value}\n");
             //if (ProgramAst.resualtFunc[root.token.value] != null && resualtPtr == null) _objProg.code.Append($"mov eax, [{getTempVarReturn(root)}]\n");
             
         }
-        
+
         public string getTempVarReturn (CommonNode call)
         {
             CommonNode type = ProgramAst.resualtFunc[call.token.value];
@@ -1608,7 +1625,30 @@ namespace Qscript
                 file += "start: ;START MAIN\n";
                 file += _objProg.codeData.ToString();
             }
-            if (TypeApp.asmmodule != typeApp) file += "section '.idata' import data readable\n";
+            if (TypeApp.asmmodule != typeApp && ProgramAst.externLibrarys.Count > 0)
+            {
+                file += "section '.idata' import data readable\n";
+                string libraryInclude = "library ";
+                foreach (var library in ProgramAst.externLibrarys)//for (int i = 0; i < ProgramAst.externLibrarys.Count; i++)
+                {
+                    libraryInclude += $"    {library.Key}, '{library.Value}'";
+                    if (library.Key != ProgramAst.externLibrarys.Last().Key) libraryInclude += ",\\ \n";
+                }
+                file += libraryInclude;
+                string funcsString = string.Empty;
+                foreach (var funcs in ProgramAst.externFuncs)
+                {
+                    if (funcs.Value.Count == 0) continue;
+                    funcsString += $"\nimport {funcs.Key},\\ \n";
+                    foreach (var library in ProgramAst.externFuncs[funcs.Key])//for (int i = 0; i < ProgramAst.externLibrarys.Count; i++)
+                    {
+                        funcsString += $"    {library}, '{library}'";
+                        if (library != ProgramAst.externFuncs[funcs.Key].Last()) funcsString += ",\\ \n";
+                    }
+                }
+                file += funcsString + "\n";
+            }
+            if (ProgramAst.sectionNodes.Count != 0) file += "section '.data' data readable writable\n";
             foreach (CommonNode section in ProgramAst.sectionNodes)
             {
                 StringBuilder chars = new StringBuilder();
@@ -1631,6 +1671,7 @@ namespace Qscript
                 str = string.Empty;
 
                 string[] strings = temp.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+                
                 for (int i = 0; i < strings.Length; i++)
                     file += strings[i] + "\n";
 

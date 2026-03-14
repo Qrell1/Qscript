@@ -96,6 +96,12 @@ namespace Qscript
             tokenTypes.Add("ASMINCLUDE", new TokenType("ASMINCLUDE", @"\basm-include\b"));
             tokenTypes.Add("INCLUDE", new TokenType("INCLUDE", @"\binclude\b"));
             tokenTypes.Add("USING", new TokenType("USING", @"\busing\b"));
+
+            tokenTypes.Add("EXTERNFUNC", new TokenType("EXTERNFUNC", @"\bextern-func\b"));
+            tokenTypes.Add("EXTERNLIBRARY", new TokenType("EXTERNLIBRARY", @"\bextern-library\b"));
+            tokenTypes.Add("EXTERN", new TokenType("EXTERN", @"\bextern\b"));
+            tokenTypes.Add("FROM", new TokenType("FROM", @"\bfrom\b"));
+
             tokenTypes.Add("ASM", new TokenType("ASM", @"\basm\b"));
             tokenTypes.Add("SEM", new TokenType("SEM", ";"));
             //tokenTypes.Add("MACRO", new TokenType("MACRO", "macro[A-Z]+"));
