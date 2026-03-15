@@ -18,6 +18,8 @@ namespace Qscript.Lex
         public Preproccessor() { }
         public List<Token> lexIncludes(List<Token> code)
         {
+            code = lexDefine(code);
+            code = lexTypedef(code);
             List<Token> nonIncludeCode = new List<Token>();
             List<string> includes = new List<string>();
 
@@ -37,12 +39,64 @@ namespace Qscript.Lex
             tokens.AddRange(nonIncludeCode);
             return tokens;
         }
+        public List<Token> lexDefine(List<Token> code)
+        {
+            Dictionary<string, Token> defines = new Dictionary<string, Token>();
+
+            for (int i = 0; i < code.Count; i++)
+            {
+                if (code[i].value == "define")
+                {
+                    i += 1; if (code[i].type.type != "VAR") Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
+                    string replace = code[i].value; i++;
+                    Token value = code[i];
+                    defines.Add(replace, value);
+                    continue;
+                }
+            }
+
+            List<Token> tokens = new List<Token>();
+            for (int i = 0; i < code.Count; i++)
+            {
+                if (code[i].value == "define") { i += 2; continue; }
+                else if (defines.ContainsKey(code[i].value)) { tokens.Add(defines[code[i].value]); }
+                else { tokens.Add(code[i]); }
+            }
+
+            return tokens;
+        }
+
+        public List<Token> lexTypedef (List<Token> code)
+        {
+            List<Token> tokens = new List<Token>();
+            for (int i = 0; i < code.Count; i++)
+            {
+                if (code[i].value == "typedef")
+                {
+                    i += 1; if (code[i].type.type != "VAR") Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
+                    string name = code[i].value; i++; if (code[i].type.type != "VAR") Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
+                    string value = code[i].value;
+
+                    string t_t = Compiler.types[value];
+                    string a_t = Compiler.typesarg[value];
+                    int    l_t = Compiler.aligns[value];
+
+                    if (!Compiler.types.ContainsKey(name)) Compiler.types.Add(name, t_t);
+                    if (!Compiler.typesarg.ContainsKey(name)) Compiler.typesarg.Add(name, a_t);
+                    if (!Compiler.aligns.ContainsKey(name)) Compiler.aligns.Add(name, l_t);
+
+                    continue;
+                } else {  tokens.Add(code[i]); }
+            }
+            return tokens;
+        }
+
         public List<Token> fileCodeIncludes(string[] includes)
         {
             List<Token> list = new List<Token>();
             foreach (string include in includes)
             {
-                if (fileIncludes.Contains(include)) return list;
+                if (fileIncludes.Contains(include)) return lexTypedef(lexDefine(list));
                 Console.WriteLine($"Загружаем Файл : {include}");
                 fileIncludes.Add(include);
 
@@ -57,8 +111,11 @@ namespace Qscript.Lex
          
                 List<Token> ts = lexIncludes(fileTokens);
                 ts.AddRange(list);
-                list = ts;
+                list = lexDefine(ts);
+                list = lexTypedef(list);
             }
+            list = lexDefine(list);
+            list = lexTypedef(list);
             return list;
         }
     }

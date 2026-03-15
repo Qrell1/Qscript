@@ -529,23 +529,6 @@ namespace Qscript
                 skip();
                 return new CommonNode("CMP", new Token(null, "true", tokens[pos - 1].pos));
             }
-            /*CommonNode buffer;
-            CommonNode left = parseFormula(); // token 1
-            Token operatpor = null;          // token 2
-            if (peek("OPER") && (new string[] { "==", "!=", "<=", ">=", "<", ">", "&&", "||" }.Contains(tokens[pos].value)))
-                operatpor = take();
-            while (operatpor != null)
-            {
-                CommonNode right = parseFormula();
-                buffer = left;
-                left = new CommonNode("CMP", operatpor);
-                left.childs.Add(buffer);
-                left.childs.Add(right);
-                if (peek("OPER") && (new string[] { "==", "!=", "<=", ">=", "<", ">", "&&", "||" }.Contains(tokens[pos].value)))
-                    operatpor = take();
-                else
-                    operatpor = null;
-            }*/
             CommonNode left = parseFormula();
             if (peek("RPAR")) { expect("RPAR"); skip(); }
             left.type = "CMP";
@@ -577,6 +560,12 @@ namespace Qscript
 
         public CommonNode parseBody()
         {
+            if (!peek("LFIG") && !peek("SEM"))
+            {
+                CommonNode node = new CommonNode("BODY", new Token(null, "{}", tokens[pos].pos));
+                node.childs.Add(parse());
+                return node;
+            }
             expect(new string[] { "LFIG", "SEM" });
             if (peek("SEM"))
             {
@@ -762,6 +751,13 @@ namespace Qscript
             expect(new string[] { "OPER", "PREFIX", "SEM", "LPAR", "TS", "VAR", "LK" });
 
             varNode = tryParseVarPath(varNode);
+
+            if (peek("OPER") && tokens[pos].value == ":")
+            {
+                skip();
+                varNode.type = "TAG";
+                return varNode;
+            }
 
             if (peek("OPER") && tokens[pos].value == "*")
             {
@@ -967,7 +963,7 @@ namespace Qscript
 
         public CommonNode parseQueueControlOperator()
         {
-            expect(new string[] { "RETURN", "BREAK", "CONTINUE" });
+            expect(new string[] { "RETURN", "BREAK", "CONTINUE", "JMP" });
             //Token operToken = take();
 
             if (peek("RETURN"))
@@ -999,6 +995,13 @@ namespace Qscript
                 CommonNode operNode = new CommonNode("CONTINUE", take());
                 if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return operNode;
+            }
+            if (peek("JMP"))
+            {
+                CommonNode jmpNode = new CommonNode("JMP", take()); expect("VAR");
+                jmpNode.childs.Add(new CommonNode("TAG", take()));
+                if (sem || peek("SEM")) { expect("SEM"); skip(); }
+                return jmpNode;
             }
 
             SyntaxError();
@@ -1419,7 +1422,7 @@ namespace Qscript
             {
                 return parseIfStrurct();
             }
-            if (peek("RETURN") || peek("BREAK") || peek("CONTINUE"))
+            if (peek("RETURN") || peek("BREAK") || peek("CONTINUE") || peek("JMP"))
             {
                 return parseQueueControlOperator();
             }

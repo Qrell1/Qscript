@@ -757,6 +757,7 @@ namespace Qscript
                 if (ast.externFuncs[library.Key].Contains(root.token.value))
                 {
                     //root.type = "EXTERNCALL";
+                    foreach (var child in root.childs) parse(child, z_buffer + 1);
                     return root;
                 }
             }

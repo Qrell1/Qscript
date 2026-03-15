@@ -109,6 +109,7 @@ namespace Qscript
             tokenTypes.Add("RETURN", new TokenType("RETURN", @"\breturn\b"));
             tokenTypes.Add("BREAK", new TokenType("BREAK", @"\bbreak\b"));
             tokenTypes.Add("CONTINUE", new TokenType("CONTINUE", @"\bcontinue\b"));
+            tokenTypes.Add("JMP", new TokenType("JMP", @"\bjump\b"));
 
             tokenTypes.Add("ITER", new TokenType("ITER", @"\biter\b"));
             tokenTypes.Add("FOR", new TokenType("FOR", @"\bfor\b"));
@@ -118,6 +119,9 @@ namespace Qscript
 
             tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"\bstruct\b"));
             tokenTypes.Add("CLASS", new TokenType("CLASS", @"\bclass\b"));
+
+            tokenTypes.Add("DEFINE", new TokenType("DEFINE", @"\bdefine\b"));
+            tokenTypes.Add("TYPEDEF", new TokenType("TYPEDEF", @"\btypedef\b"));
 
             tokenTypes.Add("SECTION", new TokenType("SECTION", @"\bsection\b"));
             tokenTypes.Add("NATIVE", new TokenType("NATIVE", @"\bnative\b"));
@@ -136,7 +140,7 @@ namespace Qscript
 
             tokenTypes.Add("BOOL", new TokenType("BOOL", @"(\btrue\b|false\b)"));
             //tokenTypes.Add("CONST", new TokenType("CONST", @"\b[A-Z]*\b"));
-            tokenTypes.Add("VAR", new TokenType("VAR", @"[a-zA-Z_][a-zA-Z0-9_]*"));
+            tokenTypes.Add("VAR", new TokenType("VAR", @"[а-яА-Яa-zA-Z_][а-яА-Яa-zA-Z0-9_]*"));
             //tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
             //tokenTypes.Add("FLOAT", new TokenType("FLOAT", @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)"));
             //tokenTypes.Add("NUMBER", new TokenType("NUMBER", "[0-9]+"));

@@ -50,6 +50,7 @@ namespace Qscript
 
         public static Dictionary<string, string> types = new Dictionary<string, string>()
         {
+            {"int64", "dq"},
             {"int32", "dd"},
             {"int16", "dw"},
             {"int8", "db"},
@@ -57,21 +58,51 @@ namespace Qscript
             {"string", "db"},
             {"char", "db"},
             {"float", "dd"},
+            {"double", "dq"},
             {"int32_a", "dd"},
+            {"bool", "db"},
+            {"long", "dd"},
+            {"half", "dw"},
+            {"dq", "dq"},
             {"dd", "dd"},
             {"dw", "dw"},
             {"db", "db"}
         };
         public static Dictionary<string, string> typesarg = new Dictionary<string, string>()
         {
+            {"int64", "QWORD"},
             {"int32", "DWORD"},
             {"int16", "WORD"},
             {"int8", "BYTE"},
             {"byte", "BYTE"},
             {"string", "BYTE"},
             {"char", "BYTE"},
-            { "float", "DWORD" },
-            {"int32_a", "DWORD"}
+            {"float", "DWORD"},
+            {"double", "QWORD"},
+            {"int32_a", "DWORD"},
+            {"bool", "BYTE"},
+            {"long", "DWORD"},
+            {"half", "WORD"}
+        };
+        public static Dictionary<string, int> aligns = new Dictionary<string, int>()
+        {
+            {"int64",   8},
+            {"int32",   4},
+            {"int16",   2},
+            {"int8",    1},
+            {"byte",    1},
+            {"string",  1},
+            {"char",    1},
+            {"float",   4},
+            {"double",  8},
+            {"int32_a", 4},
+            {"bool",    1},
+            {"long",    4},
+            {"half",    2},
+            {"dq",      8},
+            {"dd",      4},
+            {"dw",      2},
+            {"db",      1}
         };
         public Dictionary<string, string> stringConsts = new Dictionary<string, string>();
         public int stringConstsIndex;
@@ -254,6 +285,12 @@ namespace Qscript
                 case "POSTUNAROPER":
                     translationPostUnarOper(root, z_buffer);
                     break;
+                case "TAG":
+                    _objProg.code.Append($"{root.token.value}:\n");
+                    break;
+                case "JMP":
+                    _objProg.code.Append($"jmp {take(root, 0).token.value}\n");
+                    break;
                 case "BODY":
                     for (int i = 0; i < root.childs.Count; i++)
                     {
@@ -268,21 +305,24 @@ namespace Qscript
                     break;
             }
         }
+
         public void translationWhile (CommonNode root, int z_buffer)
         {
             CommonNode cmpNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
+            
+            int iterNumber = ++iterTagIndex;
 
-            _objProg.code.Append($"iter{iterTagIndex}:\n");
+            _objProg.code.Append($"iter{iterNumber}:\n");
 
             Translation(bodyNode, z_buffer + 1);
 
             Translation(cmpNode, z_buffer + 1);
-            _objProg.code.Append($"jmp iter{iterTagIndex}\n");
+            _objProg.code.Append($"jmp iter{iterNumber}\n");
             _objProg.code.Append($"false{falseTagIndex}:\n");
             falseTagIndex++;
 
-            iterTagIndex++;
+            //iterTagIndex++;
         }
         public void translationFor (CommonNode root, int z_buffer)
         {
@@ -291,18 +331,20 @@ namespace Qscript
             CommonNode stepNode = take(take(root, 2),0);
             CommonNode bodyNode = take(root, 3);
 
+            int iterNumber = ++iterTagIndex;
+
             Translation(initNode, z_buffer + 1);
-            _objProg.code.Append($"iter{iterTagIndex}:\n");
+            _objProg.code.Append($"iter{iterNumber}:\n");
 
             Translation(bodyNode, z_buffer + 1);
 
             Translation(stepNode, z_buffer + 1);
             Translation(cmpNode, z_buffer + 1);
-            _objProg.code.Append($"jmp iter{iterTagIndex}\n");
+            _objProg.code.Append($"jmp iter{iterNumber}\n");
             _objProg.code.Append($"false{falseTagIndex}:\n");
             falseTagIndex++;
 
-            iterTagIndex++;
+            //iterTagIndex++;
         }
         public void translationRept (CommonNode root, int z_buffer)
         {
@@ -318,6 +360,8 @@ namespace Qscript
             CommonNode varNode = take(root, 0);
             CommonNode countNode = take(root, 1);
             CommonNode bodyNode = take(root, 2);
+
+            int iterNumber = ++iterTagIndex;
             /*  local i dd 0
                 enumer0:
 
@@ -336,7 +380,7 @@ namespace Qscript
                 case "FLOAT": Syntax.SyntaxError("Невозможно использовать флотовое число в качестве числа енумераций!", countNode); break;
                 default: Translation(countNode, z_buffer + 1); _objProg.code.Append($"mov ecx, eax\n"); break;
             }
-            _objProg.code.Append($"iter{iterTagIndex}:\n");
+            _objProg.code.Append($"iter{iterNumber}:\n");
 
             if (countString == "ecx") _objProg.code.Append($"push ecx\n");
             Translation(bodyNode, z_buffer + 1);
@@ -345,9 +389,9 @@ namespace Qscript
             _objProg.code.Append($"inc [{varNode.token.value}]\n");
             if (countString.First() == '[') countString = "eax";
             _objProg.code.Append($"cmp [{varNode.token.value}], {countString}\n");
-            _objProg.code.Append($"jne iter{iterTagIndex}\n");
+            _objProg.code.Append($"jne iter{iterNumber}\n");
 
-            iterTagIndex++;
+            //iterTagIndex++;
         }
         public void translationPreUnarOper (CommonNode root, int z_buffer)//, bool mov = true)
         {
@@ -425,11 +469,11 @@ namespace Qscript
         {
             CommonNode countNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
-
+            int iterNumber = ++iterTagIndex;
             if (countNode.type == "NUMBER")
             {
                 _objProg.code.Append($"xor ecx, ecx\n");
-                _objProg.code.Append($"iter{iterTagIndex}:\n");
+                _objProg.code.Append($"iter{iterNumber}:\n");
 
                 _objProg.code.Append($"push ecx\n");
                 Translation(bodyNode, z_buffer + 1);
@@ -437,12 +481,12 @@ namespace Qscript
 
                 _objProg.code.Append($"inc ecx\n");
                 _objProg.code.Append($"cmp ecx, {countNode.token.value}\n");
-                _objProg.code.Append($"jne iter{iterTagIndex}\n");
+                _objProg.code.Append($"jne iter{iterNumber}\n");
             } else
             {
                 Translation(countNode, z_buffer + 1);
                 _objProg.code.Append($"xor ecx, ecx\n");
-                _objProg.code.Append($"iter{iterTagIndex}:\n");
+                _objProg.code.Append($"iter{iterNumber}:\n");
 
                 _objProg.code.Append($"push eax\n");
                 _objProg.code.Append($"push ecx\n");
@@ -452,9 +496,9 @@ namespace Qscript
 
                 _objProg.code.Append($"inc ecx\n");
                 _objProg.code.Append($"cmp ecx, eax\n");
-                _objProg.code.Append($"jne iter{iterTagIndex}\n");
+                _objProg.code.Append($"jne iter{iterNumber}\n");
             }
-            iterTagIndex++;
+            //iterTagIndex++;
         }
         public void translationIf (CommonNode root, int z_buffer)
         {

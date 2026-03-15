@@ -159,6 +159,16 @@ namespace Qscript
                 filename = "cm";
                 codes = File.ReadAllLines("codes\\" + filename + ".qs");
             }
+            if (typeApp == TypeApp.program64)
+            {
+                Compiler.types["long"] = "dq";
+                Compiler.typesarg["long"] = "QWORD";
+                Compiler.aligns["long"] = 8;
+
+                Compiler.types["half"] = "dd";
+                Compiler.typesarg["half"] = "DWORD";
+                Compiler.aligns["half"] = 4;
+            }
 
             (string code, CodeStruct codeStruct) = commentLexer.lexCodes(codes);
             Syntax.code = codeStruct;
