@@ -21,15 +21,16 @@ namespace Qscript
             Name = data[0].Trim().Split(' ')[1];
             Includes = includes;
 
-            for (int i = 1; i < data.Count-1; i++)
+            for (int i = 1; i < data.Count - 1; i++)
             {
-                string[] strs = data[i].Split(' ');
+                string[] strs = data[i].Trim().Split(new char[] {' ', '\t'});
                 // strs[0] == var
                 // strs[1] == type
+                Console.WriteLine($"asm {strs[0]}, {strs[1]} 0");
                 Vars.Add(strs[0], strs[1]);
             }
         }
-        public string ToString (ref List<AsmStruct> allStructs, ref List<string> allNames)
+        public string ToStringAsm (ref List<AsmStruct> allStructs, ref List<string> allNames)
         {
             Dictionary<string, int> structs = new Dictionary<string, int>();
             List<string> sort8b = new List<string>();
@@ -38,7 +39,7 @@ namespace Qscript
             List<string> sort1b = new List<string>();
 
             StringData resualt = new StringData();
-            resualt.Data.Add(Handle);
+            resualt.Data.Add(Handle + "\n");
 
             foreach (var v in Vars)
             {
@@ -56,10 +57,10 @@ namespace Qscript
             }
             int offset = 0;
             
-            foreach (var v in sort8b) resualt.Append($"    {v} {Vars[v]} 0");
-            foreach (var v in sort4b) resualt.Append($"    {v} {Vars[v]} 0");
-            foreach (var v in sort2b) resualt.Append($"    {v} {Vars[v]} 0");
-            foreach (var v in sort1b) resualt.Append($"    {v} {Vars[v]} 0");
+            foreach (var v in sort8b) resualt.Append($"    {v} {Vars[v]} 0\n");
+            foreach (var v in sort4b) resualt.Append($"    {v} {Vars[v]} 0\n");
+            foreach (var v in sort2b) resualt.Append($"    {v} {Vars[v]} 0\n");
+            foreach (var v in sort1b) resualt.Append($"    {v} {Vars[v]} 0\n");
 
             offset +=
                 (sort8b.Count * 8) +
@@ -70,10 +71,12 @@ namespace Qscript
             foreach (var v in structs)
             {
                 int align = 8 - (offset % 8);
-                if (offset != 0) resualt.Append($"    align {align}");
+                if (offset != 0) resualt.Append($"    align {align}\n");
                 offset += align + v.Value;
-                resualt.Append($"    {v.Key} {Vars[v.Key]} 0");
+                resualt.Append($"    {v.Key} {Vars[v.Key]} 0\n");
             }
+
+            resualt.Append("ends\n");
 
             return resualt.ToString();
         }
@@ -110,16 +113,17 @@ namespace Qscript
 
     public class CrossCompiler
     {
-        public objProgram Compile(objProgram _objProgram)
+        public static objProgram Compile(objProgram _objProgram)
         {
             objProgram objProgramResualt = _objProgram;
 
             StringData structsSpace = AlingingStructs(_objProgram.macroData);
+            objProgramResualt.macroData = structsSpace;
 
             return objProgramResualt;
         }
 
-        public StringData AlingingStructs (StringData structSpace)
+        public static StringData AlingingStructs (StringData structSpace)
         {
             List<AsmStruct> asmStructs = new List<AsmStruct>();
             List<int> asmStructsIndex = new List<int>();
@@ -127,6 +131,8 @@ namespace Qscript
             StringData tempAsm = new StringData();
             List<string> tempIncludes = new List<string>();
             
+            StringData externData = new StringData();
+
             bool flag = false;
             int index = 0;
             foreach (string str in structSpace.Data)
@@ -158,6 +164,7 @@ namespace Qscript
                 }
                 else
                 {
+                    externData.Append(str);
                     continue;
                 }
             }
@@ -193,9 +200,10 @@ namespace Qscript
             foreach (int i in asmStructsIndex) sortList.Add(asmStructs[i]);
 
             StringData newStructSpace = new StringData();
-            foreach (AsmStruct asmStruct in sortList) newStructSpace.Append(asmStruct.ToString());
+            foreach (AsmStruct asmStruct in sortList) newStructSpace.Append(asmStruct.ToStringAsm(ref asmStructs, ref asmStructsName));
 
-            return newStructSpace;
+            externData.Data.AddRange(newStructSpace.Data);
+            return externData;
         }
     }
 }

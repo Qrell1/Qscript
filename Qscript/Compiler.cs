@@ -1619,6 +1619,7 @@ namespace Qscript
         public string ConcatData (TypeApp typeApp)
         {
             _objProg = PostGen.PostTranslation(_objProg, ProgramAst);
+            //_objProg = CrossCompiler.Compile(_objProg);
             string file = string.Empty;
             file += _objProg.includes.ToString();
             file += "\n";
