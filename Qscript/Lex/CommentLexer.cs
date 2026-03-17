@@ -18,8 +18,29 @@ namespace Qscript.Lex
             bool asm = false;
             string strasm = string.Empty;
             //char[] sep = "//".ToCharArray();
+            bool multiComment = false;
             for (int i = 0; i < codes.Length; i++)
             {
+                if (!multiComment && codes[i].IndexOf("/*") >= 0)
+                {
+                    str = codes[i].Substring(0, codes[i].IndexOf("/*"));
+                    code.Append(str);
+                    codeData.strings.Add(str);
+                    codeData.stringsSize.Add(str.Length);
+                    multiComment = true;
+                    continue;
+                }
+                if (multiComment && codes[i].IndexOf("*/") >= 0)
+                {
+                    str = codes[i].Substring(codes[i].IndexOf("*/"), codes[i].Length-2);
+                    code.Append(str);
+                    codeData.strings.Add(str);
+                    codeData.stringsSize.Add(str.Length);
+                    multiComment = false;
+                    continue;
+                }
+                if (multiComment) continue;
+
                 int index = codes[i].IndexOf("//");
                 if (index >= 0)
                 {

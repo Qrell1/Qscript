@@ -63,7 +63,9 @@ namespace Qscript
                 }
             }
             Console.ResetColor();
+#if DEBUG
             Console.ReadLine();
+#endif
             //throw new Exception("Синтаксическая Ошибка!");
         }
         public static void SyntaxError(string message = "Синтаксическая Ошибка!", Token token = null)
@@ -99,7 +101,9 @@ namespace Qscript
                 }
             }
             Console.ResetColor();
+#if DEBUG
             Console.ReadLine();
+#endif
             //throw new Exception("Синтаксическая Ошибка!");
         }
     }

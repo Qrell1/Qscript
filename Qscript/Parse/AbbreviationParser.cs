@@ -74,6 +74,8 @@ namespace Qscript
                 if (ast.declarotivePatternsStruct.ContainsKey(ast.childs[i].token.value)
                     ) ast.childs[i] = new CommonNode("AIR", astNode.childs[i].token);
             }
+            //foreach (var cl in ast.classMethods.Values)
+                //ast.childs.AddRange(cl);
             //ast.childs = new List<CommonNode>() { callCheak(ast) };
             CommonNode newAst = callCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
@@ -372,43 +374,53 @@ namespace Qscript
 
             CommonNode constructorNode = null;
             CommonNode destructorNode = null;
+            CommonNode declarationNode = null;
 
             foreach (CommonNode node in root.childs)
             {
                 if (node.type == "VAR") varNodes.Add(node);
                 else if (node.type == "FUNC") methodNodes.Add(node);
                 else if (node.type == "CONSTRUCTOR") constructorNode = node;
-                else if (node.type == "DESTRUCTOR") constructorNode = node;
+                else if (node.type == "DESTRUCTOR") destructorNode = node;
+                else if (node.type == "DECLARATOR") declarationNode = node;
             }
-            
-            
+
+
             // Что мы тут должны сделать с членами класса
             // * Все переменные переместить в структуру
             // * методы преобразовать в void print () {}   -> void print (ClASS this) {}
             // * Конструкторы и деструкторы пока что не трогаем
 
             CommonNode strt = new CommonNode("STRUCT", root.token);
+            if (declarationNode != null)
+            {
+                strt.childs.Add(declarationNode);
+            }
             foreach (CommonNode node in varNodes) strt.childs.Add(node);
             if (strt.childs.Count == 0)
             {
                 strt.childs.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], "value", strt.token.pos)));
                 strt.childs[0].childs.Add(new CommonNode("TYPE", new Token(TokenTypeList.tokenTypes["VAR"], "int32", strt.token.pos)));
             }
+            if (declarationNode != null) ast.declarotivePatternsStruct.Add(strt.token.value,  strt);
+            if (declarationNode != null) ast.declarativeClassNames.Add(strt.token.value);
 
             foreach (CommonNode node in methodNodes)
             {
-                node.token.value += "_" + root.token.value;
-                CommonNode signatureFuncNode = node.childs[1];
+                CommonNode newRoot = node;
+                if (declarationNode == null) newRoot.token.value += "_" + root.token.value;
+                CommonNode signatureFuncNode = newRoot.childs[1];
                 List<CommonNode> commonNodes = new List<CommonNode>();
                 commonNodes.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], "this", signatureFuncNode.token.pos)));
                 commonNodes[0].childs.Add(new CommonNode("TYPE", new Token(TokenTypeList.tokenTypes["VAR"], root.token.value, signatureFuncNode.token.pos)));
                 foreach (CommonNode cn in signatureFuncNode.childs) commonNodes.Add(cn);
                 signatureFuncNode.childs = commonNodes;
-                ast.resualtFunc.Add(node.token.value, node.childs[0]);
+                if (declarationNode == null) ast.resualtFunc.Add(newRoot.token.value, newRoot.childs[0]);
                 //ast.typesArgsFunc.Add(node.token.value, signatureFuncNode);
             }
-            ast.classMethods.Add(root.token.value, methodNodes);
-            
+            if (declarationNode == null) ast.classMethods.Add(root.token.value, methodNodes);
+            else ast.declarotiveClassMethods.Add(root.token.value, methodNodes);
+
             return strt;
         }
 
@@ -688,6 +700,17 @@ namespace Qscript
             CommonNode signature = take(root, 1);
             CommonNode bodyFunc = take(root, 2);
             List<CommonNode> childs = new List<CommonNode>();
+            for (int i = 0; i < signature.childs.Count; i++)
+            {
+                CommonNode type = signature.childs[i].childs[0];
+
+                if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
+                {
+                    type.token.value = generationDeclarationStruct(type, type.childs[0]);
+                    type.childs.Clear();
+                    signature.childs[i].childs[0] = type;
+                }
+            }
             if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !types.Keys.Contains(ast.resualtFunc[root.token.value].token.value))
             {
                 CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", signature.token.pos));
@@ -812,8 +835,34 @@ namespace Qscript
                 if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
                 {
                     CommonNode _ast = ast;
-                    type.token.value = generationDeclarationStruct(type, type.childs[0]);
+                    string oldType = type.token.value;
+                    string oldType2 = type.token.value;
+                    Dictionary<string, string> declaratorTypes = new Dictionary<string, string>();
+                    type.token.value = generationDeclarationStruct(type, type.childs[0], ref declaratorTypes);
+                    oldType = type.token.value;
+                    if (ast.declarativeClassNames.Contains(oldType2))
+                    {
+                        Console.WriteLine("GENERATION GENERIC CLASS : ", oldType);
+                        
+                        ast.classMethods.Add(oldType, new List<CommonNode>());
+                        foreach (CommonNode child in ast.declarotiveClassMethods[oldType2])
+                        {
+                            CommonNode newMethod = replaceNodes(child, ref declaratorTypes);
+                            newMethod.token.value += "_" + type.token.value;
+                            newMethod.childs[1].childs[0].childs[0].token.value = type.token.value;
+                            ast.classMethods[oldType].Add(newMethod);
+                            ast.resualtFunc.Add(
+                                newMethod.token.value,
+                                newMethod.childs[0]
+                                );
+                        }
+                        foreach (var child in ast.classMethods[oldType])
+                        {
+                            ast.childs.Add(child);
+                        }
+                    }
                     type.childs.Clear();
+                    root.childs[0] = type;
                 }
                 if (root.childs[0].type != "OFFSET") varTypes.Add(root.token.value, type);
             }
@@ -950,6 +999,52 @@ namespace Qscript
 
             ast.childs.Add(newStruct);
 
+            return newName;
+        }
+        private string generationDeclarationStruct(CommonNode type, CommonNode declarator, ref Dictionary<string, string> types)
+        {
+            string secondDeclarator = string.Empty;
+            if (declarator.childs.Count > 0 && declarator.childs[0].childs.Count > 0 && declarator.childs[0].childs[0].type == "DECLARATOR")
+                secondDeclarator = generationDeclarationStruct(declarator.childs[0], declarator.childs[0].childs[0]);
+            if (!ast.declarotivePatternsStruct.Keys.Contains(type.token.value)) Syntax.SyntaxError($"Невозможно объявить декларотивный Тип:{type.token.value} так как его не существует!", type);
+            CommonNode pattern = ast.declarotivePatternsStruct[type.token.value];
+            CommonNode patternDeclarator = take(pattern, 0);
+
+            if (patternDeclarator.childs.Count != declarator.childs.Count) Syntax.SyntaxError($"Невозможно объявить декларотивный Тип:{type.token.value} так как количесва типов разные!", declarator);
+
+            string newName = string.Empty;
+            if (secondDeclarator == string.Empty)
+            {
+                newName = pattern.token.value;
+                for (int i = 0; i < declarator.childs.Count; i++)
+                {
+                    newName += $"_{declarator.childs[i].token.value}";
+                }
+            }
+            else
+            {
+                newName = secondDeclarator;
+                for (int i = 0; i < declarator.childs.Count; i++)
+                {
+                    newName = $"{declarator.childs[i].token.value}_" + newName;
+                }
+            }
+            if (ast.declarotiveNames.Contains(newName)) return newName;
+
+            Dictionary<string, string> declaratorTypes = new Dictionary<string, string>();
+            for (int i = 0; i < patternDeclarator.childs.Count; i++)
+            {
+                string declaratorString = declarator.childs[i].token.value;
+                if (secondDeclarator != string.Empty) declaratorString = secondDeclarator; // declarator.childs[i].token.value + "_" + 
+                declaratorTypes.Add(patternDeclarator.childs[i].token.value, declaratorString);
+            }
+            ast.declarotiveNames.Add(newName);
+            CommonNode newStruct = replaceNodes(pattern, ref declaratorTypes);
+            newStruct.childs.RemoveAt(0);
+            newStruct.token.value = newName;
+
+            ast.childs.Add(newStruct);
+            types = declaratorTypes;
             return newName;
         }
         private CommonNode generationDeclarationFunc(CommonNode root)

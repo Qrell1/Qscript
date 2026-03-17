@@ -305,7 +305,7 @@ namespace Qscript
                     break;
             }
         }
-
+        //public void
         public void translationWhile (CommonNode root, int z_buffer)
         {
             CommonNode cmpNode = take(root, 0);
@@ -708,7 +708,9 @@ namespace Qscript
                 //_objProg.code.Append($"pop eax\n");
                 // offset
                 _objProg.code.Append($"imul ecx, {getSize(root.token.value, root)}\n");
-                _objProg.code.Append($"push ecx\n");
+                _objProg.code.Append($"mov ebx, [{root.token.value.Replace(",", ".")}]\n");
+                _objProg.code.Append($"mov eax, [ebx+ecx]\n");
+                //_objProg.code.Append($"push ecx\n");
                 //_objProg.code.Append($"mov eax, [{root.token.value}+eax]\n");
                 return;
             }
@@ -754,6 +756,12 @@ namespace Qscript
                     return;
                 }
 
+                if (varChild.childs.Count > 0 && varChild.childs[0].type == "OFFSET")
+                {
+                    translationOffset(varChild, rightChild, z_buffer);
+                    return;
+                }
+
                 if (varChild.childs.Count > 0 && varChild.childs[0].type == "INDICATOR")
                 {
                     //_objProg.code.Append("lea eax, [eax]\n");
@@ -763,15 +771,7 @@ namespace Qscript
 
                 else if (varChild.childs.Count != 0 && varChild.childs[0].type != "INDICATOR") 
                     Translation(varChild, z_buffer + 1);
-                if (varChild.childs.Count > 0 && varChild.childs[0].type == "OFFSET")
-                {
-                    //_objProg.data.Append($"mov ebx, [eax]\n");
-                    //translationVar(varChild, z_buffer + 1);
-                    _objProg.code.Append($"mov ebx, [{varChild.token.value}]\n");
-                    varChild.token.value = $"ebx+ecx";
-                    _objProg.code.Append($"pop ecx\n");
-                    //_objProg.code.Append($"pop eax\n");
-                }
+                
                 //Translation (rightChild, z_buffer + 1);
                 if (rightChild.type == "STRING")
                 {
@@ -803,23 +803,6 @@ namespace Qscript
                 {
                     _objProg.code.Append($"mov [{varChild.token.value}], dword {rightChild.token.value}\n");
                 }
-                else if (rightChild.type == "VAR" && rightChild.childs.Count > 0 && rightChild.childs[0].type == "OFFSET")
-                {
-                    translationVar(rightChild, z_buffer + 1);
-                    //_objProg.code.Append($"push eax\n");
-                    //Translation(rightChild.childs[0].childs[0], z_buffer);
-                    //_objProg.code.Append($"mov ecx, eax\n");
-                    //_objProg.code.Append($"pop eax\n");
-                    _objProg.code.Append($"pop ecx\n");
-                    _objProg.code.Append($"mov ebx, [{rightChild.token.value}]\n");//{rightChild.token.value}
-                    _objProg.code.Append($"mov eax, [ebx+ecx]\n");
-                    _objProg.code.Append($"mov [{varChild.token.value}], eax\n");
-                }
-                /*else if (rightChild.type == "VAR" && rightChild.childs.Count > 0 && rightChild.childs[0].type == "INDICATOR")
-                {
-                    translationAddress(rightChild, z_buffer + 1);
-                    _objProg.code.Append($"lea ebx, [{rightChild.token.value}]\n");
-                }*/
                 else if (!(rightChild.type == "NUMBER"))
                 {
                     Translation(rightChild, z_buffer + 1);
@@ -834,18 +817,10 @@ namespace Qscript
                 CommonNode rightChild = take(root, 1);
 
                 //string ebx = "ebx"; shr-/ shl-*
-                if (leftChild.type == "VAR" && leftChild.childs.Count > 0 && leftChild.childs[0].type == "OFFSET")
+                /*if (leftChild.type == "VAR" && leftChild.childs.Count > 0 && leftChild.childs[0].type == "OFFSET")
                 {
-                    CommonNode offset = leftChild.childs[0];
-                    //_objProg.code.Append($"push eax\n");
-                    Translation(offset.childs[0], z_buffer);
-                    _objProg.code.Append($"mov ecx, eax\n");
-                    //_objProg.code.Append($"pop eax\n");
-                    // offset
-                    _objProg.code.Append($"imul ecx, {getSize(leftChild.token.value, leftChild)}\n");
-                    _objProg.code.Append($"mov ebx, [{leftChild.token.value}]\n");
-                    _objProg.code.Append($"pop ecx\n");
-                    leftChild.token.value = $"ebx+ecx";
+                    translationOffset(leftChild, rightChild, z_buffer);
+                    return;
                 }
                 if (rightChild.type == "VAR" && rightChild.childs.Count > 0 && rightChild.childs[0].type == "OFFSET")
                 {
@@ -859,53 +834,9 @@ namespace Qscript
                     _objProg.code.Append($"mov ebx, [{rightChild.token.value}]\n");
                     _objProg.code.Append($"pop ecx\n");
                     rightChild.token.value = $"ebx+ecx";
-                }
-
-                /*if (rightChild.type == "FLOAT")
-                {
-                    string floatVar = getFloatConst(rightChild);
-                    rightChild.token.value = rightChild.token.value.Replace("f","");
-                    if (leftChild.type == "VAR")
-                    {
-                        //mov eax, [a]
-                        //cvtsi2ss xmm0, eax
-                        //addss xmm0, [float_const_1];
-                        //movss[c], xmm0
-
-                        //movss xmm0, [a]
-                        //divss xmm0, [b]
-                        //movss[c], xmm0
-                        _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
-                        _objProg.code.Append($"cvtsi2ss xmm0, eax\n");
-                        string operation = root.token.value.Replace("=", "");
-                        switch (operation)
-                        {
-                            case "+": _objProg.code.Append($"addss xmm0, [{floatVar}]\n"); break;
-                            case "-": _objProg.code.Append($"subss xmm0, [{floatVar}]\n"); break;
-                            case "*": _objProg.code.Append($"mulss xmm0, [{floatVar}]\n"); break;
-                            case "/": _objProg.code.Append($"divss xmm0, [{floatVar}]\n"); break;
-                        }
-                        _objProg.code.Append($"movss [{leftChild.token.value}], xmm0\n");
-                    }
-                }
-                if (leftChild.type == "FLOAT")
-                {
-                    string floatVar = getFloatConst(leftChild);
-                    leftChild.token.value = leftChild.token.value.Replace("f", "");
-                    if (rightChild.type == "VAR")
-                    {
-                        _objProg.code.Append($"movss xmm0, [{floatVar}]\n");
-                        string operation = root.token.value.Replace("=", "");
-                        switch (operation)
-                        {
-                            case "+": _objProg.code.Append($"addss xmm0, [{rightChild.token.value}]\n"); break;
-                            case "-": _objProg.code.Append($"subss xmm0, [{rightChild.token.value}]\n"); break;
-                            case "*": _objProg.code.Append($"mulss xmm0, [{rightChild.token.value}]\n"); break;
-                            case "/": _objProg.code.Append($"divss xmm0, [{rightChild.token.value}]\n"); break;
-                        }
-                        //_objProg.code.Append($"movss [{rightChild}], xmm0\n");
-                    }
                 }*/
+
+                
                 if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("*") && (Convert.ToInt32(rightChild.token.value)%2) == 0)
                 {
                     //_objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
@@ -1049,13 +980,13 @@ namespace Qscript
                     _objProg.data.Append($"{varChild.token.value} dd {rightChild.token.value.Replace("f", "")}\n");
                     return;
                 }
-                if (varChild.childs.Count != 0)
-                    Translation(varChild, z_buffer + 1);
                 if (varChild.childs.Count > 0 && varChild.childs[0].type == "OFFSET")
                 {
-                    _objProg.code.Append($"mov ebx, [{varChild.token.value}]\n");
-                    varChild.token.value = $"ebx+ecx";
+                    translationOffset(varChild, rightChild, z_buffer);
+                    return;
                 }
+                if (varChild.childs.Count != 0)
+                    Translation(varChild, z_buffer + 1);
                 //Translation (rightChild, z_buffer + 1);
                 if (rightChild.type == "CALL")
                 {
@@ -1106,7 +1037,7 @@ namespace Qscript
                 string rightString = "xmm1";
 
                 //string ebx = "ebx"; shr-/ shl-*
-                if (leftChild.type == "VAR" && leftChild.childs.Count > 0 && leftChild.childs[0].type == "OFFSET")
+                /*if (leftChild.type == "VAR" && leftChild.childs.Count > 0 && leftChild.childs[0].type == "OFFSET")
                 {
                     CommonNode offset = leftChild.childs[0];
                     //_objProg.code.Append($"push eax\n");
@@ -1130,7 +1061,7 @@ namespace Qscript
                     _objProg.code.Append($"imul ecx, {getSize(rightChild.token.value, rightChild)}\n");
                     _objProg.code.Append($"mov ebx, [{rightChild.token.value}]\n");
                     rightChild.token.value = $"ebx+ecx";
-                }
+                }*/
 
                 if (leftChild.type == "VAR")
                 {
@@ -1309,6 +1240,11 @@ namespace Qscript
             string args = string.Empty;
             for (int i = 0; i < signature.childs.Count; i++)
             {
+                if (!Compiler.types.ContainsKey(signature.childs[i].childs[0].token.value))
+                    signature.childs[i].childs[0].type = "INDICATOR";
+            }
+            for (int i = 0; i < signature.childs.Count; i++)
+            {
                 if (i != 0) args += " , ";
                 //if (signature.childs[i].token.value == "resualtPtr")
                     //args += $"{signature.childs[i].token.value}:DWORD";
@@ -1414,12 +1350,14 @@ namespace Qscript
                 }
                 else if (signatureCall.childs[i].type == "VAR" && signatureCall.childs[i].childs.Count > 0 && signatureCall.childs[i].childs[0].type == "OFFSET")
                 {
-                    CommonNode offset = take(signatureCall.childs[i], 0);
-                    Translation(take(signatureCall, i), z_buffer + 1);
-                    _objProg.code.Append($"mov ebx, [{signatureCall.childs[i].token.value}]\n");
+                    //CommonNode offset = take(signatureCall.childs[i], 0);
+                    //Translation(take(signatureCall, i), z_buffer + 1);
+                    //_objProg.code.Append($"mov ebx, [{signatureCall.childs[i].token.value}]\n");
                     //signatureCall.childs[i].token.value = $"ebx+ecx";
-                    _objProg.code.Append($"pop ecx\n");
-                    _objProg.code.Append($"mov eax, [ebx+ecx]\n");
+                    //_objProg.code.Append($"pop ecx\n");
+                    //_objProg.code.Append($"mov eax, [ebx+ecx]\n");
+                    //_objProg.code.Append($"push eax\n");
+                    Translation(signatureCall.childs[i], z_buffer + 1);
                     _objProg.code.Append($"push eax\n");
                 } else
                 {
@@ -1469,6 +1407,20 @@ namespace Qscript
             
         }
 
+        public void translationOffset(CommonNode varNode, CommonNode rightNode, int z_buffer)
+        {
+            Translation(rightNode, z_buffer + 1);
+            _objProg.code.Append($"push eax\n");
+
+            CommonNode offset = varNode.childs[0];
+            Translation(offset.childs[0], z_buffer);
+            _objProg.code.Append($"mov ecx, eax\n");
+            _objProg.code.Append($"imul ecx, {getSize(varNode.token.value, varNode)}\n");
+
+            _objProg.code.Append($"mov ebx, [{varNode.token.value}]\n");
+            _objProg.code.Append($"pop eax\n");
+            _objProg.code.Append($"mov [ebx+ecx], eax\n");
+        }
         public string getTempVarReturn (CommonNode call)
         {
             CommonNode type = ProgramAst.resualtFunc[call.token.value];
@@ -1499,16 +1451,11 @@ namespace Qscript
         public string getSize(string name, CommonNode tagError)
         {
             CommonNode type;
-            Console.WriteLine(name);
-            foreach (var temp in ProgramAst.varTypes)
-            {
-                Console.WriteLine(temp.Key, " : ", temp.Value.type);
-            }
             if (name.First() == '*') name.Remove(0, 1);
-            if (name.Contains("."))
+            if (name.Contains(".") || name.Contains(","))
             {
                 int n = 0;
-                string[] strs = name.Split('.');
+                string[] strs = name.Split('.', ',');
                 string strct = ProgramAst.varTypes[strs[0]].token.value;
                 start:
                 if (

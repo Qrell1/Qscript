@@ -227,7 +227,7 @@ namespace Qscript
                         resualt.Append(InstructConcat(_instuct));
                         continue;
                     }
-                    
+
                     if (func)
                     {
                         if (InstructPattern(str, "?|rm") && _instuct.value != "lea" && !_instuct.value.EndsWith("zx") && func)
@@ -364,6 +364,8 @@ namespace Qscript
                         //flagM = false;
                         continue;
                     }
+
+                    
                     // |case1| -- global
                     //if (InstructPattern(str, str2) && _instuct.value == "mov")
                     //{
@@ -372,7 +374,7 @@ namespace Qscript
                     //}
 
 
-                    // |case1| -- cmp
+                        // |case1| -- cmp
                     if (InstructPattern(str, "mov|rm") && InstructPattern(str2, "cmp|rn") && InstructCmpReg(pattern1, pattern2))
                     {
                         resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "m"))); i++;

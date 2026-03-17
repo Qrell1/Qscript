@@ -150,6 +150,17 @@ namespace Qscript
             return varNode;
         }
 
+        public bool peekFig(int _pos)
+        {
+            int ps = _pos;
+            while (true)
+            {
+                if (tokens[ps].value == ")") break;
+                else ps++;
+            }
+            if (tokens[ps+1].type.type == "LFIG") return true;
+            else return false;
+        }
         public List<Token> parseParBody(string type)
         {
             string strType = type;
@@ -781,7 +792,7 @@ namespace Qscript
             if (peek("OPER") && (tokens[pos].value == "<" || tokens[pos].value == "@"))
             {
                 int ps = tryParseDeclarator();
-                if (tokens[ps].type.type == "LPAR")
+                if (tokens[ps].type.type == "LPAR" && !peekFig(ps))
                 {
                     // CALL
                     varNode = new CommonNode("CALL", varNode.token);
@@ -1223,7 +1234,8 @@ namespace Qscript
                     {
                         skip();
                         //structNode.childs.Add(modifierNode);
-                        if (declarotivePart != null) root.declarotivePatternsStruct.Add(nameToken.value, structNode);
+
+                        //if (declarotivePart != null) root.declarotivePatternsStruct.Add(nameToken.value, structNode);
                         return structNode;
                     }
                     /*else if (peek("MODIFIER"))

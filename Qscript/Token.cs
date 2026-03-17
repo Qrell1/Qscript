@@ -57,8 +57,9 @@ namespace Qscript
 
         static TokenTypeList()
         {
+            tokenTypes.Add("COMMENT", new TokenType("COMMENT", @"//.*$|/\*[\s\S]*?\*/"));
             // TYPES
-            
+
             //tokenTypes.Add("TYPE", new TokenType("TYPE", "(int32|int16|int8|float|string|char)"));
             //tokenTypes.Add("TYPE", new TokenType("TYPE", ":?"));
             //tokenTypes.Add("INT32TYPE", new TokenType("INT32TYPE", "int32"));
