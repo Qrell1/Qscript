@@ -19,7 +19,10 @@ namespace Qscript
                 Console.WriteLine(message);
             }
             catch { }
-            throw new Exception(message);
+#if DEBUG
+            Console.ReadLine();
+#endif
+            //throw new Exception(message);
         }
         public static string genRedString(int count)
         {

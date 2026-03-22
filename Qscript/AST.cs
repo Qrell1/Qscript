@@ -28,6 +28,7 @@ namespace Qscript
         public Dictionary<string, CommonNode> resualtFunc = new Dictionary<string, CommonNode>();
         public Dictionary<string, CommonNode> typesArgsFunc = new Dictionary<string, CommonNode>();
         public Dictionary<string, CommonNode> varTypes = new Dictionary<string, CommonNode>();
+        public List<string> qsFunction = new List<string>();
 
         public Dictionary<string, CommonNode> declarotivePatternsFunctions = new Dictionary<string, CommonNode>();
         public Dictionary<string, CommonNode> declarotivePatternsStruct = new Dictionary<string, CommonNode>();

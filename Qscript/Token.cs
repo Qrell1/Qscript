@@ -121,6 +121,10 @@ namespace Qscript
             tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"\bstruct\b"));
             tokenTypes.Add("CLASS", new TokenType("CLASS", @"\bclass\b"));
 
+            tokenTypes.Add("VIRTUAL", new TokenType("VIRTUAL", @"\bvirtual\b"));
+            tokenTypes.Add("OVERRIDE", new TokenType("OVERRIDE", @"\boverride\b"));
+            //tokenTypes.Add("FUNCTION", new TokenType("FUNCTION", @"\bfunction\b"));
+
             tokenTypes.Add("DEFINE", new TokenType("DEFINE", @"\bdefine\b"));
             tokenTypes.Add("TYPEDEF", new TokenType("TYPEDEF", @"\btypedef\b"));
 

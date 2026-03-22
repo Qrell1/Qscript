@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -35,18 +36,21 @@ namespace Qscript
             //{ "r", "(eax|edx|ebx|ecx|esi|edi|esp|ebp)"},
             { "t", " "},
             { "r", @"\b(rax|rdx|rbx|rcx|rsi|rdi|rsp|rbp|eax|edx|ebx|ecx|esi|edi|esp|ebp|al|dx|bx|cx|si|di|sp|bp)\b"},
-            { "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
+            //{ "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
             { "i", "\\.?[a-z\\\\.A-Z_][a-z\\\\.A-Z\\\\.0-9_]*\\:" },
             { "m", "\\[[^\\[\\]]+\\]" },
             //{ "m", @"\b\[^\[\]+\]\b" },
             //{ "m", @"\[^\[\]+\]" },
-            { "v", "[a-z\\.A-Z_][a-z\\.A-Z\\.0-9_]*" },
+            { "v", @"\b[a-z\\.A-Z_][a-z\\.A-Z\\.0-9_]*\b" },
+            { "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
+            //{ "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
             { "n", "-?[0-9]+" },
             { "o", "(/|\\*|\\-|\\+)"},
             { "s", "'[^'']*'" },
-            { "ts", @"(.|,)"},
+            { "ts", "(\\.|\\,)"},
             { "fg", "(\\{|\\})"},
             { "l", "(\n|\t)"}
+            
             //{ "cm", @";^\[\]"}
         };
 
@@ -223,8 +227,31 @@ namespace Qscript
 
                     if (func && _instuct.value == "local")
                     {
-                        varLocal.Add(pattern1[0].value, pattern1[1].value);
-                        resualt.Append(InstructConcat(_instuct));
+                        if (pattern1[1].key == "o") varLocal.Add(pattern1[0].value, pattern1[1].value + pattern1[2].value);
+                        else varLocal.Add(pattern1[0].value, pattern1[1].value);
+                        //Console.WriteLine("|||" + pattern1[0].value + " }{ " + pattern1[1].value + pattern1[2].value);
+                        foreach (var item in _instuct.pattern)
+                        {
+                            //Console.WriteLine(" |\\ : " + item.key + "" + item.value);
+                        }
+                        //Console.WriteLine(pattern1[0].value);
+                        //Console.WriteLine(pattern1[1].value);
+                        //Console.WriteLine(pattern1[2].value);
+                        //Console.WriteLine("\\\\\\" + InstructConcat(_instuct));   
+                        int posType = 0;
+                        bool flag = false;
+                        while (true)
+                        {
+                            if (_instuct.pattern[posType].key == "o")
+                            {
+                                flag = true;
+                                break;
+                            }
+                            if (posType == _instuct.pattern.Count - 1) break;
+                            else posType++;
+                        }
+                        if (flag) resualt.Append($"local {pattern1[0].value} dd 0");
+                        else resualt.Append(InstructConcat(_instuct));
                         continue;
                     }
 
@@ -297,7 +324,7 @@ namespace Qscript
                                 v1 = v1.Remove(0, 1);
                                 int n = 0;
                                 string[] strs = v1.Split('.');
-                                if (!varLocal.ContainsKey(strs[0]) || (!args.Contains(strs[0]) && strs[0].First() != '*') || strs.Length < 2) break;
+                                if (!varLocal.ContainsKey(strs[0]) && !args.Contains(strs[0]) && strs[0].First() != '*' || strs.Length < 2) break;
                                 if (Compiler.typesarg.ContainsValue(varLocal[strs[0]])) break;
                                 string var = string.Empty;
                                 for (int k = 1; k < strs.Length; k++)
@@ -308,8 +335,9 @@ namespace Qscript
                                 string resualtStr;
                                 string st = strs[0];//(varLocal[strs[0]] == "DWORD") ? strs[0] : "ecx";
                                 resualt.Append($"mov edx, [{strs[0]}]\n");
+                                string varType = (varLocal[strs[0]].First() == '*') ? varLocal[strs[0]].Remove(0,1) : varLocal[strs[0]];
                                 if (strs.Length < 2) resualtStr = $"[ecx]";//$"[{strs[0]}]";
-                                else resualtStr = "[" + $"edx" + " + " + varLocal[strs[0]] + var + "]";
+                                else resualtStr = "[" + $"edx" + " + " + varType + var + "]";
                                 _instuct.pattern[j].value = resualtStr;
                                 flag = true;
                             }
@@ -640,7 +668,7 @@ namespace Qscript
             int i = 0;
             foreach (patternNode node in instruct.pattern)
             {
-                if (node.key == "t") continue;
+                //if (node.key == "t") continue;
                 resualt += node.value; //+ " ";
                 i++;
                 //if (i < instruct.pattern.Count && i != 1) resualt += ", ";

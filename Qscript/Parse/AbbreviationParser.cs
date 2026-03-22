@@ -9,8 +9,7 @@ namespace Qscript
     public class AbbreviationParser
     {
         public ProgramNode ast;
-        public Dictionary<string, CommonNode> varTypes = new Dictionary<string, CommonNode>();
-        public Dictionary<string, CommonNode> varTypesLocal = new Dictionary<string, CommonNode>();
+        public VarSpace varSpace = new VarSpace();
 
         public List<string> strings = new List<string>();
 
@@ -63,6 +62,7 @@ namespace Qscript
             //astNode = 
             // Call Cheak
             //astNode = callCheak(astNode);
+            astNode = funcCheak(astNode);
             foreach (var cl in ast.classMethods.Values)
                 astNode.childs.AddRange(cl);
             // General Parse
@@ -79,7 +79,9 @@ namespace Qscript
             //ast.childs = new List<CommonNode>() { callCheak(ast) };
             CommonNode newAst = callCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
-            ast.varTypes = varTypes;
+            newAst = funcCheak(ast);
+            ast.childs = new List<CommonNode>(newAst.childs);
+            ast.varTypes = varSpace.VarsData;
             return ast;
         }
 
@@ -184,8 +186,8 @@ namespace Qscript
 
             bool flagFloat = false;
 
-            if (leftNode.type == "VAR" && varTypes.ContainsKey(leftNode.token.value) && varTypes[leftNode.token.value].token.value == "float") flagFloat = true;
-            if (rightNode.type == "VAR" && varTypes.ContainsKey(rightNode.token.value) && varTypes[rightNode.token.value].token.value == "float") flagFloat = true;
+            if (leftNode.type == "VAR" && varSpace.VarIsType(leftNode.token.value, "float")) flagFloat = true;
+            if (rightNode.type == "VAR" && varSpace.VarIsType(rightNode.token.value, "float")) flagFloat = true;
 
             if (leftNode.type == "VAR" && ast.resualtFunc.ContainsKey(leftNode.token.value) && ast.resualtFunc[leftNode.token.value].token.value == "float") flagFloat = true;
             if (rightNode.type == "VAR" && ast.resualtFunc.ContainsKey(rightNode.token.value) && ast.resualtFunc[rightNode.token.value].token.value == "float") flagFloat = true;
@@ -488,6 +490,141 @@ namespace Qscript
 
             return parseCall(root, 0);
         }
+        private CommonNode funcCheak(CommonNode root)
+        {
+            if (root.type != "FUNC")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = funcCheak(root.childs[i]);
+                }
+                return root;
+            }
+            if (root.childs[0].token.value != "function") return root;
+
+            Dictionary<string, CommonNode> varsLocal = new Dictionary<string, CommonNode>();
+            foreach (CommonNode node in root.childs[1].childs) varsLocal.Add(node.token.value, node.childs[0]);
+
+            List<CommonNode> recurse(CommonNode commonNode)
+            {
+                List<CommonNode> types = null;
+                foreach (var child in commonNode.childs)
+                {
+                    if (child.childs.Count == 1 && child.childs[0].type == "TYPE")
+                    {
+                        if (types == null) types = new List<CommonNode>();
+                        types.Add(child);
+                    }
+                    else
+                    {
+                        List<CommonNode> types2 = recurse(child);
+                        if (types2 != null)
+                        {
+                            if (types == null) types = new List<CommonNode>();
+                            types.AddRange(types2);
+                        }
+                    }
+                }
+                return types;
+            }
+            List<CommonNode> vars = recurse(root.childs[2]);
+            if (vars != null) foreach (var node in vars) varsLocal.Add(node.token.value, node.childs[0]);
+
+            List<CommonNode> parseReturns(CommonNode commonNode)
+            {
+                List<CommonNode> types = null;
+                foreach (var child in commonNode.childs)
+                {
+                    if (child.type == "RETURN")
+                    {
+                        if (types == null) types = new List<CommonNode>();
+                        types.Add(child.childs[0]);
+                    }
+                    else
+                    {
+                        List<CommonNode> types2 = parseReturns(child);
+                        if (types2 != null)
+                        {
+                            if (types == null) types = new List<CommonNode>();
+                            types.AddRange(types2);
+                        }
+                    }
+                }
+                return types;
+            }
+            List<CommonNode> Returns = parseReturns(root.childs[2]);
+            if (Returns == null || Returns.Count == 0) root.childs[0].token.value = "void";
+            else {
+                string ReturnType = Returns[0].type;
+                foreach (CommonNode returnNode in Returns)
+                {
+                    if (returnNode.type != ReturnType ||
+                        (
+                        returnNode.type == "VAR" && varsLocal[Returns[0].token.value].token.value != varsLocal[returnNode.token.value].token.value &&
+                        varsLocal[Returns[0].token.value].type != varsLocal[returnNode.token.value].type
+                        ) ||
+                        (
+                            returnNode.type == "TYPEOPER" && returnNode.token.value != Returns[0].token.value
+                        ))
+                    { Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode); }
+                }
+                //ReturnType = Returns[0].type;
+                string type = string.Empty;
+                switch (ReturnType)
+                {
+                    case "VAR":
+                    case "POSTUNAROPER":
+                    case "PREUNAROPER":
+                        type = varsLocal[Returns[0].token.value].token.value;
+                        break;
+                    case "SIZEOF":
+                    case "TYPEOF":
+                    case "NUMBER":
+                    case "ADDRESS":
+                    case "BINOPER":
+                        type = "long";
+                        break;
+                    case "FLOAT":
+                    case "FLOATOPER":
+                        type = "float";
+                        break;
+                    case "STRING":
+                        type = "string";
+                        break;
+                    case "CHAR":
+                        type = "char";
+                        break;
+                    case "BOOL":
+                        type = "bool";
+                        break;
+                    case "TYPEOPER":
+                        type = Returns[0].token.value;
+                        break;
+                    case "CALL":
+                        type = ast.resualtFunc[Returns[0].token.value].token.value;
+                        break;
+                    default:
+                        type = "long";
+                        break;
+                }
+                root.childs[0].token.value = type;
+                ast.resualtFunc[root.token.value].token.value = type;
+            }
+            // VAR
+            // BINOPER
+            // FLOATOPER
+            // NUMBER
+            // PREUNAROPER
+            // ADDRESS
+            // SIZEOF
+            // TYPEOF
+            // STRING
+            // CHAR
+            // BOOL
+            // FLOAT
+
+            return root;
+        }
 
         public CommonNode parse(CommonNode root, int z_buffer)
         {
@@ -717,24 +854,14 @@ namespace Qscript
                 resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                 childs.Add(resualtVar);
             }
-            Dictionary<string, CommonNode> varTypesTemp = new Dictionary<string, CommonNode>();
-            foreach (var v in varTypes)
-            {
-                varTypesTemp.Add(v.Key, v.Value);
-            }
-            foreach (CommonNode child in signature.childs)
-            {
-                varTypes.Add(child.token.value, child.childs[0]);
-            }
+
+            varSpace.OpenSpace();
+            foreach (CommonNode child in signature.childs)  varSpace.AddVar(child.token.value, child.childs[0]);
             for (int i = 0; i < bodyFunc.childs.Count; i++)
             {
                 bodyFunc.childs[i] = parse(bodyFunc.childs[i], z_buffer + 2);
             }
-            varTypes.Clear();
-            foreach (var v in varTypesTemp)
-            {
-                varTypes.Add(v.Key, v.Value);
-            }
+            varSpace.CloseSpace();
             childs.AddRange(signature.childs);
             ast.typesArgsFunc.Add(root.token.value, signature);
             signature.childs = childs;
@@ -790,7 +917,7 @@ namespace Qscript
                 //Console.WriteLine(strs[0]);
                 //Console.WriteLine(strs[1]);
                 string type = string.Empty;
-                type = varTypes[strs[0]].token.value;
+                type = varSpace.GetTypeValue(strs[0]);
                 for (int i = 1; i < strs.Length-1; i++)
                 {
                     type = ast.structs[type][strs[i]].token.value;
@@ -827,8 +954,8 @@ namespace Qscript
         {
             if (root.childs.Count > 0)
             {
-                if (varTypes.Keys.Contains(root.token.value))
-                    Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем {root.token.value}!", root);
+                if (varSpace.ContainsKey(root.token.value))
+                    Syntax.SyntaxError($"В текущей области видимости Переменная: {root.token.value} уже объявлена!", root);
 
                 CommonNode type = root.childs[0];
                 
@@ -864,7 +991,11 @@ namespace Qscript
                     type.childs.Clear();
                     root.childs[0] = type;
                 }
-                if (root.childs[0].type != "OFFSET") varTypes.Add(root.token.value, type);
+                if (root.childs[0].type != "OFFSET")
+                {
+                    if (varSpace.VarsSpaces.Count == 0) varSpace.VarsData.Add(root.token.value, type);
+                    else varSpace.AddVar(root.token.value, type);
+                }
             }
             return root;
         }
@@ -890,11 +1021,7 @@ namespace Qscript
         {
             if (root.type == "FOR")
             {
-                Dictionary<string, CommonNode> varTypesTempFor = new Dictionary<string, CommonNode>();
-                foreach (var v in varTypes)
-                {
-                    varTypesTempFor.Add(v.Key, v.Value);
-                }
+                varSpace.OpenSpace();
                 CommonNode recurse(CommonNode commonNode)
                 {
                     foreach (var child in commonNode.childs)
@@ -906,17 +1033,13 @@ namespace Qscript
                 }
                 //parse(take(root, 0), z_buffer + 1);
                 CommonNode varNode = recurse(take(root, 0));
+                varSpace.AddVar(varNode.token.value, varNode.childs[0]);
                 if (varNode == null) { Program.PrintAST(root, 0); Syntax.SyntaxError("Ошибка в объявлениии переменной в цикле For", root); }
                 parse(take(root, 3), z_buffer + 1);
-                varTypes.Clear();
-                foreach (var v in varTypesTempFor)
-                {
-                    varTypes.Add(v.Key, v.Value);
-                }
+                varSpace.CloseSpace();
             }
             return root;
         }
-
 
 
         private CommonNode copyNodes (CommonNode root)
@@ -1049,6 +1172,7 @@ namespace Qscript
         }
         private CommonNode generationDeclarationFunc(CommonNode root)
         {
+            string oldName = root.token.value;
             if (!ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) Syntax.SyntaxError($"Невозможно объявить декларотивный Тип:{root.token.value} так как его не существует!", root);
             CommonNode pattern = ast.declarotivePatternsFunctions[root.token.value];
             CommonNode patternDeclarator = pattern.childs.Last();
@@ -1080,7 +1204,7 @@ namespace Qscript
             ast.resualtFunc.Add(newName, take(newFunc, 0));
             newFunc.token.value = newName;
 
-
+            if (ast.qsFunction.Contains(oldName)) ast.qsFunction.Add(newName);
             ast.childs.Add(newFunc);
             
             return root;

@@ -83,7 +83,9 @@ namespace Qscript
             {
                 return true;
             }
-            throw new Exception($"На позиции:{pos} Ожидался Токен:{type}");
+            Syntax.SyntaxError($"На позиции:{pos} Ожидался Токен:{type}", tokens[pos].pos);
+            return false;
+            //throw new Exception($"На позиции:{pos} Ожидался Токен:{type}");
         }
         /// <summary>
         /// Сентаксическая функциия которая явно указывает что тут должен быть токен нужного типа!
@@ -732,7 +734,7 @@ namespace Qscript
             {
                 if (varNode.childs[0].childs.Count > 0 && varNode.childs[0].type == "TYPE") Syntax.SyntaxError("После возвращаемого типа функции не может идти Декларотивный Кортеж!", varNode.childs[0].childs[0]);
                 CommonNode child;
-                CommonNode args = parseVarWTypeSignature(); expect(new string[] { "LFIG", "SEM", "OPER" });
+                CommonNode args = parseVarWTypeSignature(); expect(new string[] { "LFIG", "SEM", "OPER", "VAR" }); if (tokens[pos].value == "qs") { skip(); root.qsFunction.Add(varNode.token.value); }
                 CommonNode declarator = parseDeclarator();
                 CommonNode body = parseBody();
                 varNode.type = "FUNC";
@@ -762,6 +764,14 @@ namespace Qscript
             expect(new string[] { "OPER", "PREFIX", "SEM", "LPAR", "TS", "VAR", "LK" });
 
             varNode = tryParseVarPath(varNode);
+
+            if (peek("VAR") && varNode.token.value == "qs")
+            {
+                varNode = new CommonNode("CALL", varNode.token);
+                varNode = parseCall(varNode); if (sem || peek("SEM")) { expect("SEM"); skip(); }
+                root.qsFunction.Add(varNode.token.value);
+                return varNode;
+            }
 
             if (peek("OPER") && tokens[pos].value == ":")
             {
@@ -1034,7 +1044,7 @@ namespace Qscript
                 CommonNode varNode = parse();
                 CommonNode initNode = varNode;//new CommonNode(varNode.type, varNode.token);
                 //initNode.childs.Add(new CommonNode("TYPE", type));
-                CommonNode ifNode = parseIfSignatureWOther();
+                CommonNode cmpNode = parseIfSignatureWOther();
                 expect("VAR");
                 CommonNode formulaNode = parseFormula();
                 CommonNode stepNode = new CommonNode("STEP", formulaNode.token);
@@ -1042,7 +1052,7 @@ namespace Qscript
                 if (peek("RPAR")) { expect("RPAR"); skip(); }
                 CommonNode bodyNode = parseBody();
                 cycleNode.childs.Add(initNode);
-                cycleNode.childs.Add(ifNode);
+                cycleNode.childs.Add(cmpNode);
                 cycleNode.childs.Add(stepNode);
                 cycleNode.childs.Add(bodyNode);
                 return cycleNode;

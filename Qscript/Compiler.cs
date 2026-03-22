@@ -55,7 +55,7 @@ namespace Qscript
             {"int16", "dw"},
             {"int8", "db"},
             {"byte", "db"},
-            {"string", "db"},
+            {"string", "du"},
             {"char", "db"},
             {"float", "dd"},
             {"double", "dq"},
@@ -75,7 +75,7 @@ namespace Qscript
             {"int16", "WORD"},
             {"int8", "BYTE"},
             {"byte", "BYTE"},
-            {"string", "BYTE"},
+            {"string", "WORD"},
             {"char", "BYTE"},
             {"float", "DWORD"},
             {"double", "QWORD"},
@@ -91,7 +91,7 @@ namespace Qscript
             {"int16",   2},
             {"int8",    1},
             {"byte",    1},
-            {"string",  1},
+            {"string",  2},
             {"char",    1},
             {"float",   4},
             {"double",  8},
@@ -732,7 +732,7 @@ namespace Qscript
             else
                 classes = type.token.value;
             if (root.childs.Count > 0 && root.childs[0].type == "INDICATOR")
-            { classes = $"*{root.childs[0].token.value}"; }
+            { classes = "*" + $"{root.childs[0].token.value}"; }
             if (!vars.Contains(root.token.value) && type != null && _objProg.local == false)
             {
                 _objProg.data.Append($"{root.token.value} {classes} 0\n");
@@ -1167,7 +1167,7 @@ namespace Qscript
             if (!stringConsts.Keys.Contains(root.token.value))
             {
                 stringConsts.Add(root.token.value, $"str_const_{stringConstsIndex}");
-                _objProg.stringsConsts.Append($"str_const_{stringConstsIndex} db {root.token.value}\n");
+                _objProg.stringsConsts.Append($"str_const_{stringConstsIndex} du {root.token.value}\n");
                 stringConstsIndex++;
             }
         }
@@ -1235,6 +1235,7 @@ namespace Qscript
         {
             _objProg.code.Append($"; FUNC {root.token.value}\n");
             setWriteData(CodeData.procData);
+            bool qsFunc = ProgramAst.qsFunction.Contains(root.token.value);
             //CommonNode types2 = take(root, 0);
             CommonNode signature = take(root, 1);
             string args = string.Empty;
@@ -1243,9 +1244,9 @@ namespace Qscript
                 if (!Compiler.types.ContainsKey(signature.childs[i].childs[0].token.value))
                     signature.childs[i].childs[0].type = "INDICATOR";
             }
-            for (int i = 0; i < signature.childs.Count; i++)
+            for (int i = ((qsFunc) ? 1 : 0); i < signature.childs.Count; i++)
             {
-                if (i != 0) args += " , ";
+                if (i != 0 && i != ((qsFunc)?1:0)) args += " , ";
                 //if (signature.childs[i].token.value == "resualtPtr")
                     //args += $"{signature.childs[i].token.value}:DWORD";
                 if (typesarg.ContainsKey(signature.childs[i].childs[0].token.value))
@@ -1263,6 +1264,11 @@ namespace Qscript
             returnType = take(root, 0);
             funcName = root.token.value;
             func = true;
+            if (signature.childs.Count > 0 && qsFunc)
+            {
+                translationVar(signature.childs[0], z_buffer + 2);
+                _objProg.code.Append($"    mov [{signature.childs[0].token.value}], eax");
+            }
             localVarTypes(signature);
             Translation(take(root, 2), z_buffer + 1);
             localVarTypes();
@@ -1308,6 +1314,13 @@ namespace Qscript
         {
             //_objProg.code.Append($"; CALL {root.token.value}\n");
             CommonNode signatureCall = take(root, 0);
+            CommonNode firstArg = null;
+            bool qsFunc = ProgramAst.qsFunction.Contains(root.token.value);
+            if (qsFunc && signatureCall.childs.Count > 0)
+            {
+                firstArg = signatureCall.childs[0];
+                //signatureCall.childs.RemoveAt(0);
+            }
             if (ProgramAst.inlineNames.Contains(root.token.value))
             {
                 //_objProg.code.Append($"{root.token.value} ");
@@ -1331,7 +1344,7 @@ namespace Qscript
                 _objProg.code.Append($"{root.token.value} {args}\n");
                 return;
             }
-            for (int i = signatureCall.childs.Count - 1; i >= 0; i--)
+            for (int i = signatureCall.childs.Count - 1; i >= ((qsFunc)?1:0); i--)
             {
                 if (signatureCall.childs[i].type == "VAR" && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[i].childs[0].token.value) && ProgramAst.varTypes[signatureCall.childs[i].token.value].type == "INDICATOR")
                 {
@@ -1377,13 +1390,29 @@ namespace Qscript
             if (resualtPtr != null)
             {
                 _objProg.code.Append(resualtPtr);
-                _objProg.code.Append($"push eax\n");
+                //_objProg.code.Append($"push eax\n");
             }
             if (resualtPtr == null)
             {
                 //_objProg.code.Append("sub ebp, 4\n");
                 //_objProg.code.Append("mov eax, 0\n");
                 //_objProg.code.Append($"push eax\n");
+            }
+            if (qsFunc && firstArg != null)
+            {
+                if (firstArg.type == "VAR" && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[0].childs[0].token.value) && ProgramAst.varTypes[firstArg.token.value].type == "INDICATOR")
+                    _objProg.code.Append($"mov eax, [{firstArg.token.value}]\n");
+                else if (firstArg.type == "VAR" && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[0].childs[0].token.value))
+                    _objProg.code.Append($"lea eax, [{firstArg.token.value}]\n");
+                else if (firstArg.type == "STRING")
+                {
+                    Translation(firstArg, z_buffer + 1);
+                    _objProg.code.Append($"mov eax, {stringConsts[firstArg.token.value]}\n");
+                }
+                else if (firstArg.type == "VAR" && firstArg.childs.Count > 0 && firstArg.childs[0].type == "OFFSET")
+                    Translation(firstArg, z_buffer + 1);
+                else
+                    Translation(firstArg, z_buffer + 1);
             }
             bool flag = false;
             foreach (var library in ProgramAst.externLibrarys.Keys)

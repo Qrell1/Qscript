@@ -78,6 +78,7 @@
     <Compile Include="Lex\StringLexer.cs" />
     <Compile Include="SemanticAnalyzer.cs" />
     <Compile Include="Token.cs" />
+    <Compile Include="VarSpace.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
