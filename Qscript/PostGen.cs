@@ -666,9 +666,14 @@ namespace Qscript
         {
             string resualt = instruct.value + " ";
             int i = 0;
+            bool flag = true;
             foreach (patternNode node in instruct.pattern)
             {
                 //if (node.key == "t") continue;
+                if (node.key == "t" && !flag) flag = true;
+                else if (node.key == "t") continue;
+                else flag = false;
+
                 resualt += node.value; //+ " ";
                 i++;
                 //if (i < instruct.pattern.Count && i != 1) resualt += ", ";

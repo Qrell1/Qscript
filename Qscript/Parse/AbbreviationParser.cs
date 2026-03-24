@@ -81,6 +81,8 @@ namespace Qscript
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = funcCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
+            newAst = defineCheak(ast);
+            ast.childs = new List<CommonNode>(newAst.childs);
             ast.varTypes = varSpace.VarsData;
             return ast;
         }
@@ -625,6 +627,25 @@ namespace Qscript
 
             return root;
         }
+        private CommonNode defineCheak(CommonNode root)
+        {
+            if (root.type != "TYPEIF")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = defineCheak(root.childs[i]);
+                }
+                return root;
+            }
+
+            CommonNode typeFirstNode = root.childs[0];
+            CommonNode typeSecondNode = root.childs[1];
+            CommonNode bodyNode = root.childs[2];
+
+            if (typeFirstNode.token.value == typeSecondNode.token.value)
+                return bodyNode;
+            return new CommonNode("AIR", root.token);
+        }
 
         public CommonNode parse(CommonNode root, int z_buffer)
         {
@@ -954,7 +975,7 @@ namespace Qscript
         {
             if (root.childs.Count > 0)
             {
-                if (varSpace.ContainsKey(root.token.value))
+                if (!root.token.value.Contains(".") && root.childs[0].type != "OFFSET" && varSpace.ContainsKey(root.token.value))
                     Syntax.SyntaxError($"В текущей области видимости Переменная: {root.token.value} уже объявлена!", root);
 
                 CommonNode type = root.childs[0];
@@ -969,8 +990,6 @@ namespace Qscript
                     oldType = type.token.value;
                     if (ast.declarativeClassNames.Contains(oldType2))
                     {
-                        Console.WriteLine("GENERATION GENERIC CLASS : ", oldType);
-                        
                         ast.classMethods.Add(oldType, new List<CommonNode>());
                         foreach (CommonNode child in ast.declarotiveClassMethods[oldType2])
                         {

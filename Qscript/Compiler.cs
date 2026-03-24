@@ -1359,6 +1359,12 @@ namespace Qscript
                 else if (signatureCall.childs[i].type == "STRING")
                 {
                     Translation(take(signatureCall, i), z_buffer + 1);
+                    //if (signatureCall.type == "INDICATOR")
+                    //{
+                    //_objProg.code.Append($"mov eax, [{stringConsts[signatureCall.childs[i].token.value]}]\n");
+                    //_objProg.code.Append($"push eax\n");
+                    //} else {
+                    //_objProg.code.Append($"lea eax, [{stringConsts[signatureCall.childs[i].token.value]}]\n");
                     _objProg.code.Append($"push {stringConsts[signatureCall.childs[i].token.value]}\n");
                 }
                 else if (signatureCall.childs[i].type == "VAR" && signatureCall.childs[i].childs.Count > 0 && signatureCall.childs[i].childs[0].type == "OFFSET")
@@ -1407,7 +1413,7 @@ namespace Qscript
                 else if (firstArg.type == "STRING")
                 {
                     Translation(firstArg, z_buffer + 1);
-                    _objProg.code.Append($"mov eax, {stringConsts[firstArg.token.value]}\n");
+                    _objProg.code.Append($"lea eax, [{stringConsts[firstArg.token.value]}]\n");
                 }
                 else if (firstArg.type == "VAR" && firstArg.childs.Count > 0 && firstArg.childs[0].type == "OFFSET")
                     Translation(firstArg, z_buffer + 1);
@@ -1607,6 +1613,7 @@ namespace Qscript
             //if (_objProg.procData.Length != 0)
                 file += "\nsection '.code' code readable executable\n";
             file += _objProg.procData.ToString();
+            file += "ret\n";
             // section '.code' code readable executable
             // section '.data' data readable writable
 

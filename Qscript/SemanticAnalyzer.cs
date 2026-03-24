@@ -98,6 +98,7 @@ namespace Qscript
             }
             //if ((leftNode.type == "VAR" && varSpace.GetType(leftNode.token.value).type == "INDICATOR")
                 //|| (rightNode.type == "VAR" && varSpace.GetType(rightNode.token.value).type == "INDICATOR")) return;
+            /*
             if (leftNode.type == "VAR" && rightNode.type == "VAR" && varSpace.GetTypeValue(leftNode.token.value) != varSpace.GetTypeValue(rightNode.token.value))
                 Syntax.SyntaxError($"Нельзя складывать Переменные: {leftNode.token.value} , {rightNode.token.value} разных типов!", root);
             if ((leftNode.type == "VAR" && rightNode.type == "CALL") && (varSpace.GetTypeValue(leftNode.token.value) != ast.resualtFunc[rightNode.token.value].token.value))
@@ -106,6 +107,7 @@ namespace Qscript
                 Syntax.SyntaxError($"Нельзя складывать Переменную: {rightNode.token.value} и результат Функции: {leftNode.token.value} они разных типов!", root);
             if ((leftNode.type == "CALL" && rightNode.type == "CALL") && ast.resualtFunc[leftNode.token.value].token.value != ast.resualtFunc[rightNode.token.value].token.value)
                 Syntax.SyntaxError($"Нельзя складывать результаты Функциий: {leftNode.token.value} , {rightNode.token.value} они разных типов!", root);
+            */
         }
         private static void analisFloatoper (CommonNode root, int z_buffer)
         {
@@ -160,7 +162,7 @@ namespace Qscript
             {
 
                 if (varSpace.ContainsKey(root.token.value))
-                    Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем!", root);
+                    Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем! {root.childs[0].type}", root);
                 CommonNode type = root.childs[0];
                 varSpace.AddVar(root.token.value, type);
             }

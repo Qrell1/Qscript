@@ -1419,6 +1419,16 @@ namespace Qscript
             return constNode;
         }
 
+        public CommonNode parseTypeif()
+        {
+            expect("TYPEIF");
+            CommonNode typeifNode = new CommonNode("TYPEIF", take()); expect("VAR");
+            typeifNode.childs.Add(new CommonNode("TYPE", take())); expect("VAR");
+            typeifNode.childs.Add(new CommonNode("TYPE", take()));
+            typeifNode.childs.Add(parseBody());
+            return typeifNode;
+        }
+
         public ProgramNode parseCode()
         {
             root = new ProgramNode("ROOT", new Token(null, "ROOT", -999));
@@ -1480,6 +1490,10 @@ namespace Qscript
             if (peek("INLINE"))
             {
                 return parseInline();
+            }
+            if (peek("TYPEIF"))
+            {
+                return parseTypeif();
             }
             return null;
         }
