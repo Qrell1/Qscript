@@ -28,10 +28,24 @@ namespace Qscript
             return VarsData.ContainsValue(value);
         }
 
+        public bool PeekContainsKey(string key)
+        {
+            if (VarsSpaces.Count == 0) return false;
+            return VarsSpaces.Peek().ContainsKey(key);
+        }
+
+        public bool PeekContainsValue(CommonNode value)
+        {
+            if (VarsSpaces.Count == 0) return false;
+            return VarsSpaces.Peek().ContainsValue(value);
+        }
+
         public void OpenSpace()
         {
-            if (VarsSpaces.Count != 0) VarsSpaces.Push(new Dictionary<string, CommonNode>(VarsSpaces.Peek()));
-            else VarsSpaces.Push(new Dictionary<string, CommonNode>(VarsData));
+            //if (VarsSpaces.Count != 0) VarsSpaces.Push(new Dictionary<string, CommonNode>(VarsSpaces.Peek()));
+            //else VarsSpaces.Push(new Dictionary<string, CommonNode>(VarsData));
+            if (VarsSpaces.Count != 0) VarsSpaces.Push(new Dictionary<string, CommonNode>());
+            else VarsSpaces.Push(new Dictionary<string, CommonNode>());
         }
 
         public void CloseSpace ()

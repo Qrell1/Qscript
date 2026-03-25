@@ -161,14 +161,14 @@ namespace Qscript
             if (root.childs.Count > 0 && root.childs[0].type != "OFFSET")
             {
 
-                if (varSpace.ContainsKey(root.token.value))
+                if (varSpace.PeekContainsKey(root.token.value))
                     Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем! {root.childs[0].type}", root);
                 CommonNode type = root.childs[0];
                 varSpace.AddVar(root.token.value, type);
             }
             else
             {
-                if (!root.token.value.Contains(".") && !varSpace.ContainsKey(root.token.value)) Syntax.SyntaxError($"В текущей области видимости не существует Переменной: {root.token.value}", root);
+                if (!root.token.value.Contains('.') && !root.token.value.Contains(',') && !varSpace.ContainsKey(root.token.value)) Syntax.SyntaxError($"[S]В текущей области видимости не существует Переменной: {root.token.value}", root);
             }
         }
         private static void analisCall (CommonNode root, int z_buffer)

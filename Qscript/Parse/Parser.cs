@@ -733,20 +733,31 @@ namespace Qscript
             if (peek("LPAR"))
             {
                 if (varNode.childs[0].childs.Count > 0 && varNode.childs[0].type == "TYPE") Syntax.SyntaxError("После возвращаемого типа функции не может идти Декларотивный Кортеж!", varNode.childs[0].childs[0]);
+                bool qsFlag = false;
                 CommonNode child;
-                CommonNode args = parseVarWTypeSignature(); expect(new string[] { "LFIG", "SEM", "OPER", "VAR" }); if (tokens[pos].value == "qs") { skip(); root.qsFunction.Add(varNode.token.value); }
+                CommonNode args = parseVarWTypeSignature(); expect(new string[] { "LFIG", "SEM", "OPER", "VAR" }); if (tokens[pos].value == "qs") { skip(); qsFlag = true; }
                 CommonNode declarator = parseDeclarator();
                 CommonNode body = parseBody();
                 varNode.type = "FUNC";
                 varNode.childs.Add(args);
                 varNode.childs.Add(body);
                 if (declarator != null) varNode.childs.Add(declarator);
+
+                if (root.functionOver.ContainsKey(varNode.token.value) && root.functionOver[varNode.token.value].Count != 0)
+                {
+                    string keyTemp = varNode.token.value;
+                    varNode.token.value += root.functionOver[varNode.token.value].Count;
+                    root.functionOver[keyTemp].Add(varNode);
+                }                 
+
                 if (varNode.childs[0].token.value == "void")
                     root.resualtFunc.Add(varNode.token.value, null);
                 else
                     root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
 
                 if (declarator != null) root.declarotivePatternsFunctions.Add(varNode.token.value, varNode);
+                if (!root.functionOver.ContainsKey(varNode.token.value)) root.functionOver.Add(varNode.token.value, new List<CommonNode>() { varNode });
+                if (qsFlag) root.qsFunction.Add(varNode.token.value);
                 return varNode;
             }
 
@@ -1372,8 +1383,8 @@ namespace Qscript
             {
                 expect("VAR");
                 CommonNode libraryNode = new CommonNode("VAR", take()); expect("STRING");
-                root.externLibrarys.Add(libraryNode.token.value, take().value);
-                root.externFuncs.Add(libraryNode.token.value, new List<string>());
+                if (!root.externLibrarys.ContainsKey(libraryNode.token.value)) root.externLibrarys.Add(libraryNode.token.value, take().value);
+                if (!root.externFuncs.ContainsKey(libraryNode.token.value)) root.externFuncs.Add(libraryNode.token.value, new List<string>());
                 return null;
             }
             if (externNode.type == "EXTERNFUNC")
@@ -1408,15 +1419,13 @@ namespace Qscript
 
         public CommonNode parseConst()
         {
-            expect("CONST");
-            Token constToken = take();
-            CommonNode constNode = new CommonNode("CONST", constToken);
+            expect("CONST"); skip();  expect("VAR");
+            CommonNode constNode = new CommonNode("VAR", take());
             expect("OPER"); if (tokens[pos].value != "=") SyntaxError($"На Позиции:{pos} после константы ожидался оператор =");
             skip();
             CommonNode valueNode = parseFormula();
-            constNode.childs.Add(valueNode);
-            if (sem || peek("SEM")) { expect("SEM"); skip(); }
-            return constNode;
+            root.consts.Add(constNode.token.value, valueNode);
+            return null;
         }
 
         public CommonNode parseTypeif()

@@ -40,6 +40,8 @@ namespace Qscript
         {
             ast = root;
             CommonNode astNode = copyNodes(root);
+            // Const Remove
+            astNode = constRemove(astNode);
             // Replace Constant Var Value
             astNode = replaceConstantVarValue(astNode);
             // BinOper Cheak Float
@@ -80,6 +82,8 @@ namespace Qscript
             CommonNode newAst = callCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = funcCheak(ast);
+            ast.childs = new List<CommonNode>(newAst.childs);
+            newAst = callCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = defineCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
@@ -646,6 +650,21 @@ namespace Qscript
                 return bodyNode;
             return new CommonNode("AIR", root.token);
         }
+        private CommonNode constRemove(CommonNode root)
+        {
+            if (root.type != "VAR")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = constRemove(root.childs[i]);
+                }
+                return root;
+            }
+
+            if (ast.consts.ContainsKey(root.token.value)) return ast.consts[root.token.value];
+            return root;
+        }
+
 
         public CommonNode parse(CommonNode root, int z_buffer)
         {
@@ -923,6 +942,62 @@ namespace Qscript
         }
         private CommonNode parseCall(CommonNode root, int z_buffer)
         {
+            if (ast.functionOver.ContainsKey(root.token.value) && ast.functionOver[root.token.value].Count > 1)
+            {
+                string name = root.token.value;
+                for (int i = 0; i < ast.functionOver[root.token.value].Count; i++)
+                {
+                    if (ast.functionOver[root.token.value][i].childs[1].childs.Count == root.childs[0].childs.Count)
+                    {
+                        name = ast.functionOver[root.token.value][i].token.value;
+                        bool flag = true;
+                        for (int j = 0; j < ast.functionOver[root.token.value][i].childs[1].childs.Count; j++)
+                        {
+                            string childValue = root.childs[0].childs[j].token.value;
+                            string childType = root.childs[0].childs[j].type;
+                            string functionType = ast.functionOver[root.token.value][i].childs[1].childs[j].token.value;
+                            switch (childType)
+                            {
+                                case "VAR":
+                                case "POSTUNAROPER":
+                                case "PREUNAROPER":
+                                    if (varSpace.GetTypeValue(childValue) != functionType) flag = false;
+                                    break;
+                                case "SIZEOF":
+                                case "TYPEOF":
+                                case "NUMBER":
+                                case "ADDRESS":
+                                case "BINOPER":
+                                    if (!Compiler.types.ContainsKey(functionType)) flag = false;
+                                    break;
+                                case "FLOAT":
+                                case "FLOATOPER":
+                                    if (functionType != "float" && functionType != "double") flag = false;
+                                    break;
+                                case "STRING":
+                                    if (functionType != "string") flag = false;
+                                    break;
+                                case "CHAR":
+                                    if (functionType != "char" && functionType != "byte" && functionType != "int8") flag = false;
+                                    break;
+                                case "BOOL":
+                                    if (functionType != "bool") flag = false;
+                                    break;
+                                case "TYPEOPER":
+                                    if (functionType != childValue) flag = false;
+                                    break;
+                                case "CALL":
+                                    if (functionType != ast.resualtFunc[childValue].token.value) flag = false;
+                                    break;
+                            }
+                            if (!flag) break;
+                        }
+                        if (flag) name = ast.functionOver[root.token.value][i].token.value;
+                    }
+                }
+                root.token.value = name;
+            }
+
             foreach (var library in ast.externLibrarys)
             {
                 if (ast.externFuncs[library.Key].Contains(root.token.value))
@@ -964,6 +1039,16 @@ namespace Qscript
             if (take(root, 0).type == "DECLARATOR") Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
 
             CommonNode signatureCall = take(root, 0);
+            /*List<CommonNode> nodes = new List<CommonNode>();
+            if (ast.resualtFunc.ContainsKey(root.token.value))
+            {
+                nodes.Add(new CommonNode("VAR", ast.resualtFunc[root.token.value].token));
+                nodes.Last().childs.Add(ast.resualtFunc[root.token.value]);
+            }
+            nodes.AddRange(signatureCall.childs);
+            signatureCall.childs = nodes;*/
+            
+
             for (int j = 0; j < signatureCall.childs.Count; j++)
             {
                 signatureCall.childs[j] = parse(signatureCall.childs[j], z_buffer + 2);

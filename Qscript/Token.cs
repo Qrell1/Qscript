@@ -129,6 +129,8 @@ namespace Qscript
             tokenTypes.Add("TYPEDEF", new TokenType("TYPEDEF", @"\btypedef\b"));
             tokenTypes.Add("TYPEIF", new TokenType("TYPEIF", @"\btypeif\b"));
 
+            tokenTypes.Add("CONST", new TokenType("CONST", @"\bconst\b"));
+
             tokenTypes.Add("SECTION", new TokenType("SECTION", @"\bsection\b"));
             tokenTypes.Add("NATIVE", new TokenType("NATIVE", @"\bnative\b"));
             tokenTypes.Add("INLINE", new TokenType("INLINE", @"\binline\b"));

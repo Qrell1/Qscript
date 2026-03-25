@@ -43,10 +43,7 @@ namespace Qscript
         private ProgramNode ProgramAst;
         private string refVarStr = string.Empty;
 
-        private List<string> vars = new List<string>();
-
-        private Dictionary<string, CommonNode> tempVars;
-        private bool localVars = false;
+        private VarSpace varSpace = new VarSpace();
 
         public static Dictionary<string, string> types = new Dictionary<string, string>()
         {
@@ -127,7 +124,7 @@ namespace Qscript
         private int iterTagIndex;
 
 
-        public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; }
+        public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; varSpace.VarsData = ast.varTypes; }
 
 
         public CommonNode take(CommonNode node, int i = 0)
@@ -149,7 +146,7 @@ namespace Qscript
             return ts;
         }
 
-        public void localVarTypes (CommonNode vars = null)
+        /*public void localVarTypes (CommonNode vars = null)
         {
             if (!localVars)
             {
@@ -161,7 +158,7 @@ namespace Qscript
                 ProgramAst.varTypes = copyVars(tempVars);
                 localVars = false;
             }
-        }
+        }*/
 
         public void setWriteData (CodeData data)
         {
@@ -733,11 +730,11 @@ namespace Qscript
                 classes = type.token.value;
             if (root.childs.Count > 0 && root.childs[0].type == "INDICATOR")
             { classes = "*" + $"{root.childs[0].token.value}"; }
-            if (!vars.Contains(root.token.value) && type != null && _objProg.local == false)
+            if (!varSpace.PeekContainsKey(root.token.value) && type != null && _objProg.local == false)
             {
                 _objProg.data.Append($"{root.token.value} {classes} 0\n");
             }
-            if (!vars.Contains(root.token.value) && type != null && _objProg.local == true)
+            if (!varSpace.PeekContainsKey(root.token.value) && type != null && _objProg.local == true)
             {
                 _objProg.code.Append($"local {root.token.value} {classes} 0\n");
             }
@@ -795,6 +792,7 @@ namespace Qscript
                 else if (rightChild.type == "CALL")
                 {
                     //translationCall(rightChild, z_buffer + 1);//, $"lea eax, [{varChild.token.value}]\n");
+                    Console.WriteLine(rightChild.token.value + " | " + ProgramAst.resualtFunc[rightChild.token.value].token.value + " CALL");
                     if (types.Keys.Contains(ProgramAst.resualtFunc[rightChild.token.value].token.value))
                     { translationCall(rightChild, z_buffer + 1); _objProg.code.Append($"mov [{varChild.token.value}], eax\n"); }
                     else translationCall(rightChild, z_buffer + 1, $"lea eax, [{varChild.token.value}]\n");
@@ -1269,9 +1267,10 @@ namespace Qscript
                 translationVar(signature.childs[0], z_buffer + 2);
                 _objProg.code.Append($"    mov [{signature.childs[0].token.value}], eax");
             }
-            localVarTypes(signature);
+            varSpace.OpenSpace();
+            foreach (CommonNode child in signature.childs) varSpace.AddVar(child.token.value, child.childs[0]);
             Translation(take(root, 2), z_buffer + 1);
-            localVarTypes();
+            varSpace.CloseSpace();
             func = false;
             /*
                 mov edi, mc2
@@ -1344,9 +1343,12 @@ namespace Qscript
                 _objProg.code.Append($"{root.token.value} {args}\n");
                 return;
             }
+            Console.WriteLine(root.token.value);
+            if (ProgramAst.resualtFunc[root.token.value] != null) Console.WriteLine(ProgramAst.resualtFunc[root.token.value].token.value);
             for (int i = signatureCall.childs.Count - 1; i >= ((qsFunc)?1:0); i--)
             {
-                if (signatureCall.childs[i].type == "VAR" && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[i].childs[0].token.value) && ProgramAst.varTypes[signatureCall.childs[i].token.value].type == "INDICATOR")
+                Console.WriteLine($"- {signatureCall.childs[i].token.value}");
+                if (signatureCall.childs[i].type == "VAR" && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[i].childs[0].token.value) && varSpace.GetType(signatureCall.childs[i].token.value).type == "INDICATOR")
                 {
                     _objProg.code.Append($"mov eax, [{signatureCall.childs[i].token.value}]\n");
                     _objProg.code.Append($"push eax\n");
@@ -1384,6 +1386,7 @@ namespace Qscript
                     _objProg.code.Append($"push eax\n");
                 }
             }
+            Console.WriteLine("--end");
             /*if (resualtPtr!=null && ProgramAst.resualtFunc[root.token.value] != null)
             {
                 _objProg.code.Append(resualtPtr);
@@ -1396,7 +1399,7 @@ namespace Qscript
             if (resualtPtr != null)
             {
                 _objProg.code.Append(resualtPtr);
-                //_objProg.code.Append($"push eax\n");
+                _objProg.code.Append($"push eax\n");
             }
             if (resualtPtr == null)
             {
@@ -1491,7 +1494,7 @@ namespace Qscript
             {
                 int n = 0;
                 string[] strs = name.Split('.', ',');
-                string strct = ProgramAst.varTypes[strs[0]].token.value;
+                string strct = varSpace.GetType(strs[0]).token.value;
                 start:
                 if (
                     !ProgramAst.structs.ContainsKey(strct) ||
@@ -1504,7 +1507,7 @@ namespace Qscript
                 strct = type.token.value;
                 //if (n == strs.Length) { }
                 if (!types.ContainsKey(type.token.value)) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
-            } else type = ProgramAst.varTypes[name];
+            } else type = varSpace.GetType(name);
             //CommonNode type = ProgramAst.varTypes[name];
             string classes = "";
             string sizeConst = "";
@@ -1600,6 +1603,13 @@ namespace Qscript
 
         public string ConcatData (TypeApp typeApp)
         {
+            try
+            {
+                for (int i = 0; i < types.Count; i++)
+                {
+                    Console.WriteLine($"<< {types.ElementAt(i)} | {typesarg.ElementAt(i)} | {aligns.ElementAt(i)}");
+                }
+            } catch { }
             _objProg = PostGen.PostTranslation(_objProg, ProgramAst);
             //_objProg = CrossCompiler.Compile(_objProg);
             string file = string.Empty;
