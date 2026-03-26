@@ -1128,9 +1128,9 @@ namespace Qscript
             //SyntaxError($"Ну типо ты в структуре данных на позиции:{pos} используешь первым токеном оператором не того типа!!!");
 
             //
-            if (peek("VAR") && tokens[pos+1].type.type == "VAR")
+            if (peek("VAR") && (tokens[pos + 1].type.type == "VAR" || tokens[pos + 1].value == "*"))
             {
-                CommonNode typeNode = new CommonNode("TYPE", take());
+                CommonNode typeNode = new CommonNode("TYPE", take()); if (tokens[pos].value == "*") { typeNode.type = "INDICATOR"; skip(); }
                 CommonNode varNode = new CommonNode("VAR", take());
 
                 varNode = tryParseVarPath(varNode);

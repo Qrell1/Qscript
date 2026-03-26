@@ -152,6 +152,8 @@ namespace Qscript
                     typeApp = TypeApp.program32;
                 else if (args[1] == "-program64")
                     typeApp = TypeApp.program64;
+                else if (args[1] == "-bin")
+                    typeApp = TypeApp.bin;
             }
             else
             {

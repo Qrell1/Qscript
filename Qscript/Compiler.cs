@@ -19,7 +19,7 @@ namespace Qscript
     }
     public enum TypeApp
     {
-        dll, program32, program64, asmmodule, h, gui
+        dll, program32, program64, asmmodule, h, gui, bin
     }
     public class objProgram
     {
@@ -453,7 +453,7 @@ namespace Qscript
             } else if (returnType.type == "VAR")
             {
                 Translation(returnValue, z_buffer + 1);
-                _objProg.code.Append($"mov eax, [{returnValue.token.value}]\n");
+                _objProg.code.Append($"lea eax, [{returnValue.token.value}]\n");
                 //_objProg.code.Append($"mov esi, eax\n");
             } else
             {
@@ -711,17 +711,28 @@ namespace Qscript
                 //_objProg.code.Append($"mov eax, [{root.token.value}+eax]\n");
                 return;
             }
-            
-            if (root.childs.Count == 0 && !types.Keys.Contains(root.token.value))
+
+            //if (root.childs.Count == 0 && varSpace.ContainsKey(root.token.value) && !types.ContainsKey(varSpace.GetType(root.token.value).token.value))
+            //{
+            //_objProg.code.Append($"lea eax, [{root.token.value}]\n");
+            //return;
+            //}
+            string varType = varSpace.GetTypeValue(root.token.value);
+            if (varType != null && root.childs.Count == 0 && !types.ContainsKey(varType))
+            {
+                _objProg.code.Append($"lea eax, [{root.token.value}]\n");
+                return;
+            }
+            if (root.childs.Count == 0)
             {
                 _objProg.code.Append($"mov eax, [{root.token.value}]\n");
                 return;
             }
-            if (root.childs.Count == 0 && typesarg.Keys.Contains(root.token.value))
+            /*if (root.childs.Count == 0 && typesarg.Keys.Contains(root.token.value))
             {
                 _objProg.code.Append($"mov eax, [{root.token.value}]\n");
                 return;
-            }
+            }*/
             CommonNode type = take(root, 0);
             string classes = "";
             if (types.Keys.Contains(type.token.value))
@@ -738,6 +749,7 @@ namespace Qscript
             {
                 _objProg.code.Append($"local {root.token.value} {classes} 0\n");
             }
+            if (!varSpace.ContainsKey(root.token.value) && type != null) varSpace.AddVar(root.token.value, type);
         }
         public void translationBinOper (CommonNode root, int z_buffer)
         {
@@ -779,7 +791,7 @@ namespace Qscript
                         stringConstsIndex++;
                     }
 
-                    _objProg.code.Append($"mov eax, {stringConsts[rightChild.token.value]}\n");
+                    _objProg.code.Append($"lea eax, [{stringConsts[rightChild.token.value]}]\n");
                     _objProg.code.Append($"mov [{varChild.token.value}], eax\n");
                     //_objProg.code.Append($"mov [{varChild.token.value}], eax\n");
                     return;
@@ -1361,12 +1373,6 @@ namespace Qscript
                 else if (signatureCall.childs[i].type == "STRING")
                 {
                     Translation(take(signatureCall, i), z_buffer + 1);
-                    //if (signatureCall.type == "INDICATOR")
-                    //{
-                    //_objProg.code.Append($"mov eax, [{stringConsts[signatureCall.childs[i].token.value]}]\n");
-                    //_objProg.code.Append($"push eax\n");
-                    //} else {
-                    //_objProg.code.Append($"lea eax, [{stringConsts[signatureCall.childs[i].token.value]}]\n");
                     _objProg.code.Append($"push {stringConsts[signatureCall.childs[i].token.value]}\n");
                 }
                 else if (signatureCall.childs[i].type == "VAR" && signatureCall.childs[i].childs.Count > 0 && signatureCall.childs[i].childs[0].type == "OFFSET")
@@ -1601,7 +1607,7 @@ namespace Qscript
                 _objProg.code.Append(strings[i] + "\n");
         }
 
-        public string ConcatData (TypeApp typeApp)
+        public string ConcatData(TypeApp typeApp)
         {
             try
             {
@@ -1616,14 +1622,15 @@ namespace Qscript
             file += _objProg.includes.ToString();
             file += "\n";
             file += _objProg.macroData.ToString();
+            file += "\nsection '.code' code readable executable\n";
+            file += _objProg.procData.ToString();
+            file += "ret\n";
             if (_objProg.data.Length != 0 || _objProg.stringsConsts.Length != 0)
                 file += "\nsection '.data' data readable writable\n";
             file += _objProg.stringsConsts.ToString();
             file += _objProg.data.ToString();
             //if (_objProg.procData.Length != 0)
-                file += "\nsection '.code' code readable executable\n";
-            file += _objProg.procData.ToString();
-            file += "ret\n";
+            
             // section '.code' code readable executable
             // section '.data' data readable writable
 
@@ -1635,7 +1642,12 @@ namespace Qscript
             ///}
             ///
             Console.ReadLine();
-            if (typeApp == TypeApp.gui)
+            if (typeApp == TypeApp.bin)
+            {
+                file = "format binary as \"bin\"\nentry main\n" + file;
+                file += _objProg.codeData.ToString();
+            }
+            else if (typeApp == TypeApp.gui)
             {
                 file = "format PE GUI 4.0\n\nentry start\n" + file;
                 file += "start: ;START MAIN\n";

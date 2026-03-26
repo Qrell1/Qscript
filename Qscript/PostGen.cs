@@ -229,15 +229,6 @@ namespace Qscript
                     {
                         if (pattern1[1].key == "o") varLocal.Add(pattern1[0].value, pattern1[1].value + pattern1[2].value);
                         else varLocal.Add(pattern1[0].value, pattern1[1].value);
-                        //Console.WriteLine("|||" + pattern1[0].value + " }{ " + pattern1[1].value + pattern1[2].value);
-                        foreach (var item in _instuct.pattern)
-                        {
-                            //Console.WriteLine(" |\\ : " + item.key + "" + item.value);
-                        }
-                        //Console.WriteLine(pattern1[0].value);
-                        //Console.WriteLine(pattern1[1].value);
-                        //Console.WriteLine(pattern1[2].value);
-                        //Console.WriteLine("\\\\\\" + InstructConcat(_instuct));   
                         int posType = 0;
                         bool flag = false;
                         while (true)
@@ -324,8 +315,9 @@ namespace Qscript
                                 v1 = v1.Remove(0, 1);
                                 int n = 0;
                                 string[] strs = v1.Split('.');
-                                if (!varLocal.ContainsKey(strs[0]) && !args.Contains(strs[0]) && strs[0].First() != '*' || strs.Length < 2) break;
-                                if (Compiler.typesarg.ContainsValue(varLocal[strs[0]])) break;
+                                if (!varLocal.ContainsKey(strs[0]) && !args.Contains(strs[0]) || strs.Length < 2) break; // strs[0].First() != '*'
+                                if (varLocal[strs[0]].First() != '*' && !args.Contains(strs[0])) break;
+                                if (Compiler.typesarg.ContainsKey(varLocal[strs[0]])) break;
                                 string var = string.Empty;
                                 for (int k = 1; k < strs.Length; k++)
                                 {
