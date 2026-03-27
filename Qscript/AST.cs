@@ -31,6 +31,8 @@ namespace Qscript
         public List<string> qsFunction = new List<string>();
         public Dictionary<string, CommonNode> consts = new Dictionary<string, CommonNode>();
 
+        public Dictionary<string, CommonNode> parentsStructs = new Dictionary<string, CommonNode>();
+
         public Dictionary<string, CommonNode> declarotivePatternsFunctions = new Dictionary<string, CommonNode>();
         public Dictionary<string, CommonNode> declarotivePatternsStruct = new Dictionary<string, CommonNode>();
 

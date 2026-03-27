@@ -1185,18 +1185,15 @@ namespace Qscript
             CommonNode structNode = new CommonNode(typeStructToken.type.type, nameToken);
             CommonNode declarotivePart = null;
             declarotivePart = parseDeclarator();
-            /*if (peek("OPER") && (tokens[pos].value == "<" || tokens[pos].value == "@"))
+            
+            if (peek("OPER"))
             {
-                declarotivePart = new CommonNode("DECLARATOR", take());
-                while (peek("VAR"))
-                {
-                    declarotivePart.childs.Add(new CommonNode("CONST", take()));
-                    if (!peek("PS")) break;
-                    else skip();
-                }
-                expect("OPER"); if (tokens[pos].value != ">") Syntax.SyntaxError("Ожидался Токен: >", take());
-                skip(); structNode.childs.Add(declarotivePart);
-            }*/
+                skip(); expect("VAR"); CommonNode varNode = new CommonNode("VAR", take());
+                CommonNode declarotivePartSecond = parseDeclarator();
+                if (declarotivePartSecond != null) varNode.childs.Add(declarotivePartSecond);
+                root.parentsStructs.Add(structNode.token.value, varNode);
+            }
+
             if (declarotivePart != null) structNode.childs.Add(declarotivePart);
             expect("LFIG"); skip(); if (peek("RFIG")) { skip(); return structNode; }
 
@@ -1235,11 +1232,6 @@ namespace Qscript
             }
             else
             {
-                //CommonNode modifierNode = new CommonNode("MODIFIER", take());
-                //expect("OPER"); if (tokens[pos].value != ":") SyntaxError($"Ну типо после модификатора доступа на позиции Токена:{pos} нужно писать токен :");
-                //skip();
-                //expect("VAR");
-
                 while (true)
                 {
                     /*CommonNode varNode = parse();
@@ -1259,13 +1251,6 @@ namespace Qscript
                         //if (declarotivePart != null) root.declarotivePatternsStruct.Add(nameToken.value, structNode);
                         return structNode;
                     }
-                    /*else if (peek("MODIFIER"))
-                    {
-                        structNode.childs.Add(modifierNode);
-                        modifierNode = new CommonNode("MODIFIER", take());
-                        expect("OPER"); if (tokens[pos].value != ":") SyntaxError($"Ну типо после модификатора доступа на позиции Токена:{pos} нужно писать токен :");
-                        skip();
-                    }*/
                 }
             }
             //
