@@ -136,30 +136,6 @@ namespace Qscript
             return null;
         }
 
-        private Dictionary<string, CommonNode> copyVars(Dictionary<string, CommonNode> copy)
-        {
-            Dictionary<string, CommonNode> ts = new Dictionary<string, CommonNode>();
-
-            foreach (var var in copy)
-                ts.Add(var.Key, var.Value);
-
-            return ts;
-        }
-
-        /*public void localVarTypes (CommonNode vars = null)
-        {
-            if (!localVars)
-            {
-                tempVars = copyVars(ProgramAst.varTypes);
-                localVars = true;
-                foreach (var var in vars.childs) ProgramAst.varTypes.Add(var.token.value, var.childs[0]);
-            } else
-            {
-                ProgramAst.varTypes = copyVars(tempVars);
-                localVars = false;
-            }
-        }*/
-
         public void setWriteData (CodeData data)
         {
             if (data == CodeData.codeData)
@@ -303,7 +279,7 @@ namespace Qscript
             }
         }
         //public void
-        public void translationWhile (CommonNode root, int z_buffer)
+        private void translationWhile (CommonNode root, int z_buffer)
         {
             CommonNode cmpNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
@@ -321,7 +297,7 @@ namespace Qscript
 
             //iterTagIndex++;
         }
-        public void translationFor (CommonNode root, int z_buffer)
+        private void translationFor (CommonNode root, int z_buffer)
         {
             CommonNode initNode = take(root, 0);
             CommonNode cmpNode = take(root, 1);
@@ -343,7 +319,7 @@ namespace Qscript
 
             //iterTagIndex++;
         }
-        public void translationRept (CommonNode root, int z_buffer)
+        private void translationRept (CommonNode root, int z_buffer)
         {
             CommonNode signatureNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
@@ -352,7 +328,7 @@ namespace Qscript
             Translation(bodyNode, z_buffer + 1);
             _objProg.code.Append("}");
         }
-        public void translationEnumerator (CommonNode root, int z_buffer)
+        private void translationEnumerator (CommonNode root, int z_buffer)
         {
             CommonNode varNode = take(root, 0);
             CommonNode countNode = take(root, 1);
@@ -390,32 +366,32 @@ namespace Qscript
 
             //iterTagIndex++;
         }
-        public void translationPreUnarOper (CommonNode root, int z_buffer)//, bool mov = true)
+        private void translationPreUnarOper (CommonNode root, int z_buffer)//, bool mov = true)
         {
             CommonNode varNode = take(root, 0);
             string oper = (root.token.value == "++") ? "inc" : "dec" ;
             _objProg.code.Append($"{oper} [{varNode.token.value}]\n");
             _objProg.code.Append($"mov eax, [{varNode.token.value}]\n"); // if (mov) 
         }
-        public void translationPostUnarOper(CommonNode root, int z_buffer)
+        private void translationPostUnarOper(CommonNode root, int z_buffer)
         {
             CommonNode varNode = take(root, 0);
             string oper = (root.token.value == "++") ? "inc" : "dec";
             _objProg.code.Append($"mov eax, [{varNode.token.value}]\n");
             _objProg.code.Append($"{oper} [{varNode.token.value}]\n");
         }
-        public void translationAddress (CommonNode root, int z_buffer)
+        private void translationAddress (CommonNode root, int z_buffer)
         {
             CommonNode varNode = take(root, 0);
             _objProg.code.Append($"lea eax, [{varNode.token.value}]\n");
         }
-        public void translationSizeof (CommonNode root, int z_buffer)
+        private void translationSizeof (CommonNode root, int z_buffer)
         {
             CommonNode varNode = take(root, 0);
             string size = getSize(varNode.token.value, varNode);
             _objProg.code.Append($"mov eax, {size}\n");
         }
-        public void translationTypeof(CommonNode root, int z_buffer)
+        private void translationTypeof(CommonNode root, int z_buffer)
         {
             CommonNode varNode = take(root, 0);
             string size = string.Empty;
@@ -433,7 +409,7 @@ namespace Qscript
 
             _objProg.code.Append($"mov eax, {size}\n");
         }
-        public void translationRefVar (CommonNode root, int z_buffer)
+        private void translationRefVar (CommonNode root, int z_buffer)
         {
             CommonNode call = take(root, 0);
             _objProg.code.Append($"sub esp, SIZE_{ProgramAst.resualtFunc[call.token.value].token.value.ToUpper()}\n");
@@ -442,7 +418,7 @@ namespace Qscript
             //_objProg.code.Append($"mov [eax], [esp-{ProgramAst.resualtFunc[call.token.value].token.value}.{root.token.value}]\n");
             _objProg.code.Append($"add esp, SIZE_{ProgramAst.resualtFunc[call.token.value].token.value.ToUpper()}\n");
         }
-        public void translationReturn (CommonNode root, int z_buffer)
+        private void translationReturn (CommonNode root, int z_buffer)
         {
             CommonNode returnValue = take(root, 0);
 
@@ -462,7 +438,7 @@ namespace Qscript
             }
             _objProg.code.Append($"jmp {funcName}.return\n");
         }
-        public void translationIter (CommonNode root, int z_buffer)
+        private void translationIter (CommonNode root, int z_buffer)
         {
             CommonNode countNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
@@ -497,7 +473,7 @@ namespace Qscript
             }
             //iterTagIndex++;
         }
-        public void translationIf (CommonNode root, int z_buffer)
+        private void translationIf (CommonNode root, int z_buffer)
         {
             CommonNode cmp = take(root, 0);
             CommonNode body = take(root, 1);
@@ -519,12 +495,12 @@ namespace Qscript
                 falseTagIndex++;
             }
         }
-        public void translationElse (CommonNode root, int z_buffer)
+        private void translationElse (CommonNode root, int z_buffer)
         {
             CommonNode body = take(root, 0);
             Translation(body, z_buffer + 1);
         }
-        public void translationCmp (CommonNode root, int z_buffer, bool cmp=false)
+        private void translationCmp (CommonNode root, int z_buffer, bool cmp=false)
         {
             if ("true" == root.token.value)
             {
@@ -673,7 +649,7 @@ namespace Qscript
                 //_objProg.code.Append($"mov [{leftChild.token.value}], eax\n");
             }
         }
-        public void translationLeftRightNodes (CommonNode leftChild, CommonNode rightChild, int z_buffer)
+        private void translationLeftRightNodes (CommonNode leftChild, CommonNode rightChild, int z_buffer)
         {
             if (leftChild.type == "NUMBER" && rightChild.type == "NUMBER")
             {
@@ -694,7 +670,7 @@ namespace Qscript
                 _objProg.code.Append($"pop eax\n");
             }
         }
-        public void translationVar (CommonNode root,  int z_buffer)
+        private void translationVar (CommonNode root,  int z_buffer)
         {
             if (root.childs.Count > 0 && root.childs[0].type == "OFFSET")
             {
@@ -751,7 +727,7 @@ namespace Qscript
             }
             if (!varSpace.ContainsKey(root.token.value) && type != null) varSpace.AddVar(root.token.value, type);
         }
-        public void translationBinOper (CommonNode root, int z_buffer)
+        private void translationBinOper (CommonNode root, int z_buffer)
         {
             if (root.token.value == "=")
             {
@@ -805,7 +781,7 @@ namespace Qscript
                 {
                     //translationCall(rightChild, z_buffer + 1);//, $"lea eax, [{varChild.token.value}]\n");
                     Console.WriteLine(rightChild.token.value + " | " + ProgramAst.resualtFunc[rightChild.token.value].token.value + " CALL");
-                    if (types.Keys.Contains(ProgramAst.resualtFunc[rightChild.token.value].token.value))
+                    if (types.ContainsKey(ProgramAst.resualtFunc[rightChild.token.value].token.value))
                     { translationCall(rightChild, z_buffer + 1); _objProg.code.Append($"mov [{varChild.token.value}], eax\n"); }
                     else translationCall(rightChild, z_buffer + 1, $"lea eax, [{varChild.token.value}]\n");
                 }
@@ -974,7 +950,7 @@ namespace Qscript
                     _objProg.code.Append($"mov [{leftChild.token.value}], eax\n");
             }
         }
-        public void translationFloatBinOper(CommonNode root, int z_buffer)
+        private void translationFloatBinOper(CommonNode root, int z_buffer)
         {
             if (root.token.value == "=")
             {
@@ -1153,7 +1129,7 @@ namespace Qscript
                     _objProg.code.Append($"movss [{leftChild.token.value}], xmm0\n");
             }
         }
-        public void translationConst (CommonNode root, int  z_buffer)
+        private void translationConst (CommonNode root, int  z_buffer)
         {
             CommonNode constValue = take(root, 0);
 
@@ -1172,20 +1148,20 @@ namespace Qscript
                 constsIndex++;
             }
         }
-        public void translationString (CommonNode root, int z_buffer)
+        private void translationString (CommonNode root, int z_buffer)
         {
             if (!stringConsts.Keys.Contains(root.token.value))
             {
                 stringConsts.Add(root.token.value, $"str_const_{stringConstsIndex}");
-                _objProg.stringsConsts.Append($"str_const_{stringConstsIndex} du {root.token.value}\n");
+                _objProg.stringsConsts.Append($"str_const_{stringConstsIndex} du '{root.token.value}', 0\n");
                 stringConstsIndex++;
             }
         }
-        public void translationChar(CommonNode root, int z_buffer)
+        private void translationChar(CommonNode root, int z_buffer)
         {
             _objProg.code.Append($"mov al, {root.token.value}");
         }
-        public void translationStruct (CommonNode root, int z_buffer)
+        private void translationStruct (CommonNode root, int z_buffer)
         {
             setWriteData(CodeData.macroData);
             _objProg.code.Append($"struct {root.token.value}\n");
@@ -1221,7 +1197,7 @@ namespace Qscript
 
             setWriteData(CodeData.codeData);
         }
-        public void translationInline (CommonNode root, int z_buffer)
+        private void translationInline (CommonNode root, int z_buffer)
         {
             setWriteData(CodeData.macroData);
             //CommonNode types2 = take(root, 0);
@@ -1241,7 +1217,7 @@ namespace Qscript
             _objProg.code.Append("}\n");
             setWriteData(CodeData.codeData);
         }
-        public void translationFunc (CommonNode root, int z_buffer)
+        private void translationFunc (CommonNode root, int z_buffer)
         {
             _objProg.code.Append($"; FUNC {root.token.value}\n");
             setWriteData(CodeData.procData);
@@ -1321,7 +1297,7 @@ namespace Qscript
             local();
             setWriteData(CodeData.codeData);
         }
-        public void translationCall (CommonNode root, int z_buffer, string resualtPtr=null)
+        private void translationCall (CommonNode root, int z_buffer, string resualtPtr=null)
         {
             //_objProg.code.Append($"; CALL {root.token.value}\n");
             CommonNode signatureCall = take(root, 0);
@@ -1451,7 +1427,7 @@ namespace Qscript
             
         }
 
-        public void translationOffset(CommonNode varNode, CommonNode rightNode, int z_buffer)
+        private void translationOffset(CommonNode varNode, CommonNode rightNode, int z_buffer)
         {
             Translation(rightNode, z_buffer + 1);
             _objProg.code.Append($"push eax\n");
@@ -1465,21 +1441,7 @@ namespace Qscript
             _objProg.code.Append($"pop eax\n");
             _objProg.code.Append($"mov [ebx+ecx], eax\n");
         }
-        public string getTempVarReturn (CommonNode call)
-        {
-            CommonNode type = ProgramAst.resualtFunc[call.token.value];
-            if (tempStructs.Contains($"temp_struct_{type.token.value}"))
-            {
-                return $"temp_struct_{type.token.value}";
-            }
-            else
-            {
-                _objProg.data.Append($"temp_struct_{tempTagIndex} {type.token.value} 0\n");
-                tempStructs.Add($"temp_struct_{tempTagIndex}");
-                return $"temp_struct_{tempTagIndex}";
-            }
-        }
-        public string getFloatConst (CommonNode node)
+        private string getFloatConst (CommonNode node)
         {
             if (floatConsts.Keys.Contains(node.token.value))
             {
@@ -1492,7 +1454,7 @@ namespace Qscript
                 return floatConsts[node.token.value];
             }
         }
-        public string getSize(string name, CommonNode tagError)
+        private string getSize(string name, CommonNode tagError)
         {
             CommonNode type;
             if (name.First() == '*') name.Remove(0, 1);
@@ -1644,7 +1606,7 @@ namespace Qscript
             Console.ReadLine();
             if (typeApp == TypeApp.bin)
             {
-                file = "format binary as \"bin\"\nentry main\n" + file;
+                file = "format binary as \"bin\"\n" + file;
                 file += _objProg.codeData.ToString();
             }
             else if (typeApp == TypeApp.gui)

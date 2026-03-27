@@ -180,8 +180,8 @@ namespace Qscript
             tokenTypes.Add("TAB", new TokenType("TAB", "\t"));
             tokenTypes.Add("N", new TokenType("N", "\n"));
 
-            tokenTypes.Add("PS", new TokenType("PS", ","));
-            tokenTypes.Add("TS", new TokenType("TS", "."));
+            tokenTypes.Add("PS", new TokenType("PS", "\\,"));
+            tokenTypes.Add("TS", new TokenType("TS", "\\."));
 
             rightPar.Add("LPAR", "RPAR");
             rightPar.Add("LFIG", "RFIG");

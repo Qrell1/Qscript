@@ -11,10 +11,8 @@ namespace Qscript
     public static class SemanticAnalyzer
     {
         static public ProgramNode ast;
-        static public bool local;
-        //static SemanticAnalyzer() { }
 
-        static VarSpace varSpace = new VarSpace();
+        static public VarSpace varSpace = new VarSpace();
 
         public static CommonNode take(CommonNode node, int i = 0)
         {
@@ -86,7 +84,8 @@ namespace Qscript
             analis(leftNode, z_buffer + 1);
             analis(rightNode, z_buffer + 1);
             if (leftNode.type == "VAR" && rightNode.type == "VAR"
-                && leftNode.childs.Count > 0 && rightNode.childs.Count > 0)
+                && leftNode.childs.Count > 0 && rightNode.childs.Count > 0
+                && (!leftNode.token.value.Contains(".") && !leftNode.token.value.Contains(",") && !rightNode.token.value.Contains(".") && !rightNode.token.value.Contains(",")))
             {
                 string leftType = varSpace.GetTypeValue(leftNode.token.value);
                 string rightType = varSpace.GetTypeValue(rightNode.token.value);

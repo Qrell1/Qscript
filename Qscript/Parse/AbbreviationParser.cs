@@ -53,7 +53,7 @@ namespace Qscript
             // Cmp ReFresh
             astNode = cmpReFresh(astNode);
             // If destroy
-            astNode = ifCheakDelete(astNode);
+            astNode = cmpCheakDelete(astNode);
             // Class ReFresh
             astNode = classReFresh(astNode);
             // Var Cheak
@@ -121,6 +121,48 @@ namespace Qscript
         {
             foreach (var var in vars) if (var.Key.token.value == root.token.value) return var.Value;
             return null;
+        }
+        private string getTypeFromNode(CommonNode root, Dictionary<string, CommonNode> vars)
+        {
+            string type = string.Empty;
+            switch (root.type)
+            {
+                case "VAR":
+                case "POSTUNAROPER":
+                case "PREUNAROPER":
+                    type = vars[root.token.value].token.value;
+                    break;
+                case "SIZEOF":
+                case "TYPEOF":
+                case "NUMBER":
+                case "ADDRESS":
+                case "BINOPER":
+                    type = "long";
+                    break;
+                case "FLOAT":
+                case "FLOATOPER":
+                    type = "float";
+                    break;
+                case "STRING":
+                    type = "string";
+                    break;
+                case "CHAR":
+                    type = "char";
+                    break;
+                case "BOOL":
+                    type = "bool";
+                    break;
+                case "TYPEOPER":
+                    type = root.token.value;
+                    break;
+                case "CALL":
+                    type = ast.resualtFunc[root.token.value].token.value;
+                    break;
+                default:
+                    type = "long";
+                    break;
+            }
+            return type;
         }
 
         private CommonNode replaceConstantVarValue(CommonNode root, Dictionary<CommonNode, CommonNode> varsLocal = null)
@@ -346,13 +388,13 @@ namespace Qscript
             return root;
         }
 
-        private CommonNode ifCheakDelete(CommonNode root)
+        private CommonNode cmpCheakDelete(CommonNode root)
         {
             if (root.type != "IF")
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
-                    root.childs[i] = ifCheakDelete(root.childs[i]);
+                    root.childs[i] = cmpCheakDelete(root.childs[i]);
                 }
                 return root;
             }
@@ -562,57 +604,24 @@ namespace Qscript
             if (Returns == null || Returns.Count == 0) root.childs[0].token.value = "void";
             else {
                 string ReturnType = Returns[0].type;
+                string ReturnValue = getTypeFromNode(Returns[0], varsLocal);
                 foreach (CommonNode returnNode in Returns)
                 {
-                    if (returnNode.type != ReturnType ||
-                        (
-                        returnNode.type == "VAR" && varsLocal[Returns[0].token.value].token.value != varsLocal[returnNode.token.value].token.value &&
-                        varsLocal[Returns[0].token.value].type != varsLocal[returnNode.token.value].type
-                        ) ||
-                        (
-                            returnNode.type == "TYPEOPER" && returnNode.token.value != Returns[0].token.value
-                        ))
-                    { Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode); }
+                    string ReturnValueLast = getTypeFromNode(returnNode, varsLocal);
+                    if (ReturnValueLast != ReturnValue)
+                    { 
+                        if (Compiler.types.ContainsKey(ReturnValue) && Compiler.types.ContainsKey(ReturnValueLast))
+                        {
+                            int aling_first = 0;
+                            int aling_second = -1;
+                            aling_first = Compiler.aligns[ReturnValue];
+                            aling_second = Compiler.aligns[ReturnValueLast];
+                            if (aling_first != aling_second) Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
+                        } else Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
+                    }
                 }
                 //ReturnType = Returns[0].type;
-                string type = string.Empty;
-                switch (ReturnType)
-                {
-                    case "VAR":
-                    case "POSTUNAROPER":
-                    case "PREUNAROPER":
-                        type = varsLocal[Returns[0].token.value].token.value;
-                        break;
-                    case "SIZEOF":
-                    case "TYPEOF":
-                    case "NUMBER":
-                    case "ADDRESS":
-                    case "BINOPER":
-                        type = "long";
-                        break;
-                    case "FLOAT":
-                    case "FLOATOPER":
-                        type = "float";
-                        break;
-                    case "STRING":
-                        type = "string";
-                        break;
-                    case "CHAR":
-                        type = "char";
-                        break;
-                    case "BOOL":
-                        type = "bool";
-                        break;
-                    case "TYPEOPER":
-                        type = Returns[0].token.value;
-                        break;
-                    case "CALL":
-                        type = ast.resualtFunc[Returns[0].token.value].token.value;
-                        break;
-                    default:
-                        type = "long";
-                        break;
-                }
+                string type = getTypeFromNode(Returns[0], varsLocal);
                 root.childs[0].token.value = type;
                 ast.resualtFunc[root.token.value].token.value = type;
             }
@@ -666,175 +675,30 @@ namespace Qscript
         }
 
 
-        public CommonNode parse(CommonNode root, int z_buffer)
+        private CommonNode parse(CommonNode root, int z_buffer)
         {
             switch (root.type)
             {
-                //case "BINOPER":
-                    //parseBinOper(root, z_buffer);
-                    //CommonNode leftNode = take(root, 0);
-                    //CommonNode rightNode = take(root, 1);
-
-                    /*if (
-                        (leftNode.type == "VAR" && rightNode.type == "VAR") &&
-                        varTypes.Keys.Contains(leftNode.token.value) && varTypes.Keys.Contains(rightNode.token.value) &&
-                        !(leftNode.token.value.Contains(".") || rightNode.token.value.Contains("."))
-                        )
-                    {
-                        if (varTypes[leftNode.token.value].token.value == "float" || varTypes[rightNode.token.value].token.value == "float")
-                        {
-                            CommonNode leftNodeTemp = parse(leftNode, z_buffer);
-                            CommonNode rightNodeTemp = parse(rightNode, z_buffer);
-                            root.childs[0] = leftNodeTemp;
-                            root.childs[1] = rightNodeTemp;
-                            root.type = "FLOATBINOPER";
-                            return root;
-                        }
-                    } else if ((leftNode.type == "VAR" && rightNode.type == "VAR") &&
-                        !(leftNode.token.value.Contains(".") || rightNode.token.value.Contains(".")) &&
-                        !varTypes.Keys.Contains(leftNode.token.value) && !varTypes.Keys.Contains(rightNode.token.value)
-                        )
-                    {
-                        Syntax.SyntaxError($"Нельзя складывать не объявленные Переменные: {leftNode.token.value}, {rightNode.token.value}", leftNode);
-                    }
-                    if (leftNode.type == "FLOAT" || rightNode.type == "FLOAT" || (leftNode.type == "CALL" && ast.resualtFunc[leftNode.token.value].token.value == "float") || (rightNode.type == "CALL" && ast.resualtFunc[rightNode.token.value].token.value == "float") ||
-                        (
-                        (leftNode.type == "VAR" && varTypes.Keys.Contains(leftNode.token.value) && varTypes[leftNode.token.value].token.value == "float") &&
-                        (rightNode.type == "VAR" && varTypes.Keys.Contains(rightNode.token.value) && varTypes[rightNode.token.value].token.value == "float")
-                        )
-                        )
-                    {
-                        CommonNode leftNodeTemp = parse(leftNode, z_buffer);
-                        CommonNode rightNodeTemp = parse(rightNode, z_buffer);
-                        root.childs[0] = leftNodeTemp;
-                        root.childs[1] = rightNodeTemp;
-                        root.type = "FLOATBINOPER";
-                        return root;
-                    }
-                    if (leftNode.type == "BINOPER" || rightNode.type == "BINOPER")
-                    {
-                        if (leftNode.type == "BINOPER")
-                        {
-                            CommonNode leftNodeTemp = parse(leftNode, z_buffer);
-                            //root.childs[0] = leftNodeTemp;
-                            if (leftNodeTemp.type == "FLOATBINOPER") root.type = "FLOATBINOPER";
-                        }
-                        if (rightNode.type == "BINOPER")
-                        {
-                            CommonNode rightNodeTemp = parse(rightNode, z_buffer);
-                            //root.childs[0] = rightNodeTemp;
-                            if (rightNodeTemp.type == "FLOATBINOPER") root.type = "FLOATBINOPER";
-                        }
-                    }
-                    if (leftNode.type == "BINOPER" && rightNode.type == "BINOPER")
-                    {
-                        CommonNode leftNodeTemp = parse(leftNode, z_buffer);
-                        CommonNode rightNodeTemp = parse(rightNode, z_buffer);
-                        if (leftNode.type == "FLOATBINOPER" || rightNode.type == "FLOATBINOPER")
-                        {
-                            root.childs[0] = leftNodeTemp;
-                            root.childs[1] = rightNodeTemp;
-                            root.type = "FLOATBINOPER";
-                            return root;
-                        }
-                    }
-
-
-                    if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
-                    {
-                        int resualt = 0;
-                        switch (root.token.value)
-                        {
-                            case "+":
-                                resualt = Convert.ToInt32(leftNode.token.value) + Convert.ToInt32(rightNode.token.value);
-                                break;
-                            case "-":
-                                resualt = Convert.ToInt32(leftNode.token.value) - Convert.ToInt32(rightNode.token.value);
-                                break;
-                            case "*":
-                                resualt = Convert.ToInt32(leftNode.token.value) * Convert.ToInt32(rightNode.token.value);
-                                break;
-                            case "/":
-                                resualt = Convert.ToInt32(leftNode.token.value) / Convert.ToInt32(rightNode.token.value);
-                                break;
-                        }
-                        root.type = "NUMBER";
-                        root.childs = new List<CommonNode>();
-                        root.token.type.type = "NUMBER";
-                        root.token.value = resualt.ToString();
-                        break;
-                    }
-                    if (leftNode.type != "NUMBER")
-                        leftNode = parse(leftNode, z_buffer);
-                    if (rightNode.type != "NUMBER")
-                        rightNode = parse(rightNode, z_buffer);
-
-                    if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
-                    {
-                        int resualt = 0;
-                        switch (root.token.value)
-                        {
-                            case "+":
-                                resualt = Convert.ToInt32(leftNode.token.value) + Convert.ToInt32(rightNode.token.value);
-                                break;
-                            case "-":
-                                resualt = Convert.ToInt32(leftNode.token.value) - Convert.ToInt32(rightNode.token.value);
-                                break;
-                            case "*":
-                                resualt = Convert.ToInt32(leftNode.token.value) * Convert.ToInt32(rightNode.token.value);
-                                break;
-                            case "/":
-                                resualt = Convert.ToInt32(leftNode.token.value) / Convert.ToInt32(rightNode.token.value);
-                                break;
-                        }
-                        root.type = "NUMBER";
-                        root.childs = new List<CommonNode>();
-                        root.token.type.type = "NUMBER";
-                        root.token.value = resualt.ToString();
-                        break;
-                    }*/
-                    //break;
-                case "CONST":
-                    parseConst(root, z_buffer);
-                    break;
-                case "STRING":
-                    if (!strings.Contains(root.token.value))
-                    {
-                        root.token.value = $"'{root.token.value}', 0";
-                        strings.Add(root.token.value);
-                    }
-                    return root;
-                    break;
                 case "INLINE":
                     return parseInline(root, z_buffer);
-                    break;
                 case "FUNC":
                     return parseFunc(root, z_buffer);
-                    break;
                 case "CALL":
                     return parseCall(root, z_buffer);
-                    break;
                 case "STRUCT":
                     return parseStruct(root, z_buffer);
-                    return root;
-                    break;
                 case "CLASS":
-                    if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
-                    return root;
-                    break;
+                    return parseClass(root, z_buffer);
                 case "USING":
                     return parseUsing(root, z_buffer);
-                    break;
                 case "VAR":
                     return parseVar(root, z_buffer);
-                    //return root;
-                    break;
                 case "MODIFIER":
                     return parseModifier(root, z_buffer);
-                    break;
                 case "FOR":
-                    return parseCycle(root, z_buffer);
-                    break;
+                    return parseFor(root, z_buffer);
+                case "ENUMERATOR":
+                    return parseEnumerator(root, z_buffer);
                 default:
                     if (root.childs.Count == 0)
                         break;
@@ -843,11 +707,10 @@ namespace Qscript
                         root.childs[i] = parse(root.childs[i], z_buffer + 1);
                     }
                     return root;
-                    break;
             }
             return root;
         }
-        private CommonNode parseBinOper(CommonNode root, int z_buffer)
+        /*private CommonNode parseBinOper(CommonNode root, int z_buffer)
         {
             CommonNode body = take(root, 1);
             for (int i = 0; i < body.childs.Count; i++)
@@ -858,7 +721,7 @@ namespace Qscript
             }
             ast.inlineNames.Add(root.token.value);
             return root;
-        }
+        }*/
         private CommonNode parseInline(CommonNode root, int z_buffer)
         {
             CommonNode body = take(root, 1);
@@ -888,7 +751,7 @@ namespace Qscript
                     signature.childs[i].childs[0] = type;
                 }
             }
-            if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !types.Keys.Contains(ast.resualtFunc[root.token.value].token.value))
+            if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !Compiler.types.ContainsKey(ast.resualtFunc[root.token.value].token.value))
             {
                 CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", signature.token.pos));
                 resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
@@ -1002,7 +865,6 @@ namespace Qscript
             {
                 if (ast.externFuncs[library.Key].Contains(root.token.value))
                 {
-                    //root.type = "EXTERNCALL";
                     foreach (var child in root.childs) parse(child, z_buffer + 1);
                     return root;
                 }
@@ -1010,18 +872,10 @@ namespace Qscript
             try
             {
                 string[] strs = root.token.value.Split('.');
-                //Console.WriteLine(strs[0]);
-                //Console.WriteLine(strs[1]);
                 string type = string.Empty;
                 type = varSpace.GetTypeValue(strs[0]);
                 for (int i = 1; i < strs.Length-1; i++)
-                {
                     type = ast.structs[type][strs[i]].token.value;
-                    //Console.WriteLine(type, " : ", i);
-                }
-                //type = ast.structs[type][strs[strs.Length-1]].token.value;
-                int n = 0;
-                //type = struc;
                 if (ast.classMethods.ContainsKey(type))
                 {
                     string name = string.Empty;
@@ -1039,20 +893,9 @@ namespace Qscript
             if (take(root, 0).type == "DECLARATOR") Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
 
             CommonNode signatureCall = take(root, 0);
-            /*List<CommonNode> nodes = new List<CommonNode>();
-            if (ast.resualtFunc.ContainsKey(root.token.value))
-            {
-                nodes.Add(new CommonNode("VAR", ast.resualtFunc[root.token.value].token));
-                nodes.Last().childs.Add(ast.resualtFunc[root.token.value]);
-            }
-            nodes.AddRange(signatureCall.childs);
-            signatureCall.childs = nodes;*/
-            
-
+           
             for (int j = 0; j < signatureCall.childs.Count; j++)
-            {
                 signatureCall.childs[j] = parse(signatureCall.childs[j], z_buffer + 2);
-            }
             root.childs[0] = signatureCall;
             return root;
         }
@@ -1103,48 +946,39 @@ namespace Qscript
             }
             return root;
         }
-        private CommonNode parseConst(CommonNode root, int z_buffer)
+        private CommonNode parseFor(CommonNode root, int z_buffer)
         {
-            if (take(root, 0).type == "NUMBER")
+            varSpace.OpenSpace();
+            CommonNode recurse(CommonNode commonNode)
             {
-                root.childs[0] = parse(root.childs[0], z_buffer + 1);
-                return root;
-            }
-            else if (take(root, 0).type == "STRING")
-            {
-                root.childs[0] = parse(root.childs[0], z_buffer + 1);
-                return root;
-            }
-            else if (take(root, 0).type != "BINOPER")
-                throw new Exception("Ошибка не верный токен ");
-
-            root.childs[0] = parse(root.childs[0], z_buffer + 1);
-            return root;
-        }
-        private CommonNode parseCycle(CommonNode root, int z_buffer)
-        {
-            if (root.type == "FOR")
-            {
-                varSpace.OpenSpace();
-                CommonNode recurse(CommonNode commonNode)
+                foreach (var child in commonNode.childs)
                 {
-                    foreach (var child in commonNode.childs)
-                    {
-                        if (child.childs.Count == 1 && child.childs[0].type == "TYPE") return child;
-                        return recurse(child);
-                    }
-                    return null;
+                    if (child.childs.Count == 1 && child.childs[0].type == "TYPE") return child;
+                    return recurse(child);
                 }
-                //parse(take(root, 0), z_buffer + 1);
-                CommonNode varNode = recurse(take(root, 0));
-                varSpace.AddVar(varNode.token.value, varNode.childs[0]);
-                if (varNode == null) { Program.PrintAST(root, 0); Syntax.SyntaxError("Ошибка в объявлениии переменной в цикле For", root); }
-                parse(take(root, 3), z_buffer + 1);
-                varSpace.CloseSpace();
+                return null;
             }
+            CommonNode varNode = recurse(take(root, 0));
+            varSpace.AddVar(varNode.token.value, varNode.childs[0]);
+            if (varNode == null) { Program.PrintAST(root, 0); Syntax.SyntaxError("Ошибка в объявлениии переменной в цикле For", root); }
+            parse(take(root, 3), z_buffer + 1);
+            varSpace.CloseSpace();
             return root;
         }
-
+        private CommonNode parseEnumerator(CommonNode root, int z_buffer)
+        {
+            varSpace.OpenSpace();
+            CommonNode varNode = take(root, 0);
+            varSpace.AddVar(varNode.token.value, varNode.childs[0]);
+            foreach (var child in take(root, 2).childs) parse(child, z_buffer + 2);
+            varSpace.CloseSpace();
+            return root;
+        }
+        private CommonNode parseClass(CommonNode root, int z_buffer)
+        {
+            if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+            return root;
+        }
 
         private CommonNode copyNodes (CommonNode root)
         {
