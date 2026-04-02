@@ -14,6 +14,7 @@ namespace Qscript.Lex
     public class Preproccessor
     {
         public List<string> fileIncludes = new List<string>();
+        Dictionary<string, Token> defines = new Dictionary<string, Token>();
 
         public Preproccessor() { }
         public List<Token> lexIncludes(List<Token> code)
@@ -41,8 +42,6 @@ namespace Qscript.Lex
         }
         public List<Token> lexDefine(List<Token> code)
         {
-            Dictionary<string, Token> defines = new Dictionary<string, Token>();
-
             for (int i = 0; i < code.Count; i++)
             {
                 if (code[i].value == "define")
@@ -50,7 +49,7 @@ namespace Qscript.Lex
                     i += 1; if (code[i].type.type != "VAR") Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
                     string replace = code[i].value; i++;
                     Token value = code[i];
-                    defines.Add(replace, value);
+                    if (!defines.ContainsKey(replace)) defines.Add(replace, value);
                     continue;
                 }
             }
@@ -80,10 +79,12 @@ namespace Qscript.Lex
                     string t_t = Compiler.types[value];
                     string a_t = Compiler.typesarg[value];
                     int    l_t = Compiler.aligns[value];
+                    string r_t = Compiler.typesregs[value];
 
                     if (!Compiler.types.ContainsKey(name)) Compiler.types.Add(name, t_t);
                     if (!Compiler.typesarg.ContainsKey(name)) Compiler.typesarg.Add(name, a_t);
                     if (!Compiler.aligns.ContainsKey(name)) Compiler.aligns.Add(name, l_t);
+                    if (!Compiler.typesregs.ContainsKey(name)) Compiler.typesregs.Add(name, r_t);
 
                     continue;
                 } else {  tokens.Add(code[i]); }

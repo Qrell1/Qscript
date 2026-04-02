@@ -54,6 +54,7 @@ namespace Qscript
             {"byte", "db"},
             {"string", "du"},
             {"char", "db"},
+            {"wchar", "dw"},
             {"float", "dd"},
             {"double", "dq"},
             {"int32_a", "dd"},
@@ -72,8 +73,9 @@ namespace Qscript
             {"int16", "WORD"},
             {"int8", "BYTE"},
             {"byte", "BYTE"},
-            {"string", "WORD"},
+            {"string", "DWORD"},
             {"char", "BYTE"},
+            {"wchar", "WORD"},
             {"float", "DWORD"},
             {"double", "QWORD"},
             {"int32_a", "DWORD"},
@@ -90,6 +92,7 @@ namespace Qscript
             {"byte",    1},
             {"string",  2},
             {"char",    1},
+            {"wchar",   2},
             {"float",   4},
             {"double",  8},
             {"int32_a", 4},
@@ -100,6 +103,34 @@ namespace Qscript
             {"dd",      4},
             {"dw",      2},
             {"db",      1}
+        };
+        public static Dictionary<string, string> typesregs = new Dictionary<string, string>()
+        {
+            {"int64",   "rax"},
+            {"int32",   "eax"},
+            {"int16",   "ax"},
+            {"int8",    "al"},
+            {"byte",    "al"},
+            {"string",  "eax"},
+            {"char",    "al"},
+            {"wchar",   "ax"},
+            {"float",   "eax"},
+            {"double",  "rax"},
+            {"int32_a", "eax"},
+            {"bool",    "al"},
+            {"long",    "eax"},
+            {"half",    "ax"},
+            {"dq",      "rax"},
+            {"dd",      "eax"},
+            {"dw",      "ax"},
+            {"db",      "al"}
+        };
+        public static Dictionary<string, string> regschars = new Dictionary<string, string>()
+        {
+            {"eax", "a"},
+            {"ebx", "b"},
+            {"edx", "d"},
+            {"ecx", "c"}
         };
         public Dictionary<string, string> stringConsts = new Dictionary<string, string>();
         public int stringConstsIndex;
@@ -292,7 +323,7 @@ namespace Qscript
 
             Translation(cmpNode, z_buffer + 1);
             _objProg.code.Append($"jmp iter{iterNumber}\n");
-            _objProg.code.Append($"false{falseTagIndex}:\n");
+            _objProg.code.Append($"{funcName}.false{falseTagIndex}:\n");
             falseTagIndex++;
 
             //iterTagIndex++;
@@ -482,16 +513,16 @@ namespace Qscript
             Translation(body, z_buffer + 1);
             if (elses != null)
             {
-                _objProg.code.Append($"jmp .elses{elsesTagIndex}\n");
-                _objProg.code.Append($".false{falseTagIndex}:\n");
+                _objProg.code.Append($"jmp {funcName}.elses{elsesTagIndex}\n");
+                _objProg.code.Append($"{funcName}.false{falseTagIndex}:\n");
                 falseTagIndex++;
                 Translation(elses.childs[0], z_buffer + 2);
-                _objProg.code.Append($".elses{elsesTagIndex}:\n");
+                _objProg.code.Append($"{funcName}.elses{elsesTagIndex}:\n");
                 elsesTagIndex++;
             }
             else
             {
-                _objProg.code.Append($".false{falseTagIndex}:\n");
+                _objProg.code.Append($"{funcName}.false{falseTagIndex}:\n");
                 falseTagIndex++;
             }
         }
@@ -504,12 +535,12 @@ namespace Qscript
         {
             if ("true" == root.token.value)
             {
-                if (cmp) _objProg.code.Append($"jmp .true{trueTagIndex}\n");
+                if (cmp) _objProg.code.Append($"jmp {funcName}.true{trueTagIndex}\n");
                 return;
             }
             if ("false" == root.token.value)
             {
-                _objProg.code.Append($"jmp .false{falseTagIndex}\n");
+                _objProg.code.Append($"jmp {funcName}.false{falseTagIndex}\n");
             }
             if ("&&" == root.token.value)
             {
@@ -530,8 +561,8 @@ namespace Qscript
                 translationCmp(leftChild, z_buffer + 1, true);
                 translationCmp(rightChild, z_buffer + 1, true);
 
-                _objProg.code.Append($"jmp .false{falseTagIndex}\n");
-                _objProg.code.Append($".true{trueTagIndex}:\n");
+                _objProg.code.Append($"jmp {funcName}.false{falseTagIndex}\n");
+                _objProg.code.Append($"{funcName}.true{trueTagIndex}:\n");
                 trueTagIndex++;
             }
             if (new string[] { "==", "!=", ">=", "<=", "<", ">" }.Contains(root.token.value))
@@ -600,22 +631,22 @@ namespace Qscript
                     switch (root.token.value)
                     {
                         case "==":
-                            _objProg.code.Append($"jne .false{falseTagIndex}\n");
+                            _objProg.code.Append($"jne {funcName}.false{falseTagIndex}\n");
                             break;
                         case "!=":
-                            _objProg.code.Append($"je .false{falseTagIndex}\n");
+                            _objProg.code.Append($"je {funcName}.false{falseTagIndex}\n");
                             break;
                         case ">=":
-                            _objProg.code.Append($"jl .false{falseTagIndex}\n");
+                            _objProg.code.Append($"jl {funcName}.false{falseTagIndex}\n");
                             break;
                         case "<=":
-                            _objProg.code.Append($"jg .false{falseTagIndex}\n");
+                            _objProg.code.Append($"jg {funcName}.false{falseTagIndex}\n");
                             break;
                         case ">":
-                            _objProg.code.Append($"jle .false{falseTagIndex}\n");
+                            _objProg.code.Append($"jle {funcName}.false{falseTagIndex}\n");
                             break;
                         case "<":
-                            _objProg.code.Append($"jge .false{falseTagIndex}\n");
+                            _objProg.code.Append($"jge {funcName}.false{falseTagIndex}\n");
                             break;
                     }
                 } else
@@ -623,22 +654,22 @@ namespace Qscript
                     switch (root.token.value)
                     {
                         case "==":
-                            _objProg.code.Append($"je .true{trueTagIndex}\n");
+                            _objProg.code.Append($"je {funcName}.true{trueTagIndex}\n");
                             break;
                         case "!=":
-                            _objProg.code.Append($"jne .true{trueTagIndex}\n");
+                            _objProg.code.Append($"jne {funcName}.true{trueTagIndex}\n");
                             break;
                         case ">=":
-                            _objProg.code.Append($"jge .true{trueTagIndex}\n");
+                            _objProg.code.Append($"jge {funcName}.true{trueTagIndex}\n");
                             break;
                         case "<=":
-                            _objProg.code.Append($"jle .true{trueTagIndex}\n");
+                            _objProg.code.Append($"jle {funcName}.true{trueTagIndex}\n");
                             break;
                         case ">":
-                            _objProg.code.Append($"jg .true{trueTagIndex}\n");
+                            _objProg.code.Append($"jg {funcName}.true{trueTagIndex}\n");
                             break;
                         case "<":
-                            _objProg.code.Append($"jl .true{trueTagIndex}\n");
+                            _objProg.code.Append($"jl {funcName}.true{trueTagIndex}\n");
                             break;
                     }
                 }
@@ -1152,7 +1183,10 @@ namespace Qscript
         {
             if (!stringConsts.Keys.Contains(root.token.value))
             {
+                root.token.value = root.token.value.Replace("\\n", "', 13, 10, '");
+                root.token.value = root.token.value.Replace("\\t", "', 9, '");
                 stringConsts.Add(root.token.value, $"str_const_{stringConstsIndex}");
+                
                 _objProg.stringsConsts.Append($"str_const_{stringConstsIndex} du '{root.token.value}', 0\n");
                 stringConstsIndex++;
             }

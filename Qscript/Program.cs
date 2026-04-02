@@ -166,10 +166,12 @@ namespace Qscript
                 Compiler.types["long"] = "dq";
                 Compiler.typesarg["long"] = "QWORD";
                 Compiler.aligns["long"] = 8;
+                Compiler.typesregs["long"] = "rax";
 
                 Compiler.types["half"] = "dd";
                 Compiler.typesarg["half"] = "DWORD";
                 Compiler.aligns["half"] = 4;
+                Compiler.typesregs["half"] = "eax";
             }
 
             (string code, CodeStruct codeStruct) = commentLexer.lexCodes(codes);
@@ -192,7 +194,7 @@ namespace Qscript
             ast = addParser.abbParse(ast);
             try
             {
-                SemanticAnalyzer.startAnalis(ast);
+                //SemanticAnalyzer.startAnalis(ast);
             }
             catch { }
             foreach (var item in ast.declarotivePatternsStruct.Values)

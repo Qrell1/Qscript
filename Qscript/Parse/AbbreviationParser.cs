@@ -81,13 +81,13 @@ namespace Qscript
             //ast.childs = new List<CommonNode>() { callCheak(ast) };
             CommonNode newAst = callCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
-            newAst = includeParentsStructs(ast);
-            ast.childs = new List<CommonNode>(newAst.childs);
             newAst = funcCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = callCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = defineCheak(ast);
+            ast.childs = new List<CommonNode>(newAst.childs);
+            newAst = includeParentsStructs(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
             ast.varTypes = varSpace.VarsData;
             return ast;
@@ -677,29 +677,38 @@ namespace Qscript
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
-                    //root.childs[i] = includeParentsStructs(root.childs[i]);
+                    root.childs[i] = includeParentsStructs(root.childs[i]);
                 }
                 return root;
             }
             if (ast.parentsStructs.ContainsKey(root.token.value))
             {
-                Dictionary<string, CommonNode> varsStructParent = new Dictionary<string, CommonNode>(ast.structs[ast.parentsStructs[root.token.value].token.value]);
+                Dictionary<string, CommonNode> varsStructParent = ast.structs[ast.parentsStructs[root.token.value].token.value];
                 Dictionary<string, CommonNode> varsStruct  = ast.structs[root.token.value];
                 Console.WriteLine($"Struct {root.token.value}-> Count: {root.childs.Count}");
+                Console.WriteLine($"Struct p {ast.parentsStructs[root.token.value].token}-> Count: {ast.structs[ast.parentsStructs[root.token.value].token.value].Count}");
                 Console.WriteLine($"Struct v {root.token.value}-> Count: {ast.structs[root.token.value].Count}");
                 foreach (var child in varsStructParent)
                 {
                     varsStruct.Add(child.Key, child.Value);
-                    root.childs.Add(new CommonNode(child.Key, new Token(child.Value.token.type, child.Key, child.Value.token.pos)));
-                    root.childs.Last().childs.Add(child.Value);
+                    //root.childs.Add(new CommonNode(child.Key, new Token(child.Value.token.type, child.Key, child.Value.token.pos)));
+                    //root.childs.Last().childs.Add(child.Value);
+                    root.childs.Add(child.Value);
+                    Console.WriteLine(" :---: "+child.Value);
                     Console.WriteLine($"Struct {root.token.value}-> Key: {child.Key} Value: {child.Value.token.value}");
                 }
                 Console.WriteLine($"Struct {root.token.value}-> Count: {root.childs.Count}");
                 Console.WriteLine($"Struct v {root.token.value}-> Count: {ast.structs[root.token.value].Count}");
                 ast.structs[root.token.value] = varsStruct;
+                CommonNode strt = new CommonNode("STRUCT", root.token);
+                Console.WriteLine(varsStruct.Count);
+                Console.WriteLine(varsStructParent.Count);
+                foreach (var child in varsStruct) strt.childs.Add(child.Value);
+                Console.WriteLine(strt.childs.Count);
                 return root;
             }
-            else return root;
+            //else return root;
+            return root;
         }
 
         private CommonNode parse(CommonNode root, int z_buffer)
@@ -816,7 +825,6 @@ namespace Qscript
                 typesVar.Add(var.token.value, var.childs[0]);
             }
             if (!ast.structs.ContainsKey(root.token.value)) ast.structs.Add(root.token.value, typesVar);
-            includeParentsStructs(root);
             return root;
         }
         private CommonNode parseUsing(CommonNode root, int z_buffer)

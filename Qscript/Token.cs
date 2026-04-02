@@ -70,7 +70,7 @@ namespace Qscript
             //tokenTypes.Add("CHARTYPE", new TokenType("CHARTYPE", "char"));
 
             // Logic
-            tokenTypes.Add("ELSEIF", new TokenType("ELSEIF", "else-if"));
+            tokenTypes.Add("ELSEIF", new TokenType("ELSEIF", @"\belse-if\b"));
             tokenTypes.Add("IF", new TokenType("IF", @"\bif\b"));
             tokenTypes.Add("ELSE", new TokenType("ELSE", @"\belse\b"));
 
@@ -107,10 +107,10 @@ namespace Qscript
             tokenTypes.Add("SEM", new TokenType("SEM", ";"));
             //tokenTypes.Add("MACRO", new TokenType("MACRO", "macro[A-Z]+"));
             //tokenTypes.Add("MACRO", new TokenType("MACRO", "macro"));
-            tokenTypes.Add("RETURN", new TokenType("RETURN", @"\breturn\b"));
-            tokenTypes.Add("BREAK", new TokenType("BREAK", @"\bbreak\b"));
-            tokenTypes.Add("CONTINUE", new TokenType("CONTINUE", @"\bcontinue\b"));
-            tokenTypes.Add("JMP", new TokenType("JMP", @"\bjump\b"));
+            tokenTypes.Add("RETURN", new TokenType("RETURN", @"(\breturn\b|\bвернуть\b)"));
+            tokenTypes.Add("BREAK", new TokenType("BREAK", @"(\bbreak\b|\bпрервать\b)"));
+            tokenTypes.Add("CONTINUE", new TokenType("CONTINUE", @"(\bcontinue\b|\bпродолжить\b)"));
+            tokenTypes.Add("JMP", new TokenType("JMP", @"(\bjump\b|\bпрыгнуть\b)"));
 
             tokenTypes.Add("ITER", new TokenType("ITER", @"\biter\b"));
             tokenTypes.Add("FOR", new TokenType("FOR", @"\bfor\b"));
@@ -118,18 +118,18 @@ namespace Qscript
             tokenTypes.Add("ENUMERATOR", new TokenType("ENUMERATOR", @"\benumerator\b"));
             tokenTypes.Add("REPT", new TokenType("REPT", @"\brept\b"));
 
-            tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"\bstruct\b"));
-            tokenTypes.Add("CLASS", new TokenType("CLASS", @"\bclass\b"));
+            tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"(\bstruct\b|\bструктура\b)"));
+            tokenTypes.Add("CLASS", new TokenType("CLASS", @"(\bclass\b|\bкласс\b)"));
 
             tokenTypes.Add("VIRTUAL", new TokenType("VIRTUAL", @"\bvirtual\b"));
             tokenTypes.Add("OVERRIDE", new TokenType("OVERRIDE", @"\boverride\b"));
             //tokenTypes.Add("FUNCTION", new TokenType("FUNCTION", @"\bfunction\b"));
 
-            tokenTypes.Add("DEFINE", new TokenType("DEFINE", @"\bdefine\b"));
-            tokenTypes.Add("TYPEDEF", new TokenType("TYPEDEF", @"\btypedef\b"));
-            tokenTypes.Add("TYPEIF", new TokenType("TYPEIF", @"\btypeif\b"));
+            tokenTypes.Add("DEFINE", new TokenType("DEFINE", @"(\bdefine\b|\bзаменить\b)"));
+            tokenTypes.Add("TYPEDEF", new TokenType("TYPEDEF", @"(\btypedef\b|\bсоздать_тип\b)"));
+            tokenTypes.Add("TYPEIF", new TokenType("TYPEIF", @"(\btypeif\b|\bесли_тип\b)"));
 
-            tokenTypes.Add("CONST", new TokenType("CONST", @"\bconst\b"));
+            tokenTypes.Add("CONST", new TokenType("CONST", @"(\bconst\b|\bконст\b)"));
 
             tokenTypes.Add("SECTION", new TokenType("SECTION", @"\bsection\b"));
             tokenTypes.Add("NATIVE", new TokenType("NATIVE", @"\bnative\b"));
@@ -146,7 +146,7 @@ namespace Qscript
             tokenTypes.Add("MODIFIER", new TokenType("MODIFIER", @"(\bpublic\b|\bprivate\b|\bprotected\b)"));
 
 
-            tokenTypes.Add("BOOL", new TokenType("BOOL", @"(\btrue\b|false\b)"));
+            tokenTypes.Add("BOOL", new TokenType("BOOL", @"(\btrue\b|\bfalse\b)"));
             //tokenTypes.Add("CONST", new TokenType("CONST", @"\b[A-Z]*\b"));
             tokenTypes.Add("VAR", new TokenType("VAR", @"[а-яА-Яa-zA-Z_][а-яА-Яa-zA-Z0-9_]*"));
             //tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
