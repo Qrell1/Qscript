@@ -15,7 +15,7 @@ namespace Qscript
 {
     public enum CodeData
     { 
-        codeData, procData, macroData
+        codeData, procData, macroData, tempData
     }
     public enum TypeApp
     {
@@ -111,7 +111,7 @@ namespace Qscript
             {"int16",   "ax"},
             {"int8",    "al"},
             {"byte",    "al"},
-            {"string",  "eax"},
+            {"string",  "ax"},
             {"char",    "al"},
             {"wchar",   "ax"},
             {"float",   "eax"},
@@ -154,6 +154,8 @@ namespace Qscript
 
         private int iterTagIndex;
 
+        private StringData tempData = new StringData();
+        private CodeData codeData = CodeData.codeData;
 
         public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; varSpace.VarsData = ast.varTypes; }
 
@@ -181,6 +183,11 @@ namespace Qscript
             {
                 _objProg.code = _objProg.macroData;
             }
+            if (data == CodeData.tempData)
+            {
+                _objProg.code = tempData;
+            }
+            codeData = data;
         }
         public void local()
         {
@@ -325,8 +332,6 @@ namespace Qscript
             _objProg.code.Append($"jmp iter{iterNumber}\n");
             _objProg.code.Append($"{funcName}.false{falseTagIndex}:\n");
             falseTagIndex++;
-
-            //iterTagIndex++;
         }
         private void translationFor (CommonNode root, int z_buffer)
         {
@@ -387,6 +392,34 @@ namespace Qscript
             _objProg.code.Append($"iter{iterNumber}:\n");
 
             if (countString == "ecx") _objProg.code.Append($"push ecx\n");
+            /*
+            var temp = codeData;
+            setWriteData(CodeData.tempData);
+            Translation(bodyNode, z_buffer + 1);
+            setWriteData(temp);
+            bool flag = false;
+            foreach (var str in tempData.Data)
+            {
+                foreach (var s in str.Split(' '))
+                {
+                    if (s == "ecx" || s == "[ecx]")
+                    {
+                        flag = true; break;
+                    }
+                }
+                if (flag) break;
+            }
+            if (flag)
+            {
+                _objProg.code.Append($"push ecx\n");
+                _objProg.code.Data.AddRange(tempData.Data);
+                _objProg.code.Append($"pop ecx\n");
+            } else
+            {
+                _objProg.code.Data.AddRange(tempData.Data);
+            }
+            tempData.Data.Clear();
+            */
             Translation(bodyNode, z_buffer + 1);
             if (countString == "ecx") _objProg.code.Append($"pop ecx\n");
              
@@ -476,15 +509,15 @@ namespace Qscript
             int iterNumber = ++iterTagIndex;
             if (countNode.type == "NUMBER")
             {
-                _objProg.code.Append($"xor ecx, ecx\n");
+                _objProg.code.Append($"xor edi, edi\n");
                 _objProg.code.Append($"iter{iterNumber}:\n");
 
-                _objProg.code.Append($"push ecx\n");
+                //_objProg.code.Append($"push ecx\n");
                 Translation(bodyNode, z_buffer + 1);
-                _objProg.code.Append($"pop ecx\n");
+                //_objProg.code.Append($"pop ecx\n");
 
-                _objProg.code.Append($"inc ecx\n");
-                _objProg.code.Append($"cmp ecx, {countNode.token.value}\n");
+                _objProg.code.Append($"inc edi\n");
+                _objProg.code.Append($"cmp edi, {countNode.token.value}\n");
                 _objProg.code.Append($"jne iter{iterNumber}\n");
             } else
             {
@@ -852,8 +885,25 @@ namespace Qscript
                     _objProg.code.Append($"pop ecx\n");
                     rightChild.token.value = $"ebx+ecx";
                 }*/
+                if (leftChild.type == "VAR" && rightChild.type == "CALL" && root.token.value == "+=")
+                {
+                    translationCall(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"add [{leftChild.token.value}], eax\n");
+                    return;
+                }
+                if (leftChild.type == "VAR" && rightChild.type == "CALL" && root.token.value == "-=")
+                {
+                    translationCall(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"sub [{leftChild.token.value}], eax\n");
+                    return;
+                }
+                if (leftChild.type == "VAR" && rightChild.type == "CALL" && root.token.value == "*=")
+                {
+                    translationCall(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"imul [{leftChild.token.value}], eax\n");
+                    return;
+                }
 
-                
                 if (leftChild.type == "VAR" && rightChild.type == "NUMBER" && root.token.value.Contains("*") && (Convert.ToInt32(rightChild.token.value)%2) == 0)
                 {
                     //_objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
@@ -1181,10 +1231,10 @@ namespace Qscript
         }
         private void translationString (CommonNode root, int z_buffer)
         {
+            root.token.value = root.token.value.Replace("\\n", "', 13, 10, '");
+            root.token.value = root.token.value.Replace("\\t", "', 9, '");
             if (!stringConsts.Keys.Contains(root.token.value))
             {
-                root.token.value = root.token.value.Replace("\\n", "', 13, 10, '");
-                root.token.value = root.token.value.Replace("\\t", "', 9, '");
                 stringConsts.Add(root.token.value, $"str_const_{stringConstsIndex}");
                 
                 _objProg.stringsConsts.Append($"str_const_{stringConstsIndex} du '{root.token.value}', 0\n");
@@ -1528,53 +1578,6 @@ namespace Qscript
             //string sizeConst = $"sizeof.{name}";
             return sizeConst;
         }
-
-        /*public string getSize(string name)
-        {
-            CommonNode type;
-            string namePtr;
-            if (name.Contains("."))
-            {
-                int n = 0;
-                string[] strs = name.Split('.');
-                string strct = ProgramAst.varTypes[strs[0]].token.value;
-            start:
-                if (
-                    !ProgramAst.structs.ContainsKey(strct) ||
-                    !ProgramAst.structs[strct].ContainsKey(strs[n + 1])
-                    )
-                {
-                    Syntax.SyntaxError($"Ошибка Поле:{strs[n + 1]} не существует в {strct}", ProgramAst);
-                }
-                type = ProgramAst.structs[strct][strs[n + 1]];
-                strct = type.token.value;
-                //if (n == strs.Length) { }
-                if (!types.ContainsKey(type.token.value)) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
-            }
-            else type = ProgramAst.varTypes[name];
-            //CommonNode type = ProgramAst.varTypes[name];
-            //string classes = "";
-            //string sizeConst = "";
-            if (types.Keys.Contains(type.token.value))
-            {
-                //classes = types[type.token.value];
-                /*switch (classes)
-                {
-                    case "db": sizeConst = "1"; break;
-                    case "dw": sizeConst = "2"; break;
-                    case "dd": sizeConst = "4"; break;
-                }
-                return name;
-            }
-            else
-            {
-                return  type.token.value;
-            }
-            //sizeConst = $"SIZE_{type.token.value.ToUpper()}";
-            //classes = type.token.value;
-            //string sizeConst = $"sizeof.{name}";
-            return sizeConst;
-        }*/
 
         // ВРЕМЕННЫЙ СУПЕР ГОВНОКОД   
         public void parseAsm (CommonNode root)
