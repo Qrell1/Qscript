@@ -41,13 +41,11 @@ namespace QASM.Utils
                 resualt += Convert.ToString(i);
                 j++;
             }
-
-            /*for (int i = 0; i < 32-resualt.Length; i++)
+            for (int i = 0; i < resualt.Length % 2; i++)
             {
                 resualt = "0" + resualt;
-            }*/
+            }
 
-            
             return resualt;
         }
 
@@ -62,7 +60,7 @@ namespace QASM.Utils
                 value = value / 16;
                 chars.Add(ost);
             }
-            string resualt = "0x";
+            string resualt = "";
             int j = 0;
             for (int id = chars.Count-1; id >= 0; id--)
             {
@@ -81,18 +79,11 @@ namespace QASM.Utils
                 j++;
                 if (j == 2)
                 {
-                    //resualt = "0x" + resualt;
                     j = 0;
                 }
             }
-            if (j == 1)
-            {
-                char ch = resualt[resualt.Length - 1];
-                resualt = resualt.Remove(resualt.Length - 1);
-                //resualt += "0";
-                resualt += ch;
-            }
-              
+            for (int i = 0; i < resualt.Length%2; i++)
+                resualt = "0" + resualt;
             return resualt;
         }
 
@@ -104,7 +95,7 @@ namespace QASM.Utils
             string str = string.Empty;
             List<int> chars = new List<int>();
 
-            for (int i = 2; i < len; i++) // ABCDEF
+            for (int i = 0; i < len; i++) // ABCDEF
             {
                 if (hex[i] == 'A') chars.Add(10);
                 else if (hex[i] == 'B') chars.Add(11);
@@ -127,7 +118,7 @@ namespace QASM.Utils
             return rf;
         }
 
-        public static Hex ConvtWithBinCode (string bincode, int sizeHex = 1)
+        public static Hex ConvtWithBinCode (string bincode)
         {
             int f = 0; int rf = 0;
             int j = bincode.Length - 1;
@@ -140,25 +131,27 @@ namespace QASM.Utils
                 j--;
             }
             Hex resualt = new Hex(Convt(rf));
-            resualt.value = resualt.value.Remove(0,2);
-            int len = --sizeHex - (resualt.value.Length - 2) / 2;
-            for (int i =0 ; i < len; i++)
+            //resualt.value = resualt.value.Remove(0,2);
+            for (int i = 0; i < resualt.value.Length % 2; i++)
             {
-                resualt.value = resualt.value + "00";
+                resualt.value = "0" + resualt.value;
             }
-            resualt.value = "0x" + resualt.value;
+            //int len =  (resualt.value.Length - 2) / 2;
+            //for (int i =0 ; i < len; i++)
+            //{
+            //    resualt.value = resualt.value + "00";
+            //}
             return resualt;
         }
 
-        public static string ReConcat(string hex)
+        public static string ConvrtForx86(string hex, int bytes = 4, bool forFasm = true)
         {
-            hex = hex.Remove(0, 2);
-            int len = (hex.Length);
             string resualt = string.Empty;
-            for (int i = 0; i < len; i+=2)
-            {
-                resualt += " 0x" + hex[i] + hex[i+1];   
-            } resualt = resualt.Trim();
+
+            for (int i = (hex.Length/2)-1; i >= 0; i--)
+                resualt = resualt + hex[i*2] + hex[i*2+1];
+            for (int i = 0; i < (resualt.Length/2)%bytes; i++)
+                resualt = resualt + "00";
             return resualt;
         }
 

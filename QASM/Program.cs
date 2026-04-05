@@ -20,7 +20,9 @@ namespace QASM
                 "mov eax, [mem]",
                 "mov [mem], eax",
                 "mov eax, ebx",
-                "mov ecx, 300"
+                "mov ecx, 300",
+                "mov eax, 100000000",
+                "mov eax, ecx"
                 //"mov eax, 10"
             };
 

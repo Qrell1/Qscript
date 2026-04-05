@@ -26,11 +26,11 @@ namespace QASM
 
         private static Dictionary<string, Hex> opcodes = new Dictionary<string, Hex>()
         {
-            { "mov|rr", new Hex("0x89")},
-            { "mov|rn", new Hex("0xB8")},
-            { "mov|rm", new Hex("0x8B")},
-            { "mov|mr", new Hex("0x89")},
-            { "mov|mn", new Hex("0xC7")}
+            { "mov|rr", new Hex("89")},
+            { "mov|rn", new Hex("B8")},
+            { "mov|rm", new Hex("8B")},
+            { "mov|mr", new Hex("89")},
+            { "mov|mn", new Hex("C7")}
             //mov|rr = 89
             //mov|rn = B8
             //mov|rm = 8B
@@ -131,7 +131,7 @@ namespace QASM
         public static Dictionary<string, Hex> TranslationFirst(List<instruct> instructs)
         {
             Dictionary<string, Hex> resualt = new Dictionary<string, Hex>();
-            Hex offset = new Hex("0x400000");
+            Hex offset = new Hex("400000");
 
             for (int i = 0; i < instructs.Count; i++)
             {
@@ -196,6 +196,13 @@ namespace QASM
                 //mov|rm = 8B
                 //mov|mr = 89
                 //mov|mn = C7
+                if (InstructPattern(str, "mov|rm"))
+                {
+                    Hex hex = opcodes["mov|rn"];
+                    hex = hex + Hex.ConvtWithBinCode(regcodes[pattern[0].value]);
+                    resualtStr = hex.value;
+                    resualtStr += " " + Hex.ConvrtForx86(Hex.Convt(Convert.ToInt32(pattern[1].value)));
+                }
                 if (InstructPattern(str, "mov|rr"))
                 {
                     resualtStr = opcodes["mov|rr"].value;
@@ -210,7 +217,7 @@ namespace QASM
                     Hex hex = opcodes["mov|rn"];
                     hex = hex + Hex.ConvtWithBinCode(regcodes[pattern[0].value]);
                     resualtStr = hex.value;
-                    resualtStr += " " + Hex.ReConcat(Hex.ConvtWithBinCode(Hex.ConvtWithNumber(pattern[1].value), 4).value);
+                    resualtStr += " " + Hex.ConvrtForx86(Hex.Convt(Convert.ToInt32(pattern[1].value)));
                 }
 
 
