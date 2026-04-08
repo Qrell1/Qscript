@@ -98,6 +98,7 @@ namespace Qscript
             tokenTypes.Add("INCLUDE", new TokenType("INCLUDE", @"\binclude\b"));
             tokenTypes.Add("USING", new TokenType("USING", @"\busing\b"));
 
+            tokenTypes.Add("NAMESPACE", new TokenType("NAMESPACE", @"\bnamespace\b"));
             tokenTypes.Add("EXTERNFUNC", new TokenType("EXTERNFUNC", @"\bextern-func\b"));
             tokenTypes.Add("EXTERNLIBRARY", new TokenType("EXTERNLIBRARY", @"\bextern-library\b"));
             tokenTypes.Add("EXTERN", new TokenType("EXTERN", @"\bextern\b"));

@@ -323,13 +323,14 @@ namespace Qscript
             CommonNode bodyNode = take(root, 1);
             
             int iterNumber = ++iterTagIndex;
+            string pre = (funcName != "") ? funcName + "." : "";
 
-            _objProg.code.Append($"iter{iterNumber}:\n");
+            _objProg.code.Append($"{pre}iter{iterNumber}:\n");
 
             Translation(bodyNode, z_buffer + 1);
 
             Translation(cmpNode, z_buffer + 1);
-            _objProg.code.Append($"jmp iter{iterNumber}\n");
+            _objProg.code.Append($"jmp {pre}iter{iterNumber}\n");
             _objProg.code.Append($"{funcName}.false{falseTagIndex}:\n");
             falseTagIndex++;
         }
@@ -341,15 +342,16 @@ namespace Qscript
             CommonNode bodyNode = take(root, 3);
 
             int iterNumber = ++iterTagIndex;
+            string pre = (funcName != "") ? funcName + "." : "";
 
             Translation(initNode, z_buffer + 1);
-            _objProg.code.Append($"iter{iterNumber}:\n");
+            _objProg.code.Append($"{pre}iter{iterNumber}:\n");
 
             Translation(bodyNode, z_buffer + 1);
 
             Translation(stepNode, z_buffer + 1);
             Translation(cmpNode, z_buffer + 1);
-            _objProg.code.Append($"jmp iter{iterNumber}\n");
+            _objProg.code.Append($"jmp {pre}iter{iterNumber}\n");
             _objProg.code.Append($"false{falseTagIndex}:\n");
             falseTagIndex++;
 
@@ -371,6 +373,7 @@ namespace Qscript
             CommonNode bodyNode = take(root, 2);
 
             int iterNumber = ++iterTagIndex;
+            string pre = (funcName != "") ? funcName + ".": "";
             /*  local i dd 0
                 enumer0:
 
@@ -389,7 +392,7 @@ namespace Qscript
                 case "FLOAT": Syntax.SyntaxError("Невозможно использовать флотовое число в качестве числа енумераций!", countNode); break;
                 default: Translation(countNode, z_buffer + 1); _objProg.code.Append($"mov ecx, eax\n"); break;
             }
-            _objProg.code.Append($"iter{iterNumber}:\n");
+            _objProg.code.Append($"{pre}iter{iterNumber}:\n");
 
             if (countString == "ecx") _objProg.code.Append($"push ecx\n");
             /*
@@ -426,7 +429,7 @@ namespace Qscript
             _objProg.code.Append($"inc [{varNode.token.value}]\n");
             if (countString.First() == '[') countString = "eax";
             _objProg.code.Append($"cmp [{varNode.token.value}], {countString}\n");
-            _objProg.code.Append($"jne iter{iterNumber}\n");
+            _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
 
             //iterTagIndex++;
         }

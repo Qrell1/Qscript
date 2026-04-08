@@ -11,6 +11,7 @@ namespace Qscript
         public bool sem = false;
 
         private ProgramNode root;
+        private string NamespaceString;
 
         public CommonNode nullNode = new CommonNode("NULLNODE", new Token(null, "", 0));
 
@@ -738,6 +739,7 @@ namespace Qscript
                 CommonNode args = parseVarWTypeSignature(); expect(new string[] { "LFIG", "SEM", "OPER", "VAR" }); if (tokens[pos].value == "qs") { skip(); qsFlag = true; }
                 CommonNode declarator = parseDeclarator();
                 CommonNode body = parseBody();
+                varNode.token.value = NamespaceString + varNode.token.value;
                 varNode.type = "FUNC";
                 varNode.childs.Add(args);
                 varNode.childs.Add(body);
@@ -1423,6 +1425,29 @@ namespace Qscript
             return typeifNode;
         }
 
+        public CommonNode parseNamespace()
+        {
+            skip(); expect("VAR");
+            Token namespaceToken = take();
+            NamespaceString = namespaceToken.value + ".";
+            CommonNode bodyNode = parseBody();
+            CommonNode recurse (CommonNode root)
+            {
+                if (root.type != "VAR")
+                {
+                    for (int i = 0; i < root.childs.Count; i++)
+                    {
+                        root.childs[i] = recurse(root.childs[i]);
+                    }
+                    return root;
+                }
+                root.token.value = namespaceToken.value + "." + root.token.value;
+                return root;
+            }
+            NamespaceString = "";
+            return recurse(bodyNode);
+        }
+
         public ProgramNode parseCode()
         {
             root = new ProgramNode("ROOT", new Token(null, "ROOT", -999));
@@ -1488,6 +1513,10 @@ namespace Qscript
             if (peek("TYPEIF"))
             {
                 return parseTypeif();
+            }
+            if (peek("NAMESPACE"))
+            {
+                return parseNamespace();
             }
             return null;
         }
