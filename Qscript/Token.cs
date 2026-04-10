@@ -121,6 +121,7 @@ namespace Qscript
 
             tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"(\bstruct\b|\bструктура\b)"));
             tokenTypes.Add("CLASS", new TokenType("CLASS", @"(\bclass\b|\bкласс\b)"));
+            tokenTypes.Add("ENUM", new TokenType("ENUM", @"(\benum\b|\bсловарь\b)"));
 
             tokenTypes.Add("VIRTUAL", new TokenType("VIRTUAL", @"\bvirtual\b"));
             tokenTypes.Add("OVERRIDE", new TokenType("OVERRIDE", @"\boverride\b"));

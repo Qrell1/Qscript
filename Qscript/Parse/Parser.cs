@@ -636,6 +636,34 @@ namespace Qscript
             expect("RFIG"); skip();
             return stackNode;
         }
+        public CommonNode parseEnumStack(string type)
+        {
+            expect("LFIG");
+            CommonNode stackNode = new CommonNode("BODY", take());
+
+            while (peek(type))
+            {
+                Token varToken = take();
+                while (peek("TS"))
+                {
+                    skip();
+                    varToken.value += "." + take().value;
+                    if (tokens[pos].type.type != "TS")
+                        break;
+                }
+                stackNode.childs.Add(new CommonNode(type, varToken));
+                if (tokens[pos].value == "=")
+                {
+                    skip(); expect("NUMBER");
+                    CommonNode typeNode = new CommonNode("NUMBER", take());
+                    stackNode.childs[stackNode.childs.Count - 1].childs.Add(typeNode);
+                }
+                if (peek("PS")) skip();
+            }
+
+            expect("RFIG"); skip();
+            return stackNode;
+        }
 
         public CommonNode parseDeclarator()
         {
@@ -1411,7 +1439,7 @@ namespace Qscript
             expect("OPER"); if (tokens[pos].value != "=") SyntaxError($"На Позиции:{pos} после константы ожидался оператор =");
             skip();
             CommonNode valueNode = parseFormula();
-            root.consts.Add(constNode.token.value, valueNode);
+            if (!root.consts.ContainsKey(constNode.token.value)) root.consts.Add(constNode.token.value, valueNode);
             return null;
         }
 
@@ -1446,6 +1474,28 @@ namespace Qscript
             }
             NamespaceString = "";
             return recurse(bodyNode);
+        }
+
+        public CommonNode parseEnum()
+        {
+            skip(); expect("VAR");
+            Token enumToken = take();
+            CommonNode consts = parseEnumStack("VAR");
+            int index = 0;
+            foreach (CommonNode cnst in consts.childs)
+            {
+                if (cnst.childs.Count > 0)
+                {
+                    if (!root.consts.ContainsKey(cnst.token.value)) root.consts.Add(enumToken.value + "." + cnst.token.value, cnst.childs[0]);
+                } else
+                {
+                    if (!root.consts.ContainsKey(cnst.token.value))
+                        root.consts.Add(enumToken.value + "." + cnst.token.value,
+                        new CommonNode("NUMBER", new Token(TokenTypeList.tokenTypes["NUMBER"], index.ToString(), cnst.token.pos)));
+                }
+                index++;
+            }
+            return null;
         }
 
         public ProgramNode parseCode()
@@ -1517,6 +1567,10 @@ namespace Qscript
             if (peek("NAMESPACE"))
             {
                 return parseNamespace();
+            }
+            if (peek("ENUM"))
+            {
+                return parseEnum();
             }
             return null;
         }

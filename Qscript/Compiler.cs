@@ -864,7 +864,131 @@ namespace Qscript
 
                 return;
             }
-            if (new string[] { "+=", "-=", "*=", "/=", "%=", "+", "-", "*", "/", "%" }.Contains(root.token.value))
+            if (root.token.value == "+"
+                || root.token.value == "-"
+                || root.token.value == "*"
+                || root.token.value == "/"
+                || root.token.value == "%")
+            {
+                CommonNode leftChild = take(root, 0);
+                CommonNode rightChild = take(root, 1);
+
+                string leftRegM = "eax";
+                string rightRegM = "ebx";
+
+                if (leftChild.type == "VAR" && rightChild.type == "NUMBER")
+                {
+                    rightRegM = rightChild.token.value;
+                    _objProg.code.Append($"mov eax, [{leftChild.token.value}]");
+                } else if (leftChild.type == "NUMBER" && rightChild.type == "VAR")
+                {
+                    rightRegM = $"[{rightChild}]";
+                    _objProg.code.Append($"mov eax, {leftChild.token.value}");
+                } else if (leftChild.type == "CALL" && rightChild.type == "VAR")
+                {
+                    rightRegM = $"[{rightChild.token.value}]";
+                    translationCall(leftChild, z_buffer + 1);
+                } else if (leftChild.type == "VAR" && rightChild.type == "CALL")
+                {
+                    leftRegM = "ebx";
+                    rightRegM = $"eax";
+                    translationCall(leftChild, z_buffer + 1);
+                } else if (leftChild.type == "VAR" && rightChild.type == "BINOPER")
+                {
+                    translationBinOper(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"mov ebx, eax");
+                    _objProg.code.Append($"mov eax, [{leftChild.token.value}]");
+                } else if (leftChild.type == "BINOPER" && rightChild.type == "VAR")
+                {
+                    translationBinOper(leftChild, z_buffer + 1);
+                    _objProg.code.Append($"mov ebx, [{rightChild.token.value}]");
+                }
+
+
+                else {
+                    translationLeftRightNodes(leftChild, rightChild, z_buffer);
+                }
+                switch (root.token.value)
+                {
+                    case "+":
+                        _objProg.code.Append($"add {leftRegM}, {rightRegM}\n");
+                        break;
+                    case "-":
+                        _objProg.code.Append($"sub {leftRegM}, {rightRegM}\n");
+                        break;
+                    case "*":
+                        _objProg.code.Append($"imul {leftRegM}, {rightRegM}\n");
+                        break;
+                    case "/":
+                        _objProg.code.Append("cdq\n");
+                        if (leftRegM != "eax")
+                            _objProg.code.Append($"mov eax, {leftRegM}\n");
+                        _objProg.code.Append($"idiv {rightRegM}\n");
+                        break;
+                    case "%":
+                        _objProg.code.Append("xor edx, edx\n");
+                        if (leftRegM != "eax")
+                            _objProg.code.Append($"mov eax, {leftRegM}\n");
+                        _objProg.code.Append($"idiv {rightRegM}\n");
+                        _objProg.code.Append("mov eax, edx\n");
+                        break;
+                }
+                if (leftRegM == "ebx") _objProg.code.Append("mov eax, ebx\n");
+                return;
+            }
+            if (root.token.value == "+="
+                || root.token.value == "-="
+                || root.token.value == "*="
+                || root.token.value == "/="
+                || root.token.value == "%=")
+            {
+                CommonNode leftChild = take(root, 0);
+                CommonNode rightChild = take(root, 1);
+
+                string rightRegM = "ebx";
+
+                if (rightChild.type == "NUMBER")
+                {
+                    rightRegM = rightChild.token.value;
+                }
+                else if (leftChild.type == "CALL")
+                {
+                    rightRegM = "eax";
+                    translationCall(leftChild, z_buffer + 1);
+                } else
+                {
+                    rightRegM = "eax";
+                    Translation(rightChild, z_buffer + 1);
+                }
+                switch (root.token.value)
+                {
+                    case "+=":
+                        _objProg.code.Append($"add [{leftChild.token.value}], {rightRegM}\n");
+                        break;
+                    case "-=":
+                        _objProg.code.Append($"sub [{leftChild.token.value}], {rightRegM}\n");
+                        break;
+                    case "*=":
+                        _objProg.code.Append($"mov ebx, [{leftChild.token.value}]");
+                        _objProg.code.Append($"imul ebx, {rightRegM}\n");
+                        _objProg.code.Append($"mov [{leftChild.token.value}], ebx");
+                        break;
+                    case "/=":
+                        _objProg.code.Append("cdq\n");
+                        _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
+                        _objProg.code.Append($"idiv {rightRegM}\n");
+                        _objProg.code.Append($"mov [{leftChild.token.value}], eax");
+                        break;
+                    case "%=":
+                        _objProg.code.Append("xor edx, edx\n");
+                        _objProg.code.Append($"mov eax, [{leftChild.token.value}]\n");
+                        _objProg.code.Append($"idiv {rightRegM}\n");
+                        _objProg.code.Append($"mov [{leftChild.token.value}], edx\n");
+                        break;
+                }
+                return;
+            }
+            /*if (new string[] { "+=", "-=", "*=", "/=", "%=", "+", "-", "*", "/", "%" }.Contains(root.token.value))
             {
                 CommonNode leftChild = take(root, 0); // eax
                 CommonNode rightChild = take(root, 1);
@@ -887,7 +1011,7 @@ namespace Qscript
                     _objProg.code.Append($"mov ebx, [{rightChild.token.value}]\n");
                     _objProg.code.Append($"pop ecx\n");
                     rightChild.token.value = $"ebx+ecx";
-                }*/
+                }
                 if (leftChild.type == "VAR" && rightChild.type == "CALL" && root.token.value == "+=")
                 {
                     translationCall(rightChild, z_buffer + 1);
@@ -1032,7 +1156,7 @@ namespace Qscript
                 }
                 if (leftChild.type == "VAR" && !(new string[] { "+", "-", "*", "/" }.Contains(root.token.value)))
                     _objProg.code.Append($"mov [{leftChild.token.value}], eax\n");
-            }
+            }*/
         }
         private void translationFloatBinOper(CommonNode root, int z_buffer)
         {
