@@ -144,11 +144,12 @@ namespace Qscript
         }
         public CommonNode tryParseVarPath(CommonNode varNode)
         {
-            while (peek("TS"))
+            while (peek("TS") || (tokens[pos].value == ":" && tokens[pos+1].value == ":" && ++pos != pos))
             {
-                skip();
+                skip(); 
                 varNode.token.value += "." + take().value;
                 if (tokens[pos].type.type != "TS") break;
+                //if (tokens[pos].value != ":" && tokens[pos+1].value != ":") break;
             }
             return varNode;
         }
@@ -1482,6 +1483,9 @@ namespace Qscript
             Token enumToken = take();
             CommonNode consts = parseEnumStack("VAR");
             int index = 0;
+            Compiler.types.Add(enumToken.value, Compiler.types["long"]);
+            Compiler.typesarg.Add(enumToken.value, Compiler.typesarg["long"]);
+            Compiler.aligns.Add(enumToken.value, Compiler.aligns["long"]);
             foreach (CommonNode cnst in consts.childs)
             {
                 if (cnst.childs.Count > 0)
@@ -1498,6 +1502,50 @@ namespace Qscript
             return null;
         }
 
+        public CommonNode parseOperator()
+        {
+            skip(); expect("VAR");
+            CommonNode typeNode = new CommonNode("TYPE", take());
+            if (tokens[pos].value == "*") { skip(); typeNode.type = "INDICATOR"; }
+            CommonNode varNode = new CommonNode("OPER", take());
+            string operatorChar = varNode.token.value;
+            switch (varNode.token.value)
+            {
+                case "+": varNode.token.value = "PLUS" + typeNode.token.value;        break;
+                case "-": varNode.token.value = "MINUS" + typeNode.token.value;       break;
+                case "*": varNode.token.value = "MUL" + typeNode.token.value;         break;
+                case "/": varNode.token.value = "DIV" + typeNode.token.value;         break;
+                case "%": varNode.token.value = "DDIV" + typeNode.token.value;        break;
+                case "+=": varNode.token.value = "PLUSASSIGN" + typeNode.token.value; break;
+                case "-=": varNode.token.value = "MINUSASSIGN" + typeNode.token.value;break;
+                case "*=": varNode.token.value = "MULASSIGN" + typeNode.token.value;  break;
+                case "/=": varNode.token.value = "DIVASSIGN" + typeNode.token.value;  break;
+                case "%=": varNode.token.value = "DDIVASSIGN" + typeNode.token.value; break;
+            }
+            if (root.operatorFunctions.ContainsValue(varNode.token.value)) varNode.token.value += root.operatorFunctions.Count;
+
+            bool qsFlag = false;
+            CommonNode child;
+            CommonNode args = parseVarWTypeSignature();
+            if (args.childs.Count != 2) Syntax.SyntaxError("Невозможное количество аргументов оператора!", args);
+            expect(new string[] { "LFIG", "SEM", "OPER", "VAR" }); if (tokens[pos].value == "qs") { skip(); qsFlag = true; }
+            CommonNode body = parseBody();
+            varNode.token.value = NamespaceString + varNode.token.value;
+            varNode.type = "FUNC";
+            varNode.childs.Add(typeNode);
+            varNode.childs.Add(args);
+            varNode.childs.Add(body);
+
+            if (varNode.childs[0].token.value == "void")
+                root.resualtFunc.Add(varNode.token.value, null);
+            else
+                root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
+
+            if (qsFlag) root.qsFunction.Add(varNode.token.value);
+            root.operatorFunctions.Add((operatorChar, args.childs[0].childs[0].token.value, args.childs[1].childs[0].token.value), varNode.token.value);
+            return varNode;
+        }
+
         public ProgramNode parseCode()
         {
             root = new ProgramNode("ROOT", new Token(null, "ROOT", -999));
@@ -1509,6 +1557,7 @@ namespace Qscript
                 if (node == null) continue;
                 if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 root.childs.Add(node);
+                //Program.PrintAST(node, 0);
             }
             return root;
         }
@@ -1571,6 +1620,10 @@ namespace Qscript
             if (peek("ENUM"))
             {
                 return parseEnum();
+            }
+            if (peek("OPERATOR"))
+            {
+                return parseOperator();
             }
             return null;
         }

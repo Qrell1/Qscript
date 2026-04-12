@@ -36,6 +36,7 @@ namespace Qscript
         public static void SyntaxError(string message="Синтаксическая Ошибка!", CommonNode node=null)
         {
             Console.ForegroundColor = ConsoleColor.White;
+            Program.PrintAST(node, 0);
             try
             {
                 Console.WriteLine("=---------------------------------------------------------=");
@@ -49,7 +50,7 @@ namespace Qscript
                 Console.WriteLine((node.token.pos+2).ToString() + ": " + code.strings[node.token.pos+1]);
                 Console.WriteLine((node.token.pos+3).ToString() + ": " + code.strings[node.token.pos+2]);
                 Console.WriteLine("=---------------------------------------------------------=");
-                Console.WriteLine(message);
+                Console.WriteLine(message + " " + node.token.value);
             }
             catch
             {
@@ -57,12 +58,12 @@ namespace Qscript
                 {
                     Console.WriteLine(node.token.pos.ToString() + ": " + code.strings[node.token.pos]);
                     Console.WriteLine("=---------------------------------------------------------=");
-                    Console.WriteLine(message);
+                    Console.WriteLine(message + " " + node.token.value);
                 }
                 catch
                 {
                     Console.WriteLine("=---------------------------------------------------------=");
-                    Console.WriteLine(message);
+                    Console.WriteLine(message + " " + node.token.value);
                 }
             }
             Console.ResetColor();
@@ -87,7 +88,7 @@ namespace Qscript
                 Console.WriteLine((token.pos + 2).ToString() + ": " + code.strings[token.pos + 1]);
                 Console.WriteLine((token.pos + 3).ToString() + ": " + code.strings[token.pos + 2]);
                 Console.WriteLine("=---------------------------------------------------------=");
-                Console.WriteLine(message);
+                Console.WriteLine(message + " " + token.value);
             }
             catch
             {
@@ -95,12 +96,12 @@ namespace Qscript
                 {
                     Console.WriteLine(token.pos.ToString() + ": " + code.strings[token.pos]);
                     Console.WriteLine("=---------------------------------------------------------=");
-                    Console.WriteLine(message);
+                    Console.WriteLine(message + " " + token.value);
                 }
                 catch
                 {
                     Console.WriteLine("=---------------------------------------------------------=");
-                    Console.WriteLine(message);
+                    Console.WriteLine(message + " " + token.value);
                 }
             }
             Console.ResetColor();

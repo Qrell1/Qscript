@@ -50,7 +50,7 @@ namespace Qscript
         public Dictionary<string, Dictionary<string, CommonNode>> structs = new Dictionary<string, Dictionary<string, CommonNode>>();
 
         public Dictionary<string, List<CommonNode>> functionOver = new Dictionary<string, List<CommonNode>>();
-
+        public Dictionary<(string, string, string), string> operatorFunctions = new Dictionary<(string, string, string), string>();
         public List<CommonNode> sectionNodes = new List<CommonNode>();
 
         public Dictionary<string, string> externLibrarys = new Dictionary<string, string>();

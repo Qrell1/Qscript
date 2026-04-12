@@ -136,6 +136,7 @@ namespace Qscript
             tokenTypes.Add("SECTION", new TokenType("SECTION", @"\bsection\b"));
             tokenTypes.Add("NATIVE", new TokenType("NATIVE", @"\bnative\b"));
             tokenTypes.Add("INLINE", new TokenType("INLINE", @"\binline\b"));
+            tokenTypes.Add("OPERATOR", new TokenType("OPERATOR", @"(\boperator\b|\bоператор\b)"));
             tokenTypes.Add("SIZEOF", new TokenType("SIZEOF", @"\bsizeof\b"));
             tokenTypes.Add("TYPEOF", new TokenType("TYPEOF", @"\btypeof\b"));
 

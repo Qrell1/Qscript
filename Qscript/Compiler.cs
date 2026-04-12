@@ -864,6 +864,25 @@ namespace Qscript
 
                 return;
             }
+
+            if ((root.childs[0].type == "VAR" || root.childs[0].type == "STRING")
+                && (root.childs[1].type == "VAR" || root.childs[1].type == "STRING"))
+            {
+                string leftType = (root.childs[0].type == "STRING") ? "string" : varSpace.GetTypeValue(root.childs[0].token.value);
+                string rightType = (root.childs[1].type == "STRING") ? "string" : varSpace.GetTypeValue(root.childs[1].token.value);
+                if (ProgramAst.operatorFunctions.ContainsKey((root.token.value, leftType, rightType)))
+                {
+                    string OperatorName = ProgramAst.operatorFunctions[(root.token.value, leftType, rightType)];
+                    CommonNode callNode = new CommonNode("CALL", new Token(null, OperatorName, root.token.pos));
+                    callNode.childs.Add(new CommonNode("SIGNATURE", new Token(null, "()", root.token.pos)));
+                    callNode.childs[0].childs.Add(root.childs[0]);
+                    callNode.childs[0].childs.Add(root.childs[1]);
+                    translationCall(callNode, z_buffer + 1);
+                    if (root.token.value.Contains("=")) _objProg.code.Append($"mov [{root.childs[0].token.value}], eax\n");
+                    return;
+                }
+            }
+
             if (root.token.value == "+"
                 || root.token.value == "-"
                 || root.token.value == "*"
