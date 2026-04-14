@@ -210,8 +210,17 @@ namespace Qscript
                 PrintAST(ast, 0);
 
             Compiler compiler = new Compiler("dsd", ast);
+            foreach (var c in ast.resualtFunc)
+            {
+                try { Console.WriteLine($"{c.Key} - {c.Value.token.value} : {c.Value.type}"); }
+                catch { }
+            }
             compiler.Translation(ast, 0);
-
+            foreach (var c in ast.resualtFunc)
+            {
+                try { Console.WriteLine($"{c.Key} - {c.Value.token.value} : {c.Value.type}"); }
+                catch { }
+            }
             string data = compiler.ConcatData(typeApp);
             compiler.WriteCode(data, filename, pathCompile, "qsr");
 

@@ -268,10 +268,20 @@ namespace Qscript
                                 if (type.First() == '*' || typeVar == "INDICATOR")
                                 {   
                                     if (type.First() == '*') type = type.Remove(0, 1);
-                                    resualtMemory += $"{type}.{strs[k]} + ";
+                                    if (k+1 < strs.Length)
+                                    {
+                                        resualtMemory += $"{type}.{strs[k]}";
+                                        resualt.Append($"mov ebx, [{resualtMemory}]\n");
+                                        resualtMemory = "ebx" + " + ";
+                                    }
+                                    else resualtMemory += $"{type}.{strs[k]} + ";
                                 }
                                 else resualtMemory += "." + strs[k];
                                 Console.WriteLine("-- " + strs[k] + " | " + type);
+                                foreach (var c in ProgramAst.structs["List_int32"])
+                                {
+                                    Console.WriteLine($"{c.Key} -- {c.Value.token.value} - {c.Value.type}");
+                                }
                                 typeVar = ProgramAst.structs[type][strs[k]].type;
                                 type = ProgramAst.structs[type][strs[k]].token.value;
                             }

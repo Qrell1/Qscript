@@ -727,6 +727,13 @@ namespace Qscript
                 typeNode.type = "INDICATOR";
             }
 
+            if (peek("OPER") && (tokens[pos].value == "<" || tokens[pos].value == "@"))
+            {
+                typeNode.childs.Add(parseDeclarator());
+
+                return parseType(typeNode);
+            }
+
             expect("VAR");
             CommonNode varNode = new CommonNode("VAR", take());
             varNode.childs.Add(typeNode);
@@ -1162,6 +1169,8 @@ namespace Qscript
             if (peek("VAR") && (tokens[pos + 1].type.type == "VAR" || tokens[pos + 1].value == "*"))
             {
                 CommonNode typeNode = new CommonNode("TYPE", take()); if (tokens[pos].value == "*") { typeNode.type = "INDICATOR"; skip(); }
+                CommonNode declarationPart = parseDeclarator();
+                if (declarationPart != null) typeNode.childs.Add(declarationPart);
                 CommonNode varNode = new CommonNode("VAR", take());
 
                 varNode = tryParseVarPath(varNode);
@@ -1205,7 +1214,7 @@ namespace Qscript
             }
             //
 
-            //SyntaxError("Неправильное объявление члена структуры данных");
+            SyntaxError("Неправильное объявление члена структуры данных");
             return null;
         }
 
@@ -1217,13 +1226,13 @@ namespace Qscript
             CommonNode declarotivePart = null;
             declarotivePart = parseDeclarator();
             
-            if (peek("OPER"))
+            /*if (peek("OPER"))
             {
                 skip(); expect("VAR"); CommonNode varNode = new CommonNode("VAR", take());
                 CommonNode declarotivePartSecond = parseDeclarator();
                 if (declarotivePartSecond != null) varNode.childs.Add(declarotivePartSecond);
                 root.parentsStructs.Add(structNode.token.value, varNode);
-            }
+            }*/
 
             if (declarotivePart != null) structNode.childs.Add(declarotivePart);
             expect("LFIG"); skip(); if (peek("RFIG")) { skip(); return structNode; }
@@ -1270,7 +1279,8 @@ namespace Qscript
                     modifierNode.childs.Add(varNode);*/
                     CommonNode varNode = parseStructChildren(nameToken.value);
                     if (varNode == null)
-                        varNode = parse(); if (!(new string[] { "VAR", "FUNC", "CONSTRUCTOR", "DESTRUCTOR" }.Contains(varNode.type))) SyntaxError($"Ты чё в структурн Узел Типа:{varNode.type} не может первым находиться");
+                        varNode = parse();
+                    if (!(new string[] { "VAR", "FUNC", "CONSTRUCTOR", "DESTRUCTOR" }.Contains(varNode.type))) SyntaxError($"Ты чё в структурн Узел Типа:{varNode.type} не может первым находиться");
                     //modifierNode.childs.Add(varNode);
                     structNode.childs.Add(varNode);
 
@@ -1279,7 +1289,7 @@ namespace Qscript
                         skip();
                         //structNode.childs.Add(modifierNode);
 
-                        //if (declarotivePart != null) root.declarotivePatternsStruct.Add(nameToken.value, structNode);
+                        if (declarotivePart != null) root.declarativeClassNames.Add(nameToken.value);
                         return structNode;
                     }
                 }

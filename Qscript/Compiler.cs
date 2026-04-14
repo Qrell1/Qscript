@@ -387,50 +387,33 @@ namespace Qscript
             switch (countNode.type)
             {
                 case "NUMBER": countString = countNode.token.value; break;
-                case "VAR": countString = $"[{countNode.token.value}]"; break;
+                case "VAR": _objProg.code.Append($"mov ecx, [{countNode.token.value}]\n"); countString = $"[{countNode.token.value}]"; break;
                 case "FLOATBINOPER": Syntax.SyntaxError("Невозможно использовать флотовую операцию в качестве числа енумераций!", countNode); break;
                 case "FLOAT": Syntax.SyntaxError("Невозможно использовать флотовое число в качестве числа енумераций!", countNode); break;
                 default: Translation(countNode, z_buffer + 1); _objProg.code.Append($"mov ecx, eax\n"); break;
             }
             _objProg.code.Append($"{pre}iter{iterNumber}:\n");
 
+            if (countNode.type == "NUMBER" && Convert.ToInt32(countString) <= 0) return;
+            else
+            {
+                _objProg.code.Append($"cmp ecx, 0\n");
+                _objProg.code.Append($"je {pre}passiter{iterNumber}\n");
+            }
+
             if (countString == "ecx") _objProg.code.Append($"push ecx\n");
-            /*
-            var temp = codeData;
-            setWriteData(CodeData.tempData);
-            Translation(bodyNode, z_buffer + 1);
-            setWriteData(temp);
-            bool flag = false;
-            foreach (var str in tempData.Data)
-            {
-                foreach (var s in str.Split(' '))
-                {
-                    if (s == "ecx" || s == "[ecx]")
-                    {
-                        flag = true; break;
-                    }
-                }
-                if (flag) break;
-            }
-            if (flag)
-            {
-                _objProg.code.Append($"push ecx\n");
-                _objProg.code.Data.AddRange(tempData.Data);
-                _objProg.code.Append($"pop ecx\n");
-            } else
-            {
-                _objProg.code.Data.AddRange(tempData.Data);
-            }
-            tempData.Data.Clear();
-            */
             Translation(bodyNode, z_buffer + 1);
             if (countString == "ecx") _objProg.code.Append($"pop ecx\n");
              
             _objProg.code.Append($"inc [{varNode.token.value}]\n");
-            if (countString.First() == '[') countString = "eax";
+            if (countString.First() == '[')
+            {
+                _objProg.code.Append($"mov eax, {countString}\n");
+                countString = "eax";
+            }
             _objProg.code.Append($"cmp [{varNode.token.value}], {countString}\n");
             _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
-
+            _objProg.code.Append($"{pre}passiter{iterNumber}:\n");
             //iterTagIndex++;
         }
         private void translationPreUnarOper (CommonNode root, int z_buffer)//, bool mov = true)
@@ -489,6 +472,10 @@ namespace Qscript
         {
             CommonNode returnValue = take(root, 0);
 
+            //if (returnType.type == "INDICATOR")
+            //{
+            //    Translation(returnValue, z_buffer + 1);
+            //}
             if (!typesarg.Keys.Contains(returnType.token.value))
             {
                 Translation(returnValue, z_buffer + 1);
@@ -761,6 +748,11 @@ namespace Qscript
             //return;
             //}
             string varType = varSpace.GetTypeValue(root.token.value);
+            if (varType != null && root.childs.Count == 0 && varSpace.GetType(root.token.value).type == "INDICATOR")
+            {
+                _objProg.code.Append($"mov eax, [{root.token.value}]\n");
+                return;
+            }
             if (varType != null && root.childs.Count == 0 && !types.ContainsKey(varType))
             {
                 _objProg.code.Append($"lea eax, [{root.token.value}]\n");
@@ -848,7 +840,7 @@ namespace Qscript
                 {
                     //translationCall(rightChild, z_buffer + 1);//, $"lea eax, [{varChild.token.value}]\n");
                     Console.WriteLine(rightChild.token.value + " | " + ProgramAst.resualtFunc[rightChild.token.value].token.value + " CALL");
-                    if (types.ContainsKey(ProgramAst.resualtFunc[rightChild.token.value].token.value))
+                    if (types.ContainsKey(ProgramAst.resualtFunc[rightChild.token.value].token.value) || ProgramAst.resualtFunc[rightChild.token.value].type == "INDICATOR")
                     { translationCall(rightChild, z_buffer + 1); _objProg.code.Append($"mov [{varChild.token.value}], eax\n"); }
                     else translationCall(rightChild, z_buffer + 1, $"lea eax, [{varChild.token.value}]\n");
                 }
@@ -1457,15 +1449,15 @@ namespace Qscript
             string args = string.Empty;
             for (int i = 0; i < signature.childs.Count; i++)
             {
-                if (!Compiler.types.ContainsKey(signature.childs[i].childs[0].token.value))
+                if (!Compiler.types.ContainsKey(signature.childs[i].childs[0].token.value) && signature.childs[i].token.value != "resualtPtr")
                     signature.childs[i].childs[0].type = "INDICATOR";
             }
             for (int i = ((qsFunc) ? 1 : 0); i < signature.childs.Count; i++)
             {
                 if (i != 0 && i != ((qsFunc)?1:0)) args += " , ";
-                //if (signature.childs[i].token.value == "resualtPtr")
-                    //args += $"{signature.childs[i].token.value}:DWORD";
-                if (typesarg.ContainsKey(signature.childs[i].childs[0].token.value))
+                if (signature.childs[i].token.value == "resualtPtr")
+                    args += $"{signature.childs[i].token.value}:DWORD";
+                else if (typesarg.ContainsKey(signature.childs[i].childs[0].token.value))
                     args += $"{signature.childs[i].token.value}:{typesarg[signature.childs[i].childs[0].token.value]}";
                 else
                     args += $"{signature.childs[i].token.value}:{signature.childs[i].childs[0].token.value}";
@@ -1500,7 +1492,7 @@ namespace Qscript
             {
 
             }
-            else if (typesarg.Keys.Contains(ProgramAst.resualtFunc[root.token.value].token.value))
+            else if (typesarg.Keys.Contains(ProgramAst.resualtFunc[root.token.value].token.value) || ProgramAst.resualtFunc[root.token.value].type == "INDICATOR")
             {
                 _objProg.code.Append($"{root.token.value}.return:\n");
                 //_objProg.code.Append($"    test eax, eax\n");
@@ -1754,13 +1746,13 @@ namespace Qscript
 
         public string ConcatData(TypeApp typeApp)
         {
-            try
+            /*try
             {
                 for (int i = 0; i < types.Count; i++)
                 {
                     Console.WriteLine($"<< {types.ElementAt(i)} | {typesarg.ElementAt(i)} | {aligns.ElementAt(i)}");
                 }
-            } catch { }
+            } catch { }*/
             _objProg = PostGen.PostTranslation(_objProg, ProgramAst);
             //_objProg = CrossCompiler.Compile(_objProg);
             string file = string.Empty;
