@@ -470,6 +470,11 @@ namespace Qscript
         }
         private void translationReturn (CommonNode root, int z_buffer)
         {
+            if (root.childs.Count == 0)
+            {
+                _objProg.code.Append($"jmp {funcName}.retn\n");
+                return;
+            }
             CommonNode returnValue = take(root, 0);
 
             //if (returnType.type == "INDICATOR")

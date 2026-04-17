@@ -480,6 +480,8 @@ namespace Qscript
                     skip();
                     typeNode.type = "INDICATOR";
                 }
+                CommonNode declaratorPart = parseDeclarator();
+                if (declaratorPart != null) typeNode.childs.Add(declaratorPart);
                 expect("VAR"); CommonNode varNode = new CommonNode("VAR", take());
                 varNode = tryParseVarPath(varNode);
                 varNode.childs.Add(typeNode);
@@ -1040,7 +1042,7 @@ namespace Qscript
             {
                 CommonNode operNode = new CommonNode("RETURN", take());
                 CommonNode rightNode;
-                if (peek("SEM"))
+                if (peek("SEM") || tokens[pos].value == "void")
                 {
                     skip();
                     return operNode;
