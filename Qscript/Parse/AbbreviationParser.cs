@@ -4,6 +4,7 @@ using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Qscript
 {
@@ -45,10 +46,14 @@ namespace Qscript
             astNode = cmpCheakDelete(astNode);
             // Class ReFresh
             astNode = classReFresh(astNode);
+            // Class Inheritances
+            astNode = classInheritancesMethods(astNode);
             // Var Cheak
             //astNode = varDeclaratorCheak(astNode, ref astNode);
             // Struct Cheak
             astNode = structCheak(astNode);
+            // Struct Inheritances
+            astNode = structInheritancesCheak(astNode);
             // General Parse
             //astNode = 
             // Call Cheak
@@ -421,7 +426,15 @@ namespace Qscript
                 else if (node.type == "DESTRUCTOR") destructorNode = node;
                 else if (node.type == "DECLARATOR") declarationNode = node;
             }
-
+            /*if (ast.ClassesInheritances.ContainsKey(root.token.value)
+                && ast.classMethods.ContainsKey(ast.ClassesInheritances[root.token.value])
+                && ast.classMethods[ast.ClassesInheritances[root.token.value]].Count != 0)
+            {
+                foreach (var child in ast.classMethods[ast.ClassesInheritances[root.token.value]])
+                {
+                    methodNodes.Add(child);
+                }
+            }*/
 
             // Что мы тут должны сделать с членами класса
             // * Все переменные переместить в структуру
@@ -465,6 +478,33 @@ namespace Qscript
 
             return strt;
         }
+        private CommonNode classInheritancesMethods(CommonNode root)
+        {
+            if (root.type != "CLASS")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = classInheritancesMethods(root.childs[i]);
+                }
+                return root;
+            }
+
+            if (ast.ClassesInheritances.ContainsKey(root.token.value)
+                && ast.classMethods.ContainsKey(ast.ClassesInheritances[root.token.value])
+                && ast.classMethods[ast.ClassesInheritances[root.token.value]].Count != 0)
+            {
+                foreach (var child in ast.classMethods[ast.ClassesInheritances[root.token.value]])
+                {
+                    ast.classMethods[ast.ClassesInheritances[root.token.value]].Add(child);
+                    ast.classMethods[ast.ClassesInheritances[root.token.value]][0].type = root.token.value;
+                    List<CommonNode> newMethod = ast.classMethods[ast.ClassesInheritances[root.token.value]];
+                    ast.classMethods[root.token.value].Remove(ast.ClassesInheritances[root.token.value]);
+                    ast.classMethods.Add(child.token.value + "_" + root.token.value, newMethod);
+                }
+            }
+
+            return root;
+        }
 
         private CommonNode structCheak(CommonNode root)
         {
@@ -489,6 +529,32 @@ namespace Qscript
             
             return root;
             //return parseStruct(root, 0);
+        }
+        private CommonNode structInheritancesCheak(CommonNode root)
+        {
+
+            if (root.type != "STRUCT")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = structInheritancesCheak(root.childs[i]);
+                }
+                return root;
+            }
+
+            if (ast.ClassesInheritances.ContainsKey(root.token.value))
+            {
+                foreach (var child in ast.structs[ast.ClassesInheritances[root.token.value]])
+                {
+                    if (ast.structs[root.token.value].ContainsKey(child.Key)) continue;
+                    ast.structs[root.token.value].Add(child.Key, child.Value);
+                    CommonNode varNode = new CommonNode("VAR", new Token(null, child.Key, child.Value.token.pos));
+                    varNode.childs.Add(child.Value);
+                    root.childs.Add(varNode);
+                }
+            }
+
+            return root;
         }
         private CommonNode varDeclaratorCheak(CommonNode root, ref CommonNode _ast)
         {
@@ -791,7 +857,18 @@ namespace Qscript
             }
 
             varSpace.OpenSpace();
-            foreach (CommonNode child in signature.childs)  varSpace.AddVar(child.token.value, child.childs[0]);
+            foreach (CommonNode child in signature.childs)
+            {
+                Console.WriteLine($"Func Signature Var : {child.token.value} | {child.childs[0].token.value}");
+                try
+                {
+                    varSpace.AddVar(child.token.value, child.childs[0]);
+                } catch
+                {
+                    Program.PrintAST(ast, 0);
+                    Console.ReadKey();
+                }
+            }
             for (int i = 0; i < bodyFunc.childs.Count; i++)
             {
                 bodyFunc.childs[i] = parse(bodyFunc.childs[i], z_buffer + 2);

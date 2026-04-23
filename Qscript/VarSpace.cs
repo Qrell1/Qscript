@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Qscript
 {
@@ -42,8 +38,6 @@ namespace Qscript
 
         public void OpenSpace()
         {
-            //if (VarsSpaces.Count != 0) VarsSpaces.Push(new Dictionary<string, CommonNode>(VarsSpaces.Peek()));
-            //else VarsSpaces.Push(new Dictionary<string, CommonNode>(VarsData));
             if (VarsSpaces.Count != 0) VarsSpaces.Push(new Dictionary<string, CommonNode>());
             else VarsSpaces.Push(new Dictionary<string, CommonNode>());
         }

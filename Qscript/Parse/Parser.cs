@@ -1218,6 +1218,13 @@ namespace Qscript
             expect("VAR"); Token nameToken = take();
             CommonNode structNode = new CommonNode(typeStructToken.type.type, nameToken);
             CommonNode declarotivePart = null;
+
+            if (peek("OPER") && tokens[pos].value == ":")
+            {
+                skip(); expect("VAR");
+                root.ClassesInheritances.Add(nameToken.value, take().value);
+            }
+
             declarotivePart = parseDeclarator();
             
             /*if (peek("OPER"))

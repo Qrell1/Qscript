@@ -184,14 +184,19 @@ namespace Qscript
             list = preproccessor.lexIncludes(list);
 
 
-            //int index = 0;                  
-            parser = new Parser(list);
-            ProgramNode ast = parser.parseCode();
-
+            //int index = 0
+            ProgramNode ast;
+            try
+            {
+                parser = new Parser(list);
+                ast = parser.parseCode();
+            }
+            catch { Console.WriteLine("При парсинге что-то пошло не так...("); Console.ReadKey(); return; }
             //PrintAST(ast, 0);
 
             AbbreviationParser addParser = new AbbreviationParser();
-            ast = addParser.abbParse(ast);
+            try { ast = addParser.abbParse(ast); }
+            catch { Console.WriteLine("При пост-парсинге что-то пошло не так...("); Console.ReadKey(); return; }
             try
             {
                 //SemanticAnalyzer.startAnalis(ast);
@@ -208,14 +213,14 @@ namespace Qscript
             Console.WriteLine("NEW AST AbbreviationParser!!!");
             if (args.Length == 0)
                 PrintAST(ast, 0);
-
             Compiler compiler = new Compiler("dsd", ast);
             foreach (var c in ast.resualtFunc)
             {
                 try { Console.WriteLine($"{c.Key} - {c.Value.token.value} : {c.Value.type}"); }
                 catch { }
             }
-            compiler.Translation(ast, 0);
+            try { compiler.Translation(ast, 0); }
+            catch { Console.WriteLine("При компиляции что-то пошло не так...("); Console.ReadKey(); return; }
             foreach (var c in ast.resualtFunc)
             {
                 try { Console.WriteLine($"{c.Key} - {c.Value.token.value} : {c.Value.type}"); }

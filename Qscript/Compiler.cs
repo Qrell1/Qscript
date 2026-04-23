@@ -416,7 +416,7 @@ namespace Qscript
             _objProg.code.Append($"{pre}passiter{iterNumber}:\n");
             //iterTagIndex++;
         }
-        private void translationPreUnarOper (CommonNode root, int z_buffer)//, bool mov = true)
+        private void translationPreUnarOper (CommonNode root, int z_buffer)
         {
             CommonNode varNode = take(root, 0);
             string oper = (root.token.value == "++") ? "inc" : "dec" ;
