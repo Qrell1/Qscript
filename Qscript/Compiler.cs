@@ -444,20 +444,20 @@ namespace Qscript
         private void translationTypeof(CommonNode root, int z_buffer)
         {
             CommonNode varNode = take(root, 0);
-            string size = string.Empty;
 
             if (types.ContainsKey(varNode.token.value))
             {
                 switch (types[varNode.token.value])
                 {
-                    case "dd": size = "4"; break;
-                    case "dw": size = "2"; break;
-                    case "db": size = "1"; break;
+                    case "dq": _objProg.code.Append("mov eax, 8\n"); return;
+                    case "dd": _objProg.code.Append("mov eax, 4\n"); return;
+                    case "dw": _objProg.code.Append("mov eax, 2\n"); return;
+                    case "db": _objProg.code.Append("mov eax, 1\n"); return;       
+                    case "du": _objProg.code.Append("mov eax, 2\n"); return;
                 }
+                _objProg.code.Append($"mov eax, {aligns["long"]}\n");
             }
-            else { size = $"SIZE_{varNode.token.value.ToUpper()}"; }
-
-            _objProg.code.Append($"mov eax, {size}\n");
+            else { _objProg.code.Append($"mov eax, SIZE_{varNode.token.value.ToUpper()}\n"); }
         }
         private void translationRefVar (CommonNode root, int z_buffer)
         {

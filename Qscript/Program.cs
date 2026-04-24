@@ -196,7 +196,7 @@ namespace Qscript
 
             AbbreviationParser addParser = new AbbreviationParser();
             try { ast = addParser.abbParse(ast); }
-            catch { Console.WriteLine("При пост-парсинге что-то пошло не так...("); Console.ReadKey(); return; }
+            catch (Exception e) { Console.WriteLine($"При пост-парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
             try
             {
                 //SemanticAnalyzer.startAnalis(ast);

@@ -91,7 +91,7 @@ namespace Qscript
             //line = procList.Count;
             while (true)
             {
-                objProgramResualt.procData = Translation(procList, varGlobal);
+                objProgramResualt.procData = _objProgram.procData;//Translation(procList, varGlobal);
                 procList.Clear();
                 procList = LexInstructs(objProgramResualt.procData);
                 objProgramResualt.procData = new StringData();

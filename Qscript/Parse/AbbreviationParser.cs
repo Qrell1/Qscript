@@ -86,7 +86,7 @@ namespace Qscript
             ast.varTypes = varSpace.VarsData;
             return ast;
         }
-
+        
         // Вспомогательные функции
         private Dictionary<CommonNode, CommonNode> cheakAllVarInLocal(CommonNode root)
         {
@@ -480,7 +480,7 @@ namespace Qscript
         }
         private CommonNode classInheritancesMethods(CommonNode root)
         {
-            if (root.type != "CLASS")
+            if (root.type != "STRUCT")
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -493,13 +493,23 @@ namespace Qscript
                 && ast.classMethods.ContainsKey(ast.ClassesInheritances[root.token.value])
                 && ast.classMethods[ast.ClassesInheritances[root.token.value]].Count != 0)
             {
-                foreach (var child in ast.classMethods[ast.ClassesInheritances[root.token.value]])
+                var reflist = ast.classMethods[ast.ClassesInheritances[root.token.value]];
+                List<CommonNode> list = new List<CommonNode>();
+                foreach (var e in reflist)
+                    list.Add(copyNodes(e));
+
+                foreach (var child in list)
                 {
+                    bool _is = false;
+                    child.token.value = child.token.value.Replace($"_{ast.ClassesInheritances[root.token.value]}", $"_{root.token.value}");
+                    foreach (CommonNode v in ast.classMethods[root.token.value])
+                        if (v.token.value == child.token.value) _is = true;
+                    if (_is) continue;
+                    
+                    child.childs[1].childs[0].childs[0].token.value = root.token.value;
+                    Console.WriteLine(child.token.value);
+                    ast.resualtFunc.Add(child.token.value, child.childs[0]);
                     ast.classMethods[ast.ClassesInheritances[root.token.value]].Add(child);
-                    ast.classMethods[ast.ClassesInheritances[root.token.value]][0].type = root.token.value;
-                    List<CommonNode> newMethod = ast.classMethods[ast.ClassesInheritances[root.token.value]];
-                    ast.classMethods[root.token.value].Remove(ast.ClassesInheritances[root.token.value]);
-                    ast.classMethods.Add(child.token.value + "_" + root.token.value, newMethod);
                 }
             }
 
