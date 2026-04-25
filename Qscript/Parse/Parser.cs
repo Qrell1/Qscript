@@ -222,10 +222,20 @@ namespace Qscript
             if (token.type.type == "PREFIX" && token.value == "&")
             {
                 CommonNode addr = new CommonNode("ADDRESS", token);
+                CommonNode node;
+                if (tokens[pos].value == "(" && tokens[pos + 1].value == ")")
+                {
+                    skip(); skip();
+                    node = new CommonNode("CALL", take());
+                    node = tryParseVarPath(node);
+                    node.childs.Add(new CommonNode("SIGNATURE", new Token(null, "()", node.token.pos)));
+                    addr.childs.Add(node);
+                    return addr;
+                }
                 expect("VAR");
-                CommonNode node = new CommonNode("VAR", take());
+                node = new CommonNode("VAR", take());
                 node = tryParseVarPath(node);
-                node = parseCall(node);
+                //node = parseCall(node);
                 addr.childs.Add(node);
                 return addr;
             }

@@ -466,9 +466,10 @@ namespace Qscript
                 if (declarationNode == null) newRoot.token.value += "_" + root.token.value;
                 CommonNode signatureFuncNode = newRoot.childs[1];
                 List<CommonNode> commonNodes = new List<CommonNode>();
-                commonNodes.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], "this", signatureFuncNode.token.pos)));
-                commonNodes[0].childs.Add(new CommonNode("TYPE", new Token(TokenTypeList.tokenTypes["VAR"], root.token.value, signatureFuncNode.token.pos)));
+                
                 foreach (CommonNode cn in signatureFuncNode.childs) commonNodes.Add(cn);
+                commonNodes.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], "this", signatureFuncNode.token.pos)));
+                commonNodes.Last().childs.Add(new CommonNode("TYPE", new Token(TokenTypeList.tokenTypes["VAR"], root.token.value, signatureFuncNode.token.pos)));
                 signatureFuncNode.childs = commonNodes;
                 if (declarationNode == null) ast.resualtFunc.Add(newRoot.token.value, newRoot.childs[0]);
                 //ast.typesArgsFunc.Add(node.token.value, signatureFuncNode);
@@ -506,7 +507,7 @@ namespace Qscript
                         if (v.token.value == child.token.value) _is = true;
                     if (_is) continue;
                     
-                    child.childs[1].childs[0].childs[0].token.value = root.token.value;
+                    child.childs[1].childs.Last().childs[0].token.value = root.token.value;
                     Console.WriteLine(child.token.value);
                     ast.resualtFunc.Add(child.token.value, child.childs[0]);
                     ast.classMethods[ast.ClassesInheritances[root.token.value]].Add(child);
@@ -1002,8 +1003,8 @@ namespace Qscript
                     name += "_" + type;
                     name.Remove(0, 1);
                     List<CommonNode> argsNew = new List<CommonNode>();
-                    argsNew.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], strs[0], root.childs[0].token.pos)));
                     foreach (CommonNode node in root.childs[0].childs) argsNew.Add(node);
+                    argsNew.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], strs[0], root.childs[0].token.pos)));
                     root.childs[0].childs = argsNew;
                     root.token.value = strs[strs.Length-1] + "_" + type;
                 }
@@ -1089,7 +1090,7 @@ namespace Qscript
                         {
                             CommonNode newMethod = replaceNodes(child, ref declaratorTypes);
                             newMethod.token.value += "_" + type.token.value;
-                            newMethod.childs[1].childs[0].childs[0].token.value = type.token.value;
+                            newMethod.childs[1].childs.Last().childs[0].token.value = type.token.value;
                             ast.classMethods[oldType].Add(newMethod);
                             ast.resualtFunc.Add(
                                 newMethod.token.value,

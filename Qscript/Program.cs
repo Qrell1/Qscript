@@ -220,7 +220,7 @@ namespace Qscript
                 catch { }
             }
             try { compiler.Translation(ast, 0); }
-            catch { Console.WriteLine("При компиляции что-то пошло не так...("); Console.ReadKey(); return; }
+            catch (Exception e) { PrintAST(ast, 0); Console.WriteLine($"При компиляции что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
             foreach (var c in ast.resualtFunc)
             {
                 try { Console.WriteLine($"{c.Key} - {c.Value.token.value} : {c.Value.type}"); }
