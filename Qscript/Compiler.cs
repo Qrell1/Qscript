@@ -366,22 +366,16 @@ namespace Qscript
             Translation(bodyNode, z_buffer + 1);
             _objProg.code.Append("}");
         }
-        private void translationEnumerator (CommonNode root, int z_buffer)
+        private void translationEnumerator(CommonNode root, int z_buffer)
         {
             CommonNode varNode = take(root, 0);
             CommonNode countNode = take(root, 1);
             CommonNode bodyNode = take(root, 2);
 
             int iterNumber = ++iterTagIndex;
-            string pre = (funcName != "") ? funcName + ".": "";
-            /*  local i dd 0
-                enumer0:
-
-                inc [i]
-                cmp [i], 12
-                jne enumer0
-            */
+            string pre = (funcName != "") ? funcName + "." : "";
             translationVar(varNode, z_buffer + 1);
+
 
             string countString = "ecx";
             switch (countNode.type)
@@ -392,29 +386,100 @@ namespace Qscript
                 case "FLOAT": Syntax.SyntaxError("Невозможно использовать флотовое число в качестве числа енумераций!", countNode); break;
                 default: Translation(countNode, z_buffer + 1); _objProg.code.Append($"mov ecx, eax\n"); break;
             }
-            _objProg.code.Append($"{pre}iter{iterNumber}:\n");
-
             if (countNode.type == "NUMBER" && Convert.ToInt32(countString) <= 0) return;
+            if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) <= 10 && totalNodes(bodyNode) <= 32) // plan 1
+            {
+                for (int i = 0; i < Convert.ToInt32(countNode.token.value); i++)
+                {
+                    Translation(bodyNode, z_buffer + 1);
+                }
+            }
+            else if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) % 3 == 0 && totalNodes(bodyNode) <= 32)
+            {
+                int newIter = Convert.ToInt32(countNode.token.value) / 3;
+                bool isVarUse = isNodeValue(varNode.token.value, bodyNode);
+
+                _objProg.code.Append($"xor ecx, ecx\n");
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
+                _objProg.code.Append($"push ecx\n");
+                Translation(bodyNode, z_buffer + 1);
+                if (isVarUse) _objProg.code.Append($"inc [{varNode.token.value}]\n");
+                Translation(bodyNode, z_buffer + 1);
+                if (isVarUse) _objProg.code.Append($"inc [{varNode.token.value}]\n");
+                Translation(bodyNode, z_buffer + 1);
+                _objProg.code.Append($"pop ecx\n");
+                _objProg.code.Append($"inc ecx\n");
+                if (isVarUse) _objProg.code.Append($"mov [{varNode.token.value}], ecx\n");
+                _objProg.code.Append($"cmp ecx, {newIter}\n");
+                _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+            }
+            else if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) % 2 == 0 && totalNodes(bodyNode) <= 32)
+            {
+                int newIter = Convert.ToInt32(countNode.token.value) / 2;
+                bool isVarUse = isNodeValue(varNode.token.value, bodyNode);
+
+                _objProg.code.Append($"xor ecx, ecx\n");
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
+                _objProg.code.Append($"push ecx\n");
+                Translation(bodyNode, z_buffer + 1);
+                if (isVarUse) _objProg.code.Append($"inc [{varNode.token.value}]\n");
+                Translation(bodyNode, z_buffer + 1);
+                _objProg.code.Append($"pop ecx\n");
+                _objProg.code.Append($"inc ecx\n");
+                if (isVarUse) _objProg.code.Append($"mov [{varNode.token.value}], ecx\n");
+                _objProg.code.Append($"cmp ecx, {newIter}\n");
+                _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+            }
+            else if (countNode.type == "NUMBER")
+            {
+                bool isVarUse = isNodeValue(varNode.token.value, bodyNode);
+
+                _objProg.code.Append($"xor ecx, ecx\n");
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
+                _objProg.code.Append($"push ecx\n");
+                Translation(bodyNode, z_buffer + 1);
+                _objProg.code.Append($"pop ecx\n");
+                _objProg.code.Append($"inc ecx\n");
+                if (isVarUse) _objProg.code.Append($"mov [{varNode.token.value}], ecx\n");
+                _objProg.code.Append($"cmp ecx, {countString}\n");
+                _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+            }
+            else if (countNode.type == "VAR")
+            {
+                _objProg.code.Append($"mov ecx, {countString}\n");
+                _objProg.code.Append($"cmp ecx, 0\n");
+                _objProg.code.Append($"xor ecx, ecx\n");
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
+
+                _objProg.code.Append($"push ecx\n");
+                Translation(bodyNode, z_buffer + 1);
+                _objProg.code.Append($"pop ecx\n");
+
+                _objProg.code.Append($"inc ecx\n");
+                _objProg.code.Append($"mov [{varNode.token.value}], ecx\n");
+
+                _objProg.code.Append($"cmp ecx, {countString}\n");
+                _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+            }
             else
             {
-                _objProg.code.Append($"cmp ecx, 0\n");
-                _objProg.code.Append($"je {pre}passiter{iterNumber}\n");
-            }
+                Translation(countNode, z_buffer + 1);
+                _objProg.code.Append($"cmp eax, 0\n");
+                _objProg.code.Append($"xor ecx, ecx\n");
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
 
-            if (countString == "ecx") _objProg.code.Append($"push ecx\n");
-            Translation(bodyNode, z_buffer + 1);
-            if (countString == "ecx") _objProg.code.Append($"pop ecx\n");
-             
-            _objProg.code.Append($"inc [{varNode.token.value}]\n");
-            if (countString.First() == '[')
-            {
-                _objProg.code.Append($"mov eax, {countString}\n");
-                countString = "eax";
+                _objProg.code.Append($"push ecx\n");
+                Translation(bodyNode, z_buffer + 1);
+                _objProg.code.Append($"pop ecx\n");
+
+                _objProg.code.Append($"inc ecx\n");
+                Translation(countNode, z_buffer + 1);
+
+                _objProg.code.Append($"mov [{varNode.token.value}], ecx\n");
+                _objProg.code.Append($"cmp ecx, eax\n");
+                _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
             }
-            _objProg.code.Append($"cmp [{varNode.token.value}], {countString}\n");
-            _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
             _objProg.code.Append($"{pre}passiter{iterNumber}:\n");
-            //iterTagIndex++;
         }
         private void translationPreUnarOper (CommonNode root, int z_buffer)
         {
@@ -502,19 +567,44 @@ namespace Qscript
             CommonNode countNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
             int iterNumber = ++iterTagIndex;
-            if (countNode.type == "NUMBER")
+            string pre = (funcName != "") ? funcName + "." : "";
+            if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) <= 0) return;
+            if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) <= 10 && totalNodes(bodyNode) <= 32)
             {
-                _objProg.code.Append($"xor edi, edi\n");
+                for (int i = 0; i < Convert.ToInt32(countNode.token.value); i++)
+                {
+                    Translation(bodyNode, z_buffer + 1);
+                }
+            }
+            else if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) % 4 == 0 && totalNodes(bodyNode) <= 32)
+            {
+                int newIter = Convert.ToInt32(countNode.token.value) / 4;
+                _objProg.code.Append($"xor ebx, ebx\n");
                 _objProg.code.Append($"iter{iterNumber}:\n");
 
-                //_objProg.code.Append($"push ecx\n");
                 Translation(bodyNode, z_buffer + 1);
-                //_objProg.code.Append($"pop ecx\n");
+                Translation(bodyNode, z_buffer + 1);
+                Translation(bodyNode, z_buffer + 1);
+                Translation(bodyNode, z_buffer + 1);
 
-                _objProg.code.Append($"inc edi\n");
-                _objProg.code.Append($"cmp edi, {countNode.token.value}\n");
+                _objProg.code.Append($"inc ebx\n");
+                _objProg.code.Append($"cmp ebx, {newIter}\n");
                 _objProg.code.Append($"jne iter{iterNumber}\n");
-            } else
+            }
+            else if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) % 2 == 0 && totalNodes(bodyNode) <= 32)
+            {
+                int newIter = Convert.ToInt32(countNode.token.value) / 2;
+                _objProg.code.Append($"xor ebx, ebx\n");
+                _objProg.code.Append($"iter{iterNumber}:\n");
+
+                Translation(bodyNode, z_buffer + 1);
+                Translation(bodyNode, z_buffer + 1);
+
+                _objProg.code.Append($"inc ebx\n");
+                _objProg.code.Append($"cmp ebx, {newIter}\n");
+                _objProg.code.Append($"jne iter{iterNumber}\n");
+            }
+            else
             {
                 Translation(countNode, z_buffer + 1);
                 _objProg.code.Append($"xor ecx, ecx\n");
@@ -530,7 +620,7 @@ namespace Qscript
                 _objProg.code.Append($"cmp ecx, eax\n");
                 _objProg.code.Append($"jne iter{iterNumber}\n");
             }
-            //iterTagIndex++;
+            _objProg.code.Append($"{pre}passiter{iterNumber}:\n");
         }
         private void translationIf (CommonNode root, int z_buffer)
         {
@@ -851,7 +941,7 @@ namespace Qscript
                 }
                 else if (rightChild.type == "NUMBER")
                 {
-                    _objProg.code.Append($"mov [{varChild.token.value}], dword {rightChild.token.value}\n");
+                    _objProg.code.Append($"mov [{varChild.token.value}], {rightChild.token.value}\n");
                 }
                 else if (!(rightChild.type == "NUMBER"))
                 {
@@ -1720,6 +1810,42 @@ namespace Qscript
             //classes = type.token.value;
             //string sizeConst = $"sizeof.{name}";
             return sizeConst;
+        }
+
+        private bool isNodeType(string type, CommonNode root)
+        {
+            bool isNode = false;
+
+            foreach (var child in root.childs)
+            {
+                if (child.type == type) return true;
+                else if (child.childs.Count > 0) isNode = (isNodeType(type, child)) ? true : isNode;
+            }
+
+            return isNode;
+        }
+        private bool isNodeValue(string value, CommonNode root)
+        {
+            bool isNode = false;
+
+            foreach (var child in root.childs)
+            {
+                if (child.token.value == value) return true;
+                else if (child.childs.Count > 0) isNode = (isNodeValue(value, child)) ? true : isNode;
+            }
+
+            return isNode;
+        }
+        private int totalNodes(CommonNode root)
+        {
+            int total = 1;
+
+            foreach (var child in root.childs)
+            {
+                total += totalNodes(child);
+            }
+
+            return total;
         }
 
         // ВРЕМЕННЫЙ СУПЕР ГОВНОКОД   

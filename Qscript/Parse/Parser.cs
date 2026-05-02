@@ -1567,6 +1567,20 @@ namespace Qscript
             return varNode;
         }
 
+        private CommonNode parseAsm()
+        {
+            CommonNode asmNode = new CommonNode("ASM", take());
+            asmNode.token.value = string.Empty;
+
+            while (tokens[pos].value != "@")
+            {
+                asmNode.token.value += " " + take().value;
+            }
+            skip();
+
+            return asmNode;
+        }
+
         public ProgramNode parseCode()
         {
             root = new ProgramNode("ROOT", new Token(null, "ROOT", -999));
@@ -1645,6 +1659,10 @@ namespace Qscript
             if (peek("OPERATOR"))
             {
                 return parseOperator();
+            }
+            if (tokens[pos].value == "@")
+            {
+                return parseAsm();
             }
             return null;
         }

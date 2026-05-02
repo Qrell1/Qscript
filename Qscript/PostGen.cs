@@ -91,7 +91,7 @@ namespace Qscript
             //line = procList.Count;
             while (true)
             {
-                objProgramResualt.procData = _objProgram.procData;//Translation(procList, varGlobal);
+                objProgramResualt.procData = Translation(procList, varGlobal);
                 procList.Clear();
                 procList = LexInstructs(objProgramResualt.procData);
                 objProgramResualt.procData = new StringData();
@@ -272,20 +272,16 @@ namespace Qscript
                                     {
                                         resualtMemory += $"{type}.{strs[k]}";
                                         resualt.Append($"mov ebx, [{resualtMemory}]\n");
-                                        resualtMemory = "ebx" + " + ";
+                                        resualtMemory = "ebx" + "+";
                                     }
-                                    else resualtMemory += $"{type}.{strs[k]} + ";
+                                    else resualtMemory += $"{type}.{strs[k]}+";
                                 }
                                 else resualtMemory += "." + strs[k];
                                 Console.WriteLine("-- " + strs[k] + " | " + type);
-                                foreach (var c in ProgramAst.structs["List_int32"])
-                                {
-                                    Console.WriteLine($"{c.Key} -- {c.Value.token.value} - {c.Value.type}");
-                                }
                                 typeVar = ProgramAst.structs[type][strs[k]].type;
                                 type = ProgramAst.structs[type][strs[k]].token.value;
                             }
-                            if (resualtMemory.EndsWith(" + ")) resualtMemory = resualtMemory.Remove(resualtMemory.Length-3, 3);
+                            if (resualtMemory.EndsWith("+")) resualtMemory = resualtMemory.Remove(resualtMemory.Length-1, 1);
                         } else
                         {
                             resualtMemory = strs[0];

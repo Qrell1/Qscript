@@ -151,7 +151,7 @@ namespace Qscript
 
             tokenTypes.Add("BOOL", new TokenType("BOOL", @"(\btrue\b|\bfalse\b)"));
             //tokenTypes.Add("CONST", new TokenType("CONST", @"\b[A-Z]*\b"));
-            tokenTypes.Add("VAR", new TokenType("VAR", @"[а-яА-Яa-zA-Z_][а-яА-Яa-zA-Z0-9_]*"));
+            tokenTypes.Add("VAR", new TokenType("VAR", @"[_а-я_А-Я_a-z_A-Z_][а-я_А-Я_a-z_A-Z_0-9_]*"));
             //tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
             //tokenTypes.Add("FLOAT", new TokenType("FLOAT", @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)"));
             //tokenTypes.Add("NUMBER", new TokenType("NUMBER", "[0-9]+"));
