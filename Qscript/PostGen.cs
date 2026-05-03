@@ -51,7 +51,7 @@ namespace Qscript
     // NODE INSTRACT -> ARGS (m,v,r,c)
     public static class PostGen
     {
-        public static Dictionary<string, string> match = new Dictionary<string, string>()
+        public static readonly Dictionary<string, string> match = new Dictionary<string, string>()
         {
             //{ "r", "(eax|edx|ebx|ecx|esi|edi|esp|ebp)"},
             { "t", " "},
@@ -73,6 +73,33 @@ namespace Qscript
             { "l", "(\n|\t)"}
             
             //{ "cm", @";^\[\]"}
+        };
+        public static readonly string[] registers =
+        {
+                "rax",
+                "rdx",
+                "rbx",
+                "rcx",
+                "rsi",
+                "rdi",
+                "rsp",
+                "rbp",
+                "eax",
+                "edx",
+                "ebx",
+                "ecx",
+                "esi",
+                "edi",
+                "esp",
+                "ebp",
+                "al",
+                "dx",
+                "bx",
+                "cx",
+                "si",
+                "di",
+                "sp",
+                "bp",
         };
 
         public static ProgramNode ProgramAst;
@@ -109,7 +136,7 @@ namespace Qscript
 
             StringData procData = new StringData();
             List<inst> procList = LexInstructs(_objProgram.procData);
-            procList = LexInstructs(RegisterMachine(procList));
+            procList = LexInstructs(RegisterMachine(procList, true));
             //line = procList.Count;
             while (true)
             {
@@ -125,7 +152,7 @@ namespace Qscript
 
             StringData codeData = new StringData();
             List<inst> codeList = LexInstructs(_objProgram.codeData);
-            codeList = LexInstructs(RegisterMachine(codeList));
+            codeList = LexInstructs(RegisterMachine(codeList, false));
             objProgramResualt.codeData = Translation(codeList, varGlobal);
             //line = objProgramResualt.codeData.Data.Count;
             while (true)
@@ -184,14 +211,60 @@ namespace Qscript
             }
             return resualtList;
         }
-        public static StringData RegisterMachine(List<inst> instructs)
+        public static Dictionary<string, string> CheakRegisterFunctions(List<inst> instructs)
+        {
+            bool func = false;
+            string funcName = string.Empty;
+
+            List<string> regs = new List<string>();
+
+            Dictionary<string, string> resualt = new Dictionary<string, string>();
+
+            for (int i = 0; i < instructs.Count; i++)
+            {
+                inst _inst = instructs[i];
+                if (_inst.value ==  "proc")
+                {
+                    foreach (var pat in _inst.pattern) { if (pat.key == "v") {  func = true; funcName = pat.value.Trim(); break; } }
+                }
+
+                if (func)
+                {
+                    foreach (var pat in _inst.pattern)
+                    {
+                        if (pat.key == "r" && !regs.Contains(pat.value))
+                            regs.Add(pat.value);
+                        else if (pat.key == "m")
+                        {
+                            string[] strs = pat.value.Remove(pat.value.Length-1, 1).Remove(0,1).Split('+','-','*','/',' ');
+                            foreach (var str in strs)
+                            {
+                                string _str = str.Trim();
+                                if (registers.Contains(_str) && !regs.Contains(_str)) regs.Add(_str);
+                            }
+                        }
+                    }
+                }
+
+                if (_inst.value == "endp")
+                {
+                    func = false;
+                    // TODO: Сделать финализацию сбора информации о функции
+                }
+
+            }
+
+            return resualt;
+        }
+        public static StringData RegisterMachine(List<inst> instructs, bool line)
         {
             Console.WriteLine("Start RegisterMachine...");
             StringData resualt = new StringData();
             Dictionary<string, string> tableRegisters = new Dictionary<string, string>();
             Dictionary<string, int> timelineRegisters = new Dictionary<string, int>();
             string[] asmRegisters = { "ecx", "edx", "edi", "esi", "ebx", "eax" };
-            
+            if (line) asmRegisters = new string[] { "ebx", "esi", "edi", "edx", "ecx", "eax" };
+
             Random rand = new Random();
             bool regUsed (string reg)
             {
@@ -472,6 +545,10 @@ namespace Qscript
                                     _inst.pattern[k].value = "eax".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
                                 else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
                                     _inst.pattern[k].value = GetReg(type).Replace("a", Compiler.regschars[_inst.pattern[k].value]);
+                                if (_inst.pattern[k].key == "r" 
+                                    && _inst.pattern[k].value != "esi" 
+                                    && _inst.pattern[k].value != "edi" 
+                                    && !_inst.pattern[k].value.StartsWith("e")) _inst.value = (_inst.value == "mov") ? "movzx" : _inst.value;
                                 //if (_inst.pattern[k].key == "r" && _inst.value == "mov" && !_inst.pattern[k].value.Contains("e")) _inst.value = "movzx";
                             }
                         else
@@ -532,6 +609,8 @@ namespace Qscript
                                     else if (_inst.pattern[k].key == "r" && type == "BYTE")
                                         _inst.pattern[k].value = "al".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
                                     //if (_inst.pattern[k].key == "r" && _inst.value == "mov" && !_inst.pattern[k].value.Contains("e")) _inst.value = "movzx";
+                                    if (_inst.pattern[k].key == "r" 
+                                        && !_inst.pattern[k].value.StartsWith("e")) _inst.value = (_inst.value == "mov") ? "movzx" : _inst.value;
                                 }
                             }
                             catch { }
