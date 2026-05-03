@@ -25,6 +25,26 @@ namespace Qscript
     {
         public string value = "";
         public List<patternNode> pattern = new List<patternNode>();
+
+        public override string ToString() 
+        {
+            string resualt = value + " ";
+            int i = 0;
+            bool flag = true;
+            foreach (patternNode node in pattern)
+            {
+                if (node.key == "t" && !flag) flag = true;
+                else if (node.key == "t") continue;
+                else flag = false;
+
+                resualt += node.value;
+                i++;
+            }
+            if (resualt.Length > 0) resualt.Remove(resualt.Length - 1);
+            if (resualt.Replace(" ", "").Length == 0) resualt = "";
+            if (resualt.Length > 0) resualt += "\n";
+            return resualt;
+        }
     }
 
     // str
@@ -41,7 +61,7 @@ namespace Qscript
             { "m", "\\[[^\\[\\]]+\\]" },
             //{ "m", @"\b\[^\[\]+\]\b" },
             //{ "m", @"\[^\[\]+\]" },
-            { "v", @"\b[a-z\\.A-Z_][a-z\\.A-Z\\.0-9_]*\b" },
+            { "v", @"\b[\\.a-z\\.A-Z_][\\.a-z\\.A-Z\\.0-9_]*\b" },
             { "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
             //{ "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
             { "n", "-?[0-9]+" },
@@ -88,6 +108,7 @@ namespace Qscript
 
             StringData procData = new StringData();
             List<inst> procList = LexInstructs(_objProgram.procData);
+            procList = LexInstructs(RegisterMachine(procList));
             //line = procList.Count;
             while (true)
             {
@@ -103,6 +124,7 @@ namespace Qscript
 
             StringData codeData = new StringData();
             List<inst> codeList = LexInstructs(_objProgram.codeData);
+            codeList = LexInstructs(RegisterMachine(codeList));
             objProgramResualt.codeData = Translation(codeList, varGlobal);
             //line = objProgramResualt.codeData.Data.Count;
             while (true)
@@ -161,7 +183,71 @@ namespace Qscript
             }
             return resualtList;
         }
+        public static StringData RegisterMachine(List<inst> instructs)
+        {
+            StringData resualt = new StringData();
+            Dictionary<string, string> tableRegisters = new Dictionary<string, string>();
+            Dictionary<string, int> timelineRegisters = new Dictionary<string, int>();
+            string[] asmRegisters = { "eax", "edx", "ebx", "ecx", "edi", "esi" };
+            
+            Random rand = new Random();
+            bool regUsed (string reg)
+            {
+                int count = 0;
+                foreach (var value in tableRegisters.Values)
+                {
+                    if (value == reg) count++;
+                }
+                return (count > 1) ? true : false;
+            }
+            string getFreeReg()
+            {
+                for (int i = 0; i < asmRegisters.Length; i++)
+                {
+                    if (!tableRegisters.ContainsValue(asmRegisters[i])) return asmRegisters[i];
+                }
+               
+                return "push" + asmRegisters[rand.Next(0,5)];
+            }
+            for (int i = 0; i < instructs.Count; i++)
+            {
+                inst _inst = instructs[i];
+                foreach (var pat in _inst.pattern)
+                {
+                    if (pat.key == "v" && pat.value.StartsWith(".reg"))
+                    {
+                        if (!timelineRegisters.ContainsKey(pat.value)) timelineRegisters.Add(pat.value, i);
+                        else timelineRegisters[pat.value] = i;
+                    }
+                }
+            }
 
+            for (int i = 0; i < instructs.Count; i++)
+            {
+                inst _inst = instructs[i];
+
+                foreach (var pat in _inst.pattern)
+                {
+                    if (pat.key == "v" && pat.value.StartsWith(".reg"))
+                    {
+                        if (!tableRegisters.ContainsKey(pat.value))
+                        {
+                            string freeReg = getFreeReg();
+                            tableRegisters.Add(pat.value, freeReg.Skip(4).ToString());
+                            if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Skip(4)}\n");
+                        } else
+                        {
+                            if (regUsed(tableRegisters[pat.value])) resualt.Append($"pop {pat.value}");
+                        }
+                        if (timelineRegisters[pat.value] == i) tableRegisters.Remove(pat.value);
+                    }
+                }
+
+                resualt.Append(_inst.ToString());
+            }
+
+            return resualt;
+        }
         public static StringData IndicatorsCorrection(List<inst> instructs, Dictionary<string, string> vars)
         {
             /*
