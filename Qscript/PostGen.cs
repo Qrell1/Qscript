@@ -55,6 +55,7 @@ namespace Qscript
         {
             //{ "r", "(eax|edx|ebx|ecx|esi|edi|esp|ebp)"},
             { "t", " "},
+            { "ri", @".reg[0-9]*[a-zA-Z]*"},
             { "r", @"\b(rax|rdx|rbx|rcx|rsi|rdi|rsp|rbp|eax|edx|ebx|ecx|esi|edi|esp|ebp|al|dx|bx|cx|si|di|sp|bp)\b"},
             //{ "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
             { "i", "\\.?[a-z\\\\.A-Z_][a-z\\\\.A-Z\\\\.0-9_]*\\:" },
@@ -185,10 +186,11 @@ namespace Qscript
         }
         public static StringData RegisterMachine(List<inst> instructs)
         {
+            Console.WriteLine("Start RegisterMachine...");
             StringData resualt = new StringData();
             Dictionary<string, string> tableRegisters = new Dictionary<string, string>();
             Dictionary<string, int> timelineRegisters = new Dictionary<string, int>();
-            string[] asmRegisters = { "eax", "edx", "ebx", "ecx", "edi", "esi" };
+            string[] asmRegisters = { "ecx", "edx", "edi", "esi", "ebx", "eax" };
             
             Random rand = new Random();
             bool regUsed (string reg)
@@ -200,8 +202,26 @@ namespace Qscript
                 }
                 return (count > 1) ? true : false;
             }
-            string getFreeReg()
+            string getFreeReg(string reg)
             {
+                if (reg.EndsWith("x") || reg.EndsWith("l") || reg.EndsWith("h"))
+                {
+                    string regPrefer = reg.Remove(0, 4);
+                    string number = string.Empty;
+                    try
+                    {
+                        for (int i = 0; i < regPrefer.Length; i++)
+                        {
+                            number += regPrefer[i];
+                            int temp = Convert.ToInt32(number);
+                        }
+                    } catch { number = number.Remove(number.Length-1, 1); }
+                    regPrefer = regPrefer.Replace(number, "");
+
+                    if (!tableRegisters.ContainsValue(regPrefer)) return regPrefer;
+                    else return "push" + regPrefer;
+                }
+
                 for (int i = 0; i < asmRegisters.Length; i++)
                 {
                     if (!tableRegisters.ContainsValue(asmRegisters[i])) return asmRegisters[i];
@@ -214,10 +234,23 @@ namespace Qscript
                 inst _inst = instructs[i];
                 foreach (var pat in _inst.pattern)
                 {
-                    if (pat.key == "v" && pat.value.StartsWith(".reg"))
+                    if (pat.key == "ri")
                     {
                         if (!timelineRegisters.ContainsKey(pat.value)) timelineRegisters.Add(pat.value, i);
                         else timelineRegisters[pat.value] = i;
+                    }
+                    else if (pat.key == "m")
+                    {
+                        string[] strs = pat.value.Remove(pat.value.Length-1,1).Remove(0,1).Split('+','-','*','/',' ');
+                        foreach (string str in strs)
+                        {
+                            string strtrim = str.Trim();
+                            if (strtrim.StartsWith(".reg"))
+                            {
+                                if (!timelineRegisters.ContainsKey(strtrim)) timelineRegisters.Add(strtrim, i);
+                                else timelineRegisters[strtrim] = i;
+                            }
+                        }
                     }
                 }
             }
@@ -228,24 +261,51 @@ namespace Qscript
 
                 foreach (var pat in _inst.pattern)
                 {
-                    if (pat.key == "v" && pat.value.StartsWith(".reg"))
+                    if (pat.key == "ri") Console.WriteLine(pat.value);
+                    if (pat.key == "ri")
                     {
                         if (!tableRegisters.ContainsKey(pat.value))
                         {
-                            string freeReg = getFreeReg();
-                            tableRegisters.Add(pat.value, freeReg.Skip(4).ToString());
-                            if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Skip(4)}\n");
+                            string freeReg = getFreeReg(pat.value);
+                            tableRegisters.Add(pat.value, (freeReg.StartsWith("push")) ? freeReg.Remove(0, 4).ToString() : freeReg);
+                            if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Remove(0,4)}\n");
                         } else
                         {
-                            if (regUsed(tableRegisters[pat.value])) resualt.Append($"pop {pat.value}");
+                            if (regUsed(tableRegisters[pat.value])) resualt.Append($"pop {pat.value}\n");
                         }
-                        if (timelineRegisters[pat.value] == i) tableRegisters.Remove(pat.value);
+                        string oldReg = pat.value;
+                        pat.value = tableRegisters[pat.value];
+                        pat.key = "r";
+                        if (timelineRegisters[oldReg] == i) tableRegisters.Remove(oldReg);
+                    }
+                    else if (pat.key == "m")
+                    {
+                        string[] strs = pat.value.Remove(pat.value.Length - 1, 1).Remove(0, 1).Split('+', '-', '*', '/', ' ');
+                        foreach (string str in strs)
+                        {
+                            string strtrim = str.Trim();
+                            if (strtrim.StartsWith(".reg"))
+                            {
+                                if (!tableRegisters.ContainsKey(strtrim))
+                                {
+                                    string freeReg = getFreeReg(strtrim);
+                                    tableRegisters.Add(strtrim, (freeReg.StartsWith("push")) ? freeReg.Remove(0, 4).ToString() : freeReg);
+                                    if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Remove(0, 4)}\n");
+                                }
+                                else
+                                {
+                                    if (regUsed(tableRegisters[strtrim])) resualt.Append($"pop {strtrim}\n");
+                                }
+                                pat.value = pat.value.Replace(strtrim, tableRegisters[strtrim]);
+                                if (timelineRegisters[strtrim] == i) tableRegisters.Remove(strtrim);
+                            }
+                        }
                     }
                 }
 
                 resualt.Append(_inst.ToString());
             }
-
+            //Console.WriteLine(resualt.ToString()); Console.ReadLine();
             return resualt;
         }
         public static StringData IndicatorsCorrection(List<inst> instructs, Dictionary<string, string> vars)
@@ -256,6 +316,7 @@ namespace Qscript
              * Пробежаться по всем патерннам 
              * И найти работу над памятью
              */
+            Console.WriteLine("Start IndicatorsCorrection...");
             StringData resualt = new StringData();
             List <string> args = new List<string>();
             for (int i = 0; i < instructs.Count; i++)
@@ -374,21 +435,91 @@ namespace Qscript
                         }
                         _inst.pattern[j].value = "[" + resualtMemory + "]";
                         if (type != string.Empty) for (int k = 0; k < _inst.pattern.Count; k++)
-                        {
-                            if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
-                                _inst.pattern[k].value = "eax".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
-                            else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
-                                _inst.pattern[k].value = GetReg(type).Replace("a", Compiler.regschars[_inst.pattern[k].value]);
-                            //if (_inst.pattern[k].key == "r" && _inst.value == "mov" && !_inst.pattern[k].value.Contains("e")) _inst.value = "movzx";
-                        }
+                            {
+                                if (_inst.pattern[k].value == "esi")
+                                {
+                                    if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
+                                        _inst.pattern[k].value = "esi";
+                                    else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
+                                    {
+                                        string reg = string.Empty;
+                                        switch (Compiler.typesregs[type])
+                                        {
+                                            case "rax": _inst.pattern[k].value = "rsi"; break;
+                                            case "eax": _inst.pattern[k].value = "esi"; break;
+                                            case "ax": _inst.pattern[k].value = "si"; break;
+                                            default: _inst.pattern[k].value = "ah"; break;
+                                        }
+                                    }
+                                }      // DELETE: Временное решение fix1
+                                else if (_inst.pattern[k].value == "edi")
+                                {
+                                    if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
+                                        _inst.pattern[k].value = "edi";
+                                    else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
+                                    {
+                                        string reg = string.Empty;
+                                        switch (Compiler.typesregs[type])
+                                        {
+                                            case "rax": _inst.pattern[k].value = "rdi"; break;
+                                            case "eax": _inst.pattern[k].value = "edi"; break;
+                                            case "ax": _inst.pattern[k].value = "di"; break;
+                                            default: _inst.pattern[k].value = "dh"; break;
+                                        }
+                                    }
+                                } // DELETE: Временное решение fix1
+                                else if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
+                                    _inst.pattern[k].value = "eax".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
+                                else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
+                                    _inst.pattern[k].value = GetReg(type).Replace("a", Compiler.regschars[_inst.pattern[k].value]);
+                                //if (_inst.pattern[k].key == "r" && _inst.value == "mov" && !_inst.pattern[k].value.Contains("e")) _inst.value = "movzx";
+                            }
                         else
                         {
-                            try
+                            try // FIXME: fix1 Как же мне всё таки сделать чтобы esi && edi не попадалюсь на 8 битные задачи
                             {
                                 type = vars[strs[0]];
                                 for (int k = 0; k < _inst.pattern.Count; k++)
-                                {
-                                    if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
+                                { // rax eax ax al ah
+                                    if (_inst.pattern[k].value == "esi")
+                                    {
+                                        if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
+                                            _inst.pattern[k].value = "esi";
+                                        else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
+                                        {
+                                            string reg = string.Empty;
+                                            switch (Compiler.typesregs[type])
+                                            {
+                                                case "rax": _inst.pattern[k].value = "rsi"; break;
+                                                case "eax": _inst.pattern[k].value = "esi"; break;
+                                                case "ax": _inst.pattern[k].value = "si"; break;
+                                                default: _inst.pattern[k].value = "ah"; break;
+                                            }
+                                        }
+                                        else if (_inst.pattern[k].key == "r" && type == "QWORD") _inst.pattern[k].value = "rsi";
+                                        else if (_inst.pattern[k].key == "r" && type == "DWORD") _inst.pattern[k].value = "esi";
+                                        else if (_inst.pattern[k].key == "r" && type == "WORD") _inst.pattern[k].value = "si";
+                                    }      // DELETE: Временное решение fix1
+                                    else if (_inst.pattern[k].value == "edi")
+                                    {
+                                        if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
+                                            _inst.pattern[k].value = "edi";
+                                        else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
+                                        {
+                                            string reg = string.Empty;
+                                            switch (Compiler.typesregs[type])
+                                            {
+                                                case "rax": _inst.pattern[k].value = "rdi"; break;
+                                                case "eax": _inst.pattern[k].value = "edi"; break;
+                                                case "ax": _inst.pattern[k].value = "di"; break;
+                                                default: _inst.pattern[k].value = "dh"; break;
+                                            }
+                                        }
+                                        else if (_inst.pattern[k].key == "r" && type == "QWORD") _inst.pattern[k].value = "rdi";
+                                        else if (_inst.pattern[k].key == "r" && type == "DWORD") _inst.pattern[k].value = "edi";
+                                        else if (_inst.pattern[k].key == "r" && type == "WORD") _inst.pattern[k].value = "di";
+                                    } // DELETE: Временное решение fix1
+                                    else if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
                                         _inst.pattern[k].value = "eax".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
                                     else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
                                         _inst.pattern[k].value = GetReg(type).Replace("a", Compiler.regschars[_inst.pattern[k].value]);
