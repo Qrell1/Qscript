@@ -136,6 +136,7 @@ namespace Qscript
 
             StringData procData = new StringData();
             List<inst> procList = LexInstructs(_objProgram.procData);
+            //Dictionary<string, string> functionRegisterData = CheakRegisterFunctions(LexInstructs(RegisterMachine(procList, true)));
             procList = LexInstructs(RegisterMachine(procList, true));
             //line = procList.Count;
             while (true)
@@ -249,33 +250,47 @@ namespace Qscript
                 if (_inst.value == "endp")
                 {
                     func = false;
-                    // TODO: Сделать финализацию сбора информации о функции
+
+                    string regsStr = string.Empty;
+                    foreach (var reg in regs) regsStr += reg + "|";
+                    regsStr = regsStr.Remove(regsStr.Length-1, 1);
+
+                    resualt.Add(funcName, regsStr);
+                    regs = new List<string>();
+                    funcName = string.Empty;
                 }
 
             }
 
             return resualt;
         }
-        public static StringData RegisterMachine(List<inst> instructs, bool line)
+        public static StringData RegisterMachine(List<inst> instructs, bool line, Dictionary<string, string> functionRegisterData=null)
         {
             Console.WriteLine("Start RegisterMachine...");
             StringData resualt = new StringData();
             Dictionary<string, string> tableRegisters = new Dictionary<string, string>();
             Dictionary<string, int> timelineRegisters = new Dictionary<string, int>();
+            List<string> tasks = new List<string>();
             string[] asmRegisters = { "ecx", "edx", "edi", "esi", "ebx", "eax" };
             if (line) asmRegisters = new string[] { "ebx", "esi", "edi", "edx", "ecx", "eax" };
 
             Random rand = new Random();
+            void removeRegTask (string task)
+            {
+                if (!tasks.Contains(task)) return;
+                tasks.Remove(task);
+            }
             bool regUsed (string reg)
             {
                 int count = 0;
+                if (tasks.Contains(reg)) return true;
                 foreach (var value in tableRegisters.Values)
                 {
                     if (value == reg) count++;
                 }
                 return (count > 1) ? true : false;
             }
-            string getFreeReg(string reg)
+            string getFreeReg (string reg)
             {
                 if (reg.EndsWith("x") || reg.EndsWith("l") || reg.EndsWith("h"))
                 {
@@ -332,9 +347,21 @@ namespace Qscript
             {
                 inst _inst = instructs[i];
 
+                if (_inst.value == "precall")
+                {
+                    foreach (var reg in tableRegisters)
+                    {
+                        if (!tasks.Contains(reg.Value))
+                        {
+                            resualt.Append($"push {reg.Value}\n");
+                            tasks.Add(reg.Value);
+                        }
+                    }
+                    continue;
+                }
+
                 foreach (var pat in _inst.pattern)
                 {
-                    if (pat.key == "ri") Console.WriteLine(pat.value);
                     if (pat.key == "ri")
                     {
                         if (!tableRegisters.ContainsKey(pat.value))
@@ -344,7 +371,11 @@ namespace Qscript
                             if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Remove(0,4)}\n");
                         } else
                         {
-                            if (regUsed(tableRegisters[pat.value])) resualt.Append($"pop {pat.value}\n");
+                            if (regUsed(tableRegisters[pat.value]))
+                            {
+                                resualt.Append($"pop {tableRegisters[pat.value]}\n");
+                                removeRegTask(tableRegisters[pat.value]);
+                            }
                         }
                         string oldReg = pat.value;
                         pat.value = tableRegisters[pat.value];
@@ -367,7 +398,11 @@ namespace Qscript
                                 }
                                 else
                                 {
-                                    if (regUsed(tableRegisters[strtrim])) resualt.Append($"pop {strtrim}\n");
+                                    if (regUsed(tableRegisters[strtrim]))
+                                    {
+                                        resualt.Append($"pop {tableRegisters[strtrim]}\n");
+                                        removeRegTask(tableRegisters[strtrim]);
+                                    }
                                 }
                                 pat.value = pat.value.Replace(strtrim, tableRegisters[strtrim]);
                                 if (timelineRegisters[strtrim] == i) tableRegisters.Remove(strtrim);

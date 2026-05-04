@@ -1679,6 +1679,7 @@ namespace Qscript
         private void translationCall (CommonNode root, int z_buffer, string resualtPtr=null)
         {
             //_objProg.code.Append($"; CALL {root.token.value}\n");
+            _objProg.code.Append($"precall\n");
             CommonNode signatureCall = take(root, 0);
             CommonNode firstArg = null;
             bool qsFunc = ProgramAst.qsFunction.Contains(root.token.value);
