@@ -346,17 +346,62 @@ namespace Qscript
             for (int i = 0; i < instructs.Count; i++)
             {
                 inst _inst = instructs[i];
-
+                //if (_inst.value == "precall") continue;
                 if (_inst.value == "precall")
                 {
-                    foreach (var reg in tableRegisters)
+                    /*foreach (var reg in tableRegisters)
                     {
                         if (!tasks.Contains(reg.Value))
                         {
-                            resualt.Append($"push {reg.Value}\n");
+                            List<string> data = new List<string>();
+                            bool _break = false;
+                            List<inst> insts = LexInstructs(resualt);
+                            Console.WriteLine($"---PRECALL--- [{resualt.Data[0]}] {{{resualt.Data.Count}}} ({resualt.Data.Last()})");
+                            //data.Add(insts.Last().ToString());
+                            for (int j = insts.Count-1; j >= 0; j--)
+                            {
+                                if (_break)
+                                {
+                                    data.Add(InstructConcat(insts[j]));
+                                    continue;
+                                }
+
+                                inst tempInst = insts[j];
+ 
+                                foreach (var pat in tempInst.pattern)
+                                {
+                                    if (pat.key == "r" && pat.value == reg.Value)
+                                    {
+                                        data.Add($"push {reg.Value}\n");
+                                        _break = true;
+                                        //break;
+                                    }
+                                    else if (pat.key == "m")
+                                    {
+                                        string[] strs = pat.value.Remove(pat.value.Length-1, 1).Remove(0,1).Split('+','-','*','/',' ');
+                                        foreach (string _str in strs)
+                                        {
+                                            string strtrim = _str.Trim();
+                                            if (strtrim == reg.Value)
+                                            {
+                                                data.Add($"push {reg.Value}\n");
+                                                _break = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    if (_break) break;
+                                }
+
+                                data.Add(InstructConcat(insts[j]));
+                            } foreach (string str in data) { Console.WriteLine(str); }
+                            data.Reverse();
+                            //resualt.Data.Clear();
+                            resualt.Data = data;
                             tasks.Add(reg.Value);
+                            //Console.WriteLine(resualt.ToString()); Console.ReadLine();
                         }
-                    }
+                    }*/
                     continue;
                 }
 
@@ -368,14 +413,14 @@ namespace Qscript
                         {
                             string freeReg = getFreeReg(pat.value);
                             tableRegisters.Add(pat.value, (freeReg.StartsWith("push")) ? freeReg.Remove(0, 4).ToString() : freeReg);
-                            if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Remove(0,4)}\n");
+                            //if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Remove(0,4)}\n");
                         } else
                         {
-                            if (regUsed(tableRegisters[pat.value]))
+                            /*if (regUsed(tableRegisters[pat.value]))
                             {
                                 resualt.Append($"pop {tableRegisters[pat.value]}\n");
                                 removeRegTask(tableRegisters[pat.value]);
-                            }
+                            }*/
                         }
                         string oldReg = pat.value;
                         pat.value = tableRegisters[pat.value];
@@ -394,15 +439,15 @@ namespace Qscript
                                 {
                                     string freeReg = getFreeReg(strtrim);
                                     tableRegisters.Add(strtrim, (freeReg.StartsWith("push")) ? freeReg.Remove(0, 4).ToString() : freeReg);
-                                    if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Remove(0, 4)}\n");
+                                    //if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Remove(0, 4)}\n");
                                 }
                                 else
                                 {
-                                    if (regUsed(tableRegisters[strtrim]))
+                                    /*if (regUsed(tableRegisters[strtrim]))
                                     {
                                         resualt.Append($"pop {tableRegisters[strtrim]}\n");
                                         removeRegTask(tableRegisters[strtrim]);
-                                    }
+                                    }*/
                                 }
                                 pat.value = pat.value.Replace(strtrim, tableRegisters[strtrim]);
                                 if (timelineRegisters[strtrim] == i) tableRegisters.Remove(strtrim);
@@ -457,7 +502,7 @@ namespace Qscript
                         j++;
                     }
                     if (patterns.Count > 1) resualtProcString = resualtProcString.Remove(resualtProcString.Length - 1, 1);
-                    Console.WriteLine("Resualt Proc - " + resualtProcString);
+                    //Console.WriteLine("Resualt Proc - " + resualtProcString);
                     resualt.Append(resualtProcString + "\n");
                     continue;
                 }
@@ -465,7 +510,7 @@ namespace Qscript
                 // endp preparing
                 if (_inst.value == "endp")
                 {
-                    foreach (var child in args) { Console.WriteLine(child);
+                    foreach (var child in args) {
                         vars.Remove(child);}
                     args.Clear();
                 }
@@ -475,7 +520,7 @@ namespace Qscript
                 if (_inst.value == "local")
                 {
                     string resualtLocalString = $"local {patterns[0].value.Trim()} ";
-                    Console.WriteLine(resualtLocalString + " || " + patterns[1]);
+                    //Console.WriteLine(resualtLocalString + " || " + patterns[1]);
                     if (patterns[1].value.Trim().First() == '*')
                     {
                         resualtLocalString += $" dd 0\n";
@@ -512,14 +557,14 @@ namespace Qscript
                         string typeVar = string.Empty;
                         if (strs.Length >= 2)
                         {
-                            Console.WriteLine("var: " + strs[0]);
+                            //Console.WriteLine("var: " + strs[0]);
                             type = vars[strs[0]];
                             if (type.First() == '*') { resualtMemory += "ebx" + " + "; resualt.Append($"mov ebx, [{strs[0]}]\n"); }
                             else resualtMemory += strs[0];
                             
                             for (int k = 1; k < strs.Length; k++)
                             {
-                                Console.WriteLine(strs[k] + " | " + type);
+                                //Console.WriteLine(strs[k] + " | " + type);
                                 if (type.First() == '*' || typeVar == "INDICATOR")
                                 {   
                                     if (type.First() == '*') type = type.Remove(0, 1);
@@ -532,7 +577,7 @@ namespace Qscript
                                     else resualtMemory += $"{type}.{strs[k]}+";
                                 }
                                 else resualtMemory += "." + strs[k];
-                                Console.WriteLine("-- " + strs[k] + " | " + type);
+                                //Console.WriteLine("-- " + strs[k] + " | " + type);
                                 typeVar = ProgramAst.structs[type][strs[k]].type;
                                 type = ProgramAst.structs[type][strs[k]].token.value;
                             }
@@ -655,7 +700,7 @@ namespace Qscript
 
                 resualt.Append(InstructConcat(_inst));
             }
-            foreach (var child in vars) Console.WriteLine($" Key: {child.Key} --Value: {child.Value}");
+
             return resualt;
         }
 

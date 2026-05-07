@@ -13,6 +13,8 @@ namespace Qscript
         public static CommentLexer commentLexer = new CommentLexer();
         public static Preproccessor preproccessor = new Preproccessor();
         public static Parser parser;
+        public static Compiler compiler;
+        public static AbbreviationParser addParser;
 
         static void PrintListToken (List<Token> list)
         {
@@ -177,63 +179,44 @@ namespace Qscript
             (string code, CodeStruct codeStruct) = commentLexer.lexCodes(codes);
             Syntax.code = codeStruct;
 
+            Console.WriteLine("Start Lexer...");
             lexer = new Lexer();
-
-
             List<Token> list = lexer.lexAnalysis();
+            Console.WriteLine("Start PreproccessorIncludes...");
             list = preproccessor.lexIncludes(list);
 
 
             //int index = 0
             ProgramNode ast;
+            Console.WriteLine("Start Parser...");
             try
             {
                 parser = new Parser(list);
                 ast = parser.parseCode();
             }
-            catch { Console.WriteLine("При парсинге что-то пошло не так...("); Console.ReadKey(); return; }
+            catch { Console.WriteLine("При Парсинге что-то пошло не так...("); Console.ReadKey(); return; }
             //PrintAST(ast, 0);
 
-            AbbreviationParser addParser = new AbbreviationParser();
+            Console.WriteLine("Start PostParser...");
+            addParser = new AbbreviationParser();
             try { ast = addParser.abbParse(ast); }
             catch (Exception e) { Console.WriteLine($"При пост-парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
-            try
-            {
-                //SemanticAnalyzer.startAnalis(ast);
-            }
-            catch { }
-            foreach (var item in ast.declarotivePatternsStruct.Values)
-            {
-                //PrintAST(item, 0);
-            }
-            foreach (var item in ast.declarotivePatternsFunctions.Values)
-            {
-                //PrintAST(item, 0);
-            }
-            Console.WriteLine("NEW AST AbbreviationParser!!!");
-            if (args.Length == 0)
-                PrintAST(ast, 0);
-            Compiler compiler = new Compiler("dsd", ast);
-            foreach (var c in ast.resualtFunc)
-            {
-                try { Console.WriteLine($"{c.Key} - {c.Value.token.value} : {c.Value.type}"); }
-                catch { }
-            }
+            Console.WriteLine("Start SemanticAnalyser...");
+            try { SemanticAnalyzer.startAnalis(ast); }
+            catch (Exception e) { Console.WriteLine($"При Симантическом Анализе что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
+
+
+            //Console.WriteLine("NEW AST AbbreviationParser!!!");
+            //if (args.Length == 0)
+            //    PrintAST(ast, 0);
+
+
+            Console.WriteLine("Start Compiler...");
+            compiler = new Compiler("dsd", ast);
             try { compiler.Translation(ast, 0); }
-            catch (Exception e) { PrintAST(ast, 0); Console.WriteLine($"При компиляции что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
-            foreach (var c in ast.resualtFunc)
-            {
-                try { Console.WriteLine($"{c.Key} - {c.Value.token.value} : {c.Value.type}"); }
-                catch { }
-            }
+            catch (Exception e) { PrintAST(ast, 0); Console.WriteLine($"При Компиляции что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
             string data = compiler.ConcatData(typeApp);
             compiler.WriteCode(data, filename, pathCompile, "qsr");
-
-            if (args.Length != 0)
-            {
-                Console.Clear();
-                return;
-            }
 
             Console.WriteLine("End...");
             Console.ReadKey();

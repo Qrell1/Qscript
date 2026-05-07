@@ -861,7 +861,6 @@ namespace Qscript
             }
             if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !Compiler.types.ContainsKey(ast.resualtFunc[root.token.value].token.value) && ast.resualtFunc[root.token.value].type != "INDICATOR")
             {
-                //Console.WriteLine("RESUALTPTR - " + ast.resualtFunc[root.token.value].token.value + " | " + ast.resualtFunc[root.token.value].type);
                 CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", signature.token.pos));
                 resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                 childs.Add(resualtVar);
@@ -870,7 +869,7 @@ namespace Qscript
             varSpace.OpenSpace();
             foreach (CommonNode child in signature.childs)
             {
-                Console.WriteLine($"Func Signature Var : {child.token.value} | {child.childs[0].token.value}");
+                //Console.WriteLine($"Func Signature Var : {child.token.value} | {child.childs[0].token.value}");
                 try
                 {
                     varSpace.AddVar(child.token.value, child.childs[0]);
@@ -1028,36 +1027,6 @@ namespace Qscript
 
                 CommonNode type = root.childs[0];
                 
-                /*if (ast.classVars.ContainsKey(type.token.value) && ast.declarativeClassNames.Contains(type.token.value))
-                {
-                    CommonNode _ast = ast;
-                    string oldType = type.token.value;
-                    string oldType2 = type.token.value;
-                    Dictionary<string, string> declaratorTypes = new Dictionary<string, string>();
-                    type.token.value = generationDeclarationStruct(type, type.childs[0], ref declaratorTypes);
-                    oldType = type.token.value;
-                    if (ast.declarativeClassNames.Contains(oldType2))
-                    {
-                        ast.classMethods.Add(oldType, new List<CommonNode>());
-                        foreach (CommonNode child in ast.declarotiveClassMethods[oldType2])
-                        {
-                            CommonNode newMethod = replaceNodes(child, ref declaratorTypes);
-                            newMethod.token.value += "_" + type.token.value;
-                            newMethod.childs[1].childs[0].childs[0].token.value = type.token.value;
-                            ast.classMethods[oldType].Add(newMethod);
-                            ast.resualtFunc.Add(
-                                newMethod.token.value,
-                                newMethod.childs[0]
-                                );
-                        }
-                        foreach (var child in ast.classMethods[oldType])
-                        {
-                            ast.childs.Add(child);
-                        }
-                    }
-                    type.childs.Clear();
-                    root.childs[0] = type;
-                }*/
 
                 if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
                 {

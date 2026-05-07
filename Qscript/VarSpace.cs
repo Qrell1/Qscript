@@ -13,6 +13,16 @@ namespace Qscript
         public bool ContainsKey (string key)
         {
             bool r = (VarsSpaces.Count != 0) ? VarsSpaces.Peek().ContainsKey(key) : false;
+
+            if (!r)
+            {
+                foreach (var space in VarsSpaces)
+                {
+                    r = (space.ContainsKey(key)) ? true : r;
+                    if (r) break;
+                }
+            }
+
             if (r) return true;
             return VarsData.ContainsKey(key);
         }

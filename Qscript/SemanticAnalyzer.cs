@@ -1,10 +1,5 @@
-﻿using Qscript;
-using System;
-using System.Collections.Generic;
+﻿using System;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml.Linq;
 
 namespace Qscript
 {
@@ -23,10 +18,10 @@ namespace Qscript
             return null;
         }
 
-        public static void startAnalis(ProgramNode root)
+        public static void startAnalis(ProgramNode _root)
         {
-            ast = root;
-            analis(root, 0);
+            ast = _root;
+            analis(_root, 0);
         }
 
         public static void analis(CommonNode root, int z_buffer)
@@ -37,16 +32,13 @@ namespace Qscript
                     analisBinoper(root, z_buffer);
                     break;
                 case "FLOATBINOPER":
-                    analisFloatoper(root, z_buffer);
+                    //analisFloatoper(root, z_buffer);
                     break;
                 case "INLINE":
-                    analisInline(root, z_buffer);
+                    //analisInline(root, z_buffer);
                     break;
                 case "FUNC":
                     analisFunc(root, z_buffer);
-                    break;
-                case "VAR":
-                    analisVar(root, z_buffer);
                     break;
                 case "FOR":
                     analisFor(root, z_buffer);
@@ -63,6 +55,9 @@ namespace Qscript
                 case "CALL":
                     analisCall(root, z_buffer);
                     break;
+                case "VAR":
+                    analisVar(root, z_buffer);
+                    break;
                 default:
                     //if (root.childs.Count == 0 || root.type == "SIGNATURE" || root.type == "CMP" || root.type == "STRUCT" || root.type == "FUNC")
                     //break;
@@ -76,14 +71,14 @@ namespace Qscript
             return;
         }
 
-        private static void analisBinoper (CommonNode root, int z_buffer)
+        private static void analisBinoper(CommonNode root, int z_buffer)
         {
             CommonNode leftNode = take(root, 0);
             CommonNode rightNode = take(root, 1);
 
             analis(leftNode, z_buffer + 1);
             analis(rightNode, z_buffer + 1);
-            if (leftNode.type == "VAR" && rightNode.type == "VAR"
+            /*if (leftNode.type == "VAR" && rightNode.type == "VAR"
                 && leftNode.childs.Count > 0 && rightNode.childs.Count > 0
                 && (!leftNode.token.value.Contains(".") && !leftNode.token.value.Contains(",") && !rightNode.token.value.Contains(".") && !rightNode.token.value.Contains(",")))
             {
@@ -94,9 +89,9 @@ namespace Qscript
                 int aling_left = (Compiler.aligns.ContainsKey(leftType)) ? Compiler.aligns[leftType] : 0;
                 int aling_right = (Compiler.aligns.ContainsKey(rightType)) ? Compiler.aligns[rightType] : 0;
                 if (aling_left != aling_right) Syntax.SyntaxError($"Нельзя произвести Операцию: {root.token.value} с Переменными: {leftNode.token.value} , {rightNode.token.value}", root);
-            }
+            }*/
             //if ((leftNode.type == "VAR" && varSpace.GetType(leftNode.token.value).type == "INDICATOR")
-                //|| (rightNode.type == "VAR" && varSpace.GetType(rightNode.token.value).type == "INDICATOR")) return;
+            //|| (rightNode.type == "VAR" && varSpace.GetType(rightNode.token.value).type == "INDICATOR")) return;
             /*
             if (leftNode.type == "VAR" && rightNode.type == "VAR" && varSpace.GetTypeValue(leftNode.token.value) != varSpace.GetTypeValue(rightNode.token.value))
                 Syntax.SyntaxError($"Нельзя складывать Переменные: {leftNode.token.value} , {rightNode.token.value} разных типов!", root);
@@ -108,7 +103,7 @@ namespace Qscript
                 Syntax.SyntaxError($"Нельзя складывать результаты Функциий: {leftNode.token.value} , {rightNode.token.value} они разных типов!", root);
             */
         }
-        private static void analisFloatoper (CommonNode root, int z_buffer)
+        private static void analisFloatoper(CommonNode root, int z_buffer)
         {
             CommonNode leftNode = take(root, 0);
             CommonNode rightNode = take(root, 1);
@@ -127,7 +122,7 @@ namespace Qscript
                 if (aling_left != aling_right) Syntax.SyntaxError($"Нельзя произвести Операцию: {root.token.value} с Переменными: {leftNode.token.value} , {rightNode.token.value}", root);
             }
             //if ((leftNode.type == "VAR" && varSpace.GetType(leftNode.token.value).type == "INDICATOR")
-                //|| (rightNode.type == "VAR" && varSpace.GetType(rightNode.token.value).type == "INDICATOR")) return;
+            //|| (rightNode.type == "VAR" && varSpace.GetType(rightNode.token.value).type == "INDICATOR")) return;
             if (leftNode.type == "VAR" && rightNode.type == "VAR" && varSpace.GetTypeValue(leftNode.token.value) != varSpace.GetTypeValue(rightNode.token.value))
                 Syntax.SyntaxError($"Нельзя складывать Переменные: {leftNode.token.value} , {rightNode.token.value} разных типов!", root);
             if (leftNode.type == "VAR" && rightNode.type == "CALL" && varSpace.GetTypeValue(leftNode.token.value) != ast.resualtFunc[rightNode.token.value].token.value)
@@ -137,7 +132,7 @@ namespace Qscript
             if (leftNode.type == "CALL" && rightNode.type == "CALL" && ast.resualtFunc[leftNode.token.value].token.value != ast.resualtFunc[rightNode.token.value].token.value)
                 Syntax.SyntaxError($"Нельзя складывать результаты Функциий: {leftNode.token.value} , {rightNode.token.value} они разных типов!", root);
         }
-        private static void analisInline (CommonNode root, int z_buffer)
+        private static void analisInline(CommonNode root, int z_buffer)
         {
             CommonNode signatureNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
@@ -146,8 +141,9 @@ namespace Qscript
             foreach (CommonNode child in bodyNode.childs) analis(child, z_buffer + 2);
             varSpace.CloseSpace();
         }
-        private static void analisFunc (CommonNode root, int z_buffer)
+        private static void analisFunc(CommonNode root, int z_buffer)
         {
+            //Console.WriteLine($"ANALIS FUNCTION: {root.token.value} : {z_buffer}");
             CommonNode signatureNode = take(root, 0);
             varSpace.OpenSpace();
             for (int i = 0; i < ast.typesArgsFunc[root.token.value].childs.Count; i++)
@@ -155,7 +151,7 @@ namespace Qscript
             analis(take(root, 2), z_buffer + 1);
             varSpace.CloseSpace();
         }
-        private static void analisVar (CommonNode root, int z_buffer)
+        private static void analisVar(CommonNode root, int z_buffer)
         {
             if (root.childs.Count > 0 && root.childs[0].type != "OFFSET")
             {
@@ -167,11 +163,16 @@ namespace Qscript
             }
             else
             {
-                if (!root.token.value.Contains('.') && !root.token.value.Contains(',') && !varSpace.ContainsKey(root.token.value)) Syntax.SyntaxError($"[S]В текущей области видимости не существует Переменной: {root.token.value}", root);
+                if (!root.token.value.Contains('.') && !root.token.value.Contains(',') && !varSpace.ContainsKey(root.token.value)) Syntax.SyntaxError($"[S]В текущей области видимости не существует Переменной: ", root);
             }
         }
-        private static void analisCall (CommonNode root, int z_buffer)
+        private static void analisCall(CommonNode root, int z_buffer)
         {
+            //Console.WriteLine($"Call {root.token.value}");
+            foreach (var externLibrary in ast.externFuncs)
+            {
+                if (externLibrary.Value.Contains(root.token.value)) return;
+            }
             if (!ast.resualtFunc.ContainsKey(root.token.value) && !ast.inlineNames.Contains(root.token.value))
                 Syntax.SyntaxError($"Функции: {root.token.value} не сущестует чтобы её вызывать!", root);
             else
@@ -186,51 +187,18 @@ namespace Qscript
                     Syntax.SyntaxError($"Ошибка вызова Функции: {root.token.value} ты пердаёшь {callSignatureNode.childs.Count} аргументов,\nНо функция принемает {funcSignatureNode.childs.Count} аргументов", root);
                 else
                 {
-                    /*string[] types = new string[callSignatureNode.childs.Count];
-                    for (int i = 0; i < callSignatureNode.childs.Count; i++)
+                    /*int[] sizes = new int[callSignatureNode.childs.Count];
+
+                    for (int i = 0; i < sizes.Length; i++)
                     {
-                        switch (callSignatureNode.childs[i].type)
-                        {
-                            case "VAR":
-                            case "POSTUNAROPER":
-                            case "PREUNAROPER":
-                                types[i] = varSpace.GetType(callSignatureNode.childs[i].token.value).token.value;
-                                break;
-                            case "SIZEOF":
-                            case "TYPEOF":
-                            case "NUMBER":
-                            case "ADDRESS":
-                            case "BINOPER":
-                                types[i] = "long";
-                                break;
-                            case "FLOAT":
-                            case "FLOATOPER":
-                                types[i] = "float";
-                                break;
-                            case "STRING":
-                                types[i] = "string";
-                                break;
-                            case "CHAR":
-                                types[i] = "char";
-                                break;
-                            case "BOOL":
-                                types[i] = "bool";
-                                break;
-                            case "TYPEOPER":
-                                types[i] = callSignatureNode.childs[i].token.value;
-                                break;
-                            case "CALL":
-                                types[i] = varSpace.GetType(callSignatureNode.childs[i].token.value).token.value;
-                                break;
-                            default:
-                                types[i] = "long";
-                                break;
-                        }
+                        sizes[i] = getFormulaNodeSize(callSignatureNode.childs[i]);
                     }
+
+
                     for (int i = 0; i < funcSignatureNode.childs.Count; i++)
                     {
-                        if (types[i] != funcSignatureNode.childs[i].token.value)
-                            Syntax.SyntaxError($"Тип аргумента {i} вызываемой Функции: {root} несовподает с {funcSignatureNode.childs[i].token.value}!", callSignatureNode.childs[i]);
+                        if (sizes[i] != getFormulaNodeSize(funcSignatureNode.childs[i]))
+                            Syntax.SyntaxError($"Тип аргумента {i} вызываемой Функции: {root.token.value} несовподает с {funcSignatureNode.childs[i].token.value}!", callSignatureNode.childs[i]);
                     }*/
                 }
             }
@@ -278,6 +246,82 @@ namespace Qscript
             analis(signatureNode, z_buffer + 1);
             foreach (CommonNode child in bodyNode.childs) analis(child, z_buffer + 2);
             varSpace.CloseSpace();
+        }
+
+
+        private static int getFormulaNodeSize(CommonNode node)
+        {
+            Console.WriteLine(node.token.value + " : " + node.type);
+            int size = 0;
+            string type;
+            switch (node.type)
+            {
+                case "VAR":
+                case "POSTUNAROPER":
+                case "PREUNAROPER":
+                    type = varSpace.GetType(node.token.value).token.value;
+                    if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                    else size = getStructSize(type);
+                    break;
+                case "SIZEOF":
+                case "TYPEOF":
+                case "NUMBER":
+                case "ADDRESS":
+                case "BINOPER":
+                    size = 4;
+                    break;
+                case "FLOAT":
+                case "FLOATOPER":
+                    size = 4;
+                    break;
+                case "STRING":
+                    size = 4;
+                    break;
+                case "CHAR":
+                    size = 2;
+                    break;
+                case "BOOL":
+                    size = 1;
+                    break;
+                case "TYPEOPER":
+                    type = node.token.value;
+                    if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                    else size = getStructSize(type);
+                    break;
+                case "CALL":
+                    type = varSpace.GetType(node.token.value).token.value;
+                    if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                    else size = getStructSize(type);
+                    break;
+                default:
+                    size = 4;
+                    break;
+            }
+            return size;
+        }
+        public static int getStructSize(string type)
+        {
+            int size = 0;
+
+            foreach (var _var in ast.structs[type].Values)
+            {
+                if (_var.type == "INDICATOR") size += 4;
+                else if (Compiler.types.ContainsKey(_var.token.value))
+                {
+                    string classsize = Compiler.types[_var.token.value];
+                    if (_var.token.value == "dq") size += 8;
+                    else if (_var.token.value == "dd") size += 4;
+                    else if (_var.token.value == "dw") size += 2;
+                    else if (_var.token.value == "db") size += 1;
+                }
+                else if (_var.token.value == "dq") size += 8;
+                else if (_var.token.value == "dd") size += 4;
+                else if (_var.token.value == "dw") size += 2;
+                else if (_var.token.value == "db") size += 1;
+                else size += getStructSize(_var.token.value);
+            }
+
+            return size;
         }
     }
 }
