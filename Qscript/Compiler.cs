@@ -1538,8 +1538,13 @@ namespace Qscript
                                 _objProg.code.Append($"    {child.token.value} {take(child, 0).token.value} 0\n");
                         }
                     }
-                //}
             //}
+            //}
+
+            int size = getStructSize(root.token.value);
+
+            if (size % 4 != 0) _objProg.code.Append($"    align {4 - size % 4}\n");
+
             _objProg.code.Append("ends\n");
 
             _objProg.data.Append($"SIZE_{root.token.value.ToUpper()} = sizeof.{root.token.value}\n");
@@ -1859,10 +1864,10 @@ namespace Qscript
                 else if (types.ContainsKey(_var.token.value))
                 {
                     string classsize = types[_var.token.value];
-                    if (_var.token.value == "dq") size += 8;
-                    else if (_var.token.value == "dd") size += 4;
-                    else if (_var.token.value == "dw") size += 2;
-                    else if (_var.token.value == "db") size += 1;
+                    if (classsize == "dq") size += 8;
+                    else if (classsize == "dd") size += 4;
+                    else if (classsize == "dw") size += 2;
+                    else if (classsize == "db") size += 1;
                 }
                 else if (_var.token.value == "dq") size += 8;
                 else if (_var.token.value == "dd") size += 4;
