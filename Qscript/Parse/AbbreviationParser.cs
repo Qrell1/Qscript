@@ -14,6 +14,7 @@ namespace Qscript
         public VarSpace varSpace = new VarSpace();
 
         public List<string> strings = new List<string>();
+        public List<string> varRegisters = new List<string>();
 
         public AbbreviationParser() { }
 
@@ -30,6 +31,8 @@ namespace Qscript
         {
             ast = root;
             CommonNode astNode = copyNodes(root);
+            // Var Register Cheak
+            astNode = varRegisterCheakUses(astNode);
             // Const Remove
             astNode = constRemove(astNode);
             // Replace Constant Var Value
@@ -780,6 +783,26 @@ namespace Qscript
                 return root;
             }
             //else return root;
+            return root;
+        }
+
+        private CommonNode varRegisterCheakUses(CommonNode root)
+        {
+            if (root.type == "VAR" && varRegisters.Contains(root.token.value))
+            {
+                root.type = "REGUSE";
+            } else if (root.type == "REGDECL" && !varRegisters.Contains(root.token.value))
+            {
+                varRegisters.Add(root.token.value);
+            } else if (root.type != "REGDECL")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = varRegisterCheakUses(root.childs[i]);
+                }
+                return root;
+            }
+
             return root;
         }
 

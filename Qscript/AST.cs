@@ -24,6 +24,7 @@ namespace Qscript
     {
         public List<CommonNode> Constans = new List<CommonNode>();
         public List<string> inlineNames = new List<string>();
+        public List<string> asmInlineNames = new List<string>();
 
         public Dictionary<string, CommonNode> resualtFunc = new Dictionary<string, CommonNode>();
         public Dictionary<string, CommonNode> typesArgsFunc = new Dictionary<string, CommonNode>();

@@ -87,6 +87,7 @@ namespace Qscript
             tokenTypes.Add("FLOAT", new TokenType("FLOAT", @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)"));
             tokenTypes.Add("NUMBER", new TokenType("NUMBER", "[0-9]+"));
             tokenTypes.Add("PREFIX", new TokenType("PREFIX", "(\\+\\+|--|\\<>|\\?|&)"));
+            tokenTypes.Add("REGDECL", new TokenType("REGDECL", "\\$"));
             tokenTypes.Add("OPER", new TokenType("OPER", "(@|\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-\\*/%=|!:~])"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", "<"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", ">"));
@@ -136,6 +137,7 @@ namespace Qscript
             tokenTypes.Add("SECTION", new TokenType("SECTION", @"\bsection\b"));
             tokenTypes.Add("NATIVE", new TokenType("NATIVE", @"\bnative\b"));
             tokenTypes.Add("INLINE", new TokenType("INLINE", @"\binline\b"));
+            tokenTypes.Add("ASMINLINE", new TokenType("ASMINLINE", @"(\basm-inline\b|\basminline\b)"));
             tokenTypes.Add("OPERATOR", new TokenType("OPERATOR", @"(\boperator\b|\bоператор\b)"));
             tokenTypes.Add("SIZEOF", new TokenType("SIZEOF", @"\bsizeof\b"));
             tokenTypes.Add("TYPEOF", new TokenType("TYPEOF", @"\btypeof\b"));

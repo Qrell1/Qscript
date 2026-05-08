@@ -946,6 +946,33 @@ namespace Qscript
             SyntaxError();
             return null;
         }
+        private CommonNode parseAsmInline()
+        {
+            skip(); expect("VAR");
+            CommonNode nameNode = new CommonNode("ASMINLINE", take());
+            
+            while (peek("TS"))
+            {
+                skip();
+                nameNode.token.value += "." + take().value;
+                if (peek("LPAR"))
+                    break;
+            }
+            root.asmInlineNames.Add(nameNode.token.value);
+
+            if (peek("LPAR"))
+            {
+                CommonNode args = parseVarWTypeSignature(); expect(new string[] { "LFIG", "SEM" });
+                CommonNode body = parseBody();
+                nameNode.childs.Add(args);
+                nameNode.childs.Add(body);
+
+                return nameNode;
+            }
+
+            SyntaxError();
+            return null;
+        }
         /*
         public CommonNode parseLpar()
         {
@@ -1347,6 +1374,17 @@ namespace Qscript
                 if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 return null;
             }
+            else if (peek("ASMINLINE"))
+            {
+                skip();
+                CommonNode stack = parseStack("VAR");
+                foreach (var child in stack.childs)
+                {
+                    root.asmInlineNames.Add(child.token.value);
+                }
+
+                return null;
+            }
             else if (peek("NATIVE"))
             {
                 //usingNode.childs.Add(new CommonNode("INLINE", take()));
@@ -1567,6 +1605,21 @@ namespace Qscript
             return varNode;
         }
 
+        private CommonNode parseRegDeclaration()
+        {
+            skip(); expect("VAR");
+            CommonNode regDeclationNode = new CommonNode("REGDECL", take());
+            if (tokens[pos].value == "=")
+            {
+                CommonNode assignNode = new CommonNode("BINOPER", take());
+                CommonNode rightNode = parseFormula();
+                assignNode.childs.Add(regDeclationNode);
+                assignNode.childs.Add(rightNode);
+                return assignNode;
+            }
+            return regDeclationNode;
+        }
+
         private CommonNode parseAsm()
         {
             CommonNode asmNode = new CommonNode("ASM", take());
@@ -1592,7 +1645,6 @@ namespace Qscript
                 if (node == null) continue;
                 if (sem || peek("SEM")) { expect("SEM"); skip(); }
                 root.childs.Add(node);
-                //Program.PrintAST(node, 0);
             }
             return root;
         }
@@ -1644,6 +1696,10 @@ namespace Qscript
             {
                 return parseInline();
             }
+            if (peek("ASMINLINE"))
+            {
+                return parseAsmInline();
+            }
             if (peek("TYPEIF"))
             {
                 return parseTypeif();
@@ -1663,6 +1719,10 @@ namespace Qscript
             if (tokens[pos].value == "@")
             {
                 return parseAsm();
+            }
+            if (tokens[pos].value == "$")
+            {
+                return parseRegDeclaration();
             }
             return null;
         }

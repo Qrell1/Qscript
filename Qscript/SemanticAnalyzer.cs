@@ -78,30 +78,9 @@ namespace Qscript
 
             analis(leftNode, z_buffer + 1);
             analis(rightNode, z_buffer + 1);
-            /*if (leftNode.type == "VAR" && rightNode.type == "VAR"
-                && leftNode.childs.Count > 0 && rightNode.childs.Count > 0
-                && (!leftNode.token.value.Contains(".") && !leftNode.token.value.Contains(",") && !rightNode.token.value.Contains(".") && !rightNode.token.value.Contains(",")))
-            {
-                string leftType = varSpace.GetTypeValue(leftNode.token.value);
-                string rightType = varSpace.GetTypeValue(rightNode.token.value);
-                if (leftNode == null) leftType = "void";
-                if (rightType == null) rightType = "void";
-                int aling_left = (Compiler.aligns.ContainsKey(leftType)) ? Compiler.aligns[leftType] : 0;
-                int aling_right = (Compiler.aligns.ContainsKey(rightType)) ? Compiler.aligns[rightType] : 0;
-                if (aling_left != aling_right) Syntax.SyntaxError($"Нельзя произвести Операцию: {root.token.value} с Переменными: {leftNode.token.value} , {rightNode.token.value}", root);
-            }*/
-            //if ((leftNode.type == "VAR" && varSpace.GetType(leftNode.token.value).type == "INDICATOR")
-            //|| (rightNode.type == "VAR" && varSpace.GetType(rightNode.token.value).type == "INDICATOR")) return;
-            /*
-            if (leftNode.type == "VAR" && rightNode.type == "VAR" && varSpace.GetTypeValue(leftNode.token.value) != varSpace.GetTypeValue(rightNode.token.value))
-                Syntax.SyntaxError($"Нельзя складывать Переменные: {leftNode.token.value} , {rightNode.token.value} разных типов!", root);
-            if ((leftNode.type == "VAR" && rightNode.type == "CALL") && (varSpace.GetTypeValue(leftNode.token.value) != ast.resualtFunc[rightNode.token.value].token.value))
-                Syntax.SyntaxError($"Нельзя складывать Переменную: {leftNode.token.value} и результат Функции: {rightNode.token.value} они разных типов!", root);
-            if ((rightNode.type == "VAR" && leftNode.type == "CALL") && varSpace.GetTypeValue(rightNode.token.value) != ast.resualtFunc[leftNode.token.value].token.value)
-                Syntax.SyntaxError($"Нельзя складывать Переменную: {rightNode.token.value} и результат Функции: {leftNode.token.value} они разных типов!", root);
-            if ((leftNode.type == "CALL" && rightNode.type == "CALL") && ast.resualtFunc[leftNode.token.value].token.value != ast.resualtFunc[rightNode.token.value].token.value)
-                Syntax.SyntaxError($"Нельзя складывать результаты Функциий: {leftNode.token.value} , {rightNode.token.value} они разных типов!", root);
-            */
+            int leftSize = getFormulaNodeSize(leftNode);
+            int rightSize = getFormulaNodeSize(rightNode);
+            if (leftSize != rightSize && root.token.value != "=") Syntax.SyntaxError($"Нельзя оперировать: {leftNode.token.value} с {rightNode.token.value}", root);
         }
         private static void analisFloatoper(CommonNode root, int z_buffer)
         {
@@ -110,27 +89,9 @@ namespace Qscript
 
             analis(leftNode, z_buffer + 1);
             analis(rightNode, z_buffer + 1);
-            if (leftNode.type == "VAR" && rightNode.type == "VAR"
-                && leftNode.childs.Count > 0 && rightNode.childs.Count > 0)
-            {
-                string leftType = varSpace.GetTypeValue(leftNode.token.value);
-                string rightType = varSpace.GetTypeValue(rightNode.token.value);
-                if (leftNode == null) leftType = "void";
-                if (rightType == null) rightType = "void";
-                int aling_left = (Compiler.aligns.ContainsKey(leftType)) ? Compiler.aligns[leftType] : 0;
-                int aling_right = (Compiler.aligns.ContainsKey(rightType)) ? Compiler.aligns[rightType] : 0;
-                if (aling_left != aling_right) Syntax.SyntaxError($"Нельзя произвести Операцию: {root.token.value} с Переменными: {leftNode.token.value} , {rightNode.token.value}", root);
-            }
-            //if ((leftNode.type == "VAR" && varSpace.GetType(leftNode.token.value).type == "INDICATOR")
-            //|| (rightNode.type == "VAR" && varSpace.GetType(rightNode.token.value).type == "INDICATOR")) return;
-            if (leftNode.type == "VAR" && rightNode.type == "VAR" && varSpace.GetTypeValue(leftNode.token.value) != varSpace.GetTypeValue(rightNode.token.value))
-                Syntax.SyntaxError($"Нельзя складывать Переменные: {leftNode.token.value} , {rightNode.token.value} разных типов!", root);
-            if (leftNode.type == "VAR" && rightNode.type == "CALL" && varSpace.GetTypeValue(leftNode.token.value) != ast.resualtFunc[rightNode.token.value].token.value)
-                Syntax.SyntaxError($"Нельзя складывать Переменную: {leftNode.token.value} и результат Функции: {rightNode.token.value} они разных типов!", root);
-            if (rightNode.type == "VAR" && leftNode.type == "CALL" && varSpace.GetTypeValue(rightNode.token.value) != ast.resualtFunc[leftNode.token.value].token.value)
-                Syntax.SyntaxError($"Нельзя складывать Переменную: {rightNode.token.value} и результат Функции: {leftNode.token.value} они разных типов!", root);
-            if (leftNode.type == "CALL" && rightNode.type == "CALL" && ast.resualtFunc[leftNode.token.value].token.value != ast.resualtFunc[rightNode.token.value].token.value)
-                Syntax.SyntaxError($"Нельзя складывать результаты Функциий: {leftNode.token.value} , {rightNode.token.value} они разных типов!", root);
+            int leftSize = getFormulaNodeSize(leftNode);
+            int rightSize = getFormulaNodeSize(rightNode);
+            if (leftSize != rightSize && root.token.value != "=") Syntax.SyntaxError($"Нельзя оперировать: {leftNode.token.value} с {rightNode.token.value}", root);
         }
         private static void analisInline(CommonNode root, int z_buffer)
         {
@@ -251,52 +212,55 @@ namespace Qscript
 
         private static int getFormulaNodeSize(CommonNode node)
         {
-            Console.WriteLine(node.token.value + " : " + node.type);
             int size = 0;
             string type;
-            switch (node.type)
+            try
             {
-                case "VAR":
-                case "POSTUNAROPER":
-                case "PREUNAROPER":
-                    type = varSpace.GetType(node.token.value).token.value;
-                    if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
-                    else size = getStructSize(type);
-                    break;
-                case "SIZEOF":
-                case "TYPEOF":
-                case "NUMBER":
-                case "ADDRESS":
-                case "BINOPER":
-                    size = 4;
-                    break;
-                case "FLOAT":
-                case "FLOATOPER":
-                    size = 4;
-                    break;
-                case "STRING":
-                    size = 4;
-                    break;
-                case "CHAR":
-                    size = 2;
-                    break;
-                case "BOOL":
-                    size = 1;
-                    break;
-                case "TYPEOPER":
-                    type = node.token.value;
-                    if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
-                    else size = getStructSize(type);
-                    break;
-                case "CALL":
-                    type = varSpace.GetType(node.token.value).token.value;
-                    if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
-                    else size = getStructSize(type);
-                    break;
-                default:
-                    size = 4;
-                    break;
-            }
+                switch (node.type)
+                {
+                    case "VAR":
+                    case "POSTUNAROPER":
+                    case "PREUNAROPER":
+                        type = varSpace.GetType(node.token.value).token.value;
+                        if (varSpace.GetType(node.token.value).type == "INDICATOR") size = 4;
+                        else if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                        else size = getStructSize(type);
+                        break;
+                    case "SIZEOF":
+                    case "TYPEOF":
+                    case "NUMBER":
+                    case "ADDRESS":
+                    case "BINOPER":
+                        size = 4;
+                        break;
+                    case "FLOAT":
+                    case "FLOATOPER":
+                        size = 4;
+                        break;
+                    case "STRING":
+                        size = 2;
+                        break;
+                    case "CHAR":
+                        size = 2;
+                        break;
+                    case "BOOL":
+                        size = 1;
+                        break;
+                    case "TYPEOPER":
+                        type = node.token.value;
+                        if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                        else size = getStructSize(type);
+                        break;
+                    case "CALL":
+                        type = varSpace.GetType(node.token.value).token.value;
+                        if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                        else size = getStructSize(type);
+                        break;
+                    default:
+                        size = 4;
+                        break;
+                }
+            } catch { size = 4; }
             return size;
         }
         public static int getStructSize(string type)
