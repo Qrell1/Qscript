@@ -1381,6 +1381,7 @@ namespace Qscript
                 foreach (var child in stack.childs)
                 {
                     root.asmInlineNames.Add(child.token.value);
+                    root.inlineNames.Add(child.token.value);
                 }
 
                 return null;

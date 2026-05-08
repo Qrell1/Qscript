@@ -35,7 +35,7 @@ namespace Qscript
                     //analisFloatoper(root, z_buffer);
                     break;
                 case "INLINE":
-                    //analisInline(root, z_buffer);
+                    analisInline(root, z_buffer);
                     break;
                 case "FUNC":
                     analisFunc(root, z_buffer);
@@ -97,8 +97,36 @@ namespace Qscript
         {
             CommonNode signatureNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
+
+            bool isInlineCall(CommonNode node)
+            {
+                bool isNode = false;
+
+                foreach (var child in node.childs)
+                {
+                    if (ast.inlineNames.Contains(child.token.value)) return true;
+                    else if (child.childs.Count > 0) isNode = (isInlineCall(child)) ? true : isNode;
+                }
+
+                return isNode;
+            }
+            bool isVarDeclaration(CommonNode node)
+            {
+                bool isNode = false;
+
+                foreach (var child in node.childs)
+                {
+                    if (node.type == "VAR" && node.childs.Count > 0 && node.childs[0].type == "TYPE") return true;
+                    else if (child.childs.Count > 0) isNode = (isVarDeclaration(child)) ? true : isNode;
+                }
+
+                return isNode;
+            }
+
             varSpace.OpenSpace();
             foreach (CommonNode child in signatureNode.childs) varSpace.AddVar(child.token.value, child.childs[0]);
+            if (isVarDeclaration(bodyNode)) Syntax.SyntaxError($"Невозможно объявление переменных в инлайне", bodyNode);
+            if (isInlineCall(bodyNode)) Syntax.SyntaxError($"Невозможно вызывать инлайны в инлайне", bodyNode);
             foreach (CommonNode child in bodyNode.childs) analis(child, z_buffer + 2);
             varSpace.CloseSpace();
         }
@@ -209,7 +237,30 @@ namespace Qscript
             varSpace.CloseSpace();
         }
 
+        private static bool isNodeType(string type, CommonNode root)
+        {
+            bool isNode = false;
 
+            foreach (var child in root.childs)
+            {
+                if (child.type == type) return true;
+                else if (child.childs.Count > 0) isNode = (isNodeType(type, child)) ? true : isNode;
+            }
+
+            return isNode;
+        }
+        private static bool isNodeValue(string value, CommonNode root)
+        {
+            bool isNode = false;
+
+            foreach (var child in root.childs)
+            {
+                if (child.token.value == value) return true;
+                else if (child.childs.Count > 0) isNode = (isNodeValue(value, child)) ? true : isNode;
+            }
+
+            return isNode;
+        }
         private static int getFormulaNodeSize(CommonNode node)
         {
             int size = 0;
