@@ -272,6 +272,7 @@ namespace Qscript
             Console.WriteLine("Start RegisterMachine...");
             StringData resualt = new StringData();
             Dictionary<string, string> tableRegisters = new Dictionary<string, string>();
+            Dictionary<string, string> tableSafeRegisters = new Dictionary<string, string>();
             Dictionary<string, int> timelineRegisters = new Dictionary<string, int>();
             List<string> tasks = new List<string>();
             string[] asmRegisters = { "ecx", "edx", "edi", "esi", "ebx", "eax" };
@@ -295,6 +296,15 @@ namespace Qscript
             }
             string getFreeReg (string reg)
             {
+                if (reg.EndsWith("safe"))
+                {
+                    for (int i = 0; i < asmRegisters.Length; i++)
+                    {
+                        if (!tableSafeRegisters.ContainsValue(asmRegisters[i])) return asmRegisters[i];
+                    }
+
+                    return asmRegisters[rand.Next(0, 5)];
+                }
                 if (reg.EndsWith("x") || reg.EndsWith("l") || reg.EndsWith("h"))
                 {
                     string regPrefer = reg.Remove(0, 4);
@@ -412,10 +422,17 @@ namespace Qscript
                 {
                     if (pat.key == "ri")
                     {
-                        if (!tableRegisters.ContainsKey(pat.value))
+                        if (!tableRegisters.ContainsKey(pat.value) && !tableSafeRegisters.ContainsKey(pat.value))
                         {
-                            string freeReg = getFreeReg(pat.value);
-                            tableRegisters.Add(pat.value, (freeReg.StartsWith("push")) ? freeReg.Remove(0, 4).ToString() : freeReg);
+                            if (pat.value.EndsWith("safe"))
+                            {
+                                tableSafeRegisters.Add(pat.value, getFreeReg(pat.value));
+                            }
+                            else
+                            {
+                                string freeReg = getFreeReg(pat.value);
+                                tableRegisters.Add(pat.value, (freeReg.StartsWith("push")) ? freeReg.Remove(0, 4).ToString() : freeReg);
+                            }
                             //if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Remove(0,4)}\n");
                         } else
                         {
@@ -426,9 +443,11 @@ namespace Qscript
                             }*/
                         }
                         string oldReg = pat.value;
-                        pat.value = tableRegisters[pat.value];
+                        if (oldReg.EndsWith("safe")) pat.value = tableSafeRegisters[oldReg];
+                        else pat.value = tableRegisters[oldReg];
                         pat.key = "r";
-                        if (timelineRegisters[oldReg] == i) tableRegisters.Remove(oldReg);
+                        if (oldReg.EndsWith("safe") && timelineRegisters[oldReg] == i) tableSafeRegisters.Remove(oldReg);
+                        else if (timelineRegisters[oldReg] == i) tableRegisters.Remove(oldReg);
                     }
                     else if (pat.key == "m")
                     {
@@ -438,11 +457,18 @@ namespace Qscript
                             string strtrim = str.Trim();
                             if (strtrim.StartsWith(".reg"))
                             {
-                                if (!tableRegisters.ContainsKey(strtrim))
+                                if (!tableRegisters.ContainsKey(strtrim) && !tableSafeRegisters.ContainsKey(strtrim))
                                 {
-                                    string freeReg = getFreeReg(strtrim);
-                                    tableRegisters.Add(strtrim, (freeReg.StartsWith("push")) ? freeReg.Remove(0, 4).ToString() : freeReg);
-                                    //if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Remove(0, 4)}\n");
+                                    if (pat.value.EndsWith("safe"))
+                                    {
+                                        tableSafeRegisters.Add(strtrim, getFreeReg(strtrim));
+                                        continue;
+                                    }
+                                    else
+                                    {
+                                        string freeReg = getFreeReg(strtrim);
+                                        tableRegisters.Add(strtrim, (freeReg.StartsWith("push")) ? freeReg.Remove(0, 4).ToString() : freeReg);
+                                    }
                                 }
                                 else
                                 {
@@ -452,8 +478,10 @@ namespace Qscript
                                         removeRegTask(tableRegisters[strtrim]);
                                     }*/
                                 }
-                                pat.value = pat.value.Replace(strtrim, tableRegisters[strtrim]);
-                                if (timelineRegisters[strtrim] == i) tableRegisters.Remove(strtrim);
+                                if (strtrim.EndsWith("safe")) pat.value = pat.value.Replace(strtrim, tableSafeRegisters[strtrim]);
+                                else pat.value = pat.value.Replace(strtrim, tableRegisters[strtrim]);
+                                if (strtrim.EndsWith("safe") && timelineRegisters[strtrim] == i) tableSafeRegisters.Remove(strtrim);
+                                else if (timelineRegisters[strtrim] == i) tableRegisters.Remove(strtrim);
                             }
                         }
                     }
@@ -635,10 +663,11 @@ namespace Qscript
                                         _inst.pattern[k].value = "eax".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
                                     else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
                                         _inst.pattern[k].value = GetReg(type).Replace("a", Compiler.regschars[_inst.pattern[k].value]);
-                                    if (_inst.pattern[k].key == "r"
+                                    /*if (patterns[0].key == "r"
+                                        && _inst.pattern[k].key == "r"
                                         && _inst.pattern[k].value != "esi"
                                         && _inst.pattern[k].value != "edi"
-                                        && !_inst.pattern[k].value.StartsWith("e")) _inst.value = (_inst.value == "mov") ? "movzx" : _inst.value;
+                                        && !_inst.pattern[k].value.StartsWith("e")) _inst.value = (_inst.value == "mov") ? "movzx" : _inst.value;*/
                                     //if (_inst.pattern[k].key == "r" && _inst.value == "mov" && !_inst.pattern[k].value.Contains("e")) _inst.value = "movzx";
                                 }
                             else
@@ -699,8 +728,8 @@ namespace Qscript
                                         else if (_inst.pattern[k].key == "r" && type == "BYTE")
                                             _inst.pattern[k].value = "al".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
                                         //if (_inst.pattern[k].key == "r" && _inst.value == "mov" && !_inst.pattern[k].value.Contains("e")) _inst.value = "movzx";
-                                        if (_inst.pattern[k].key == "r"
-                                            && !_inst.pattern[k].value.StartsWith("e")) _inst.value = (_inst.value == "mov") ? "movzx" : _inst.value;
+                                        //if (_inst.pattern[k].key == "r" && patterns[0].key == "r"
+                                        //    && !_inst.pattern[k].value.StartsWith("e")) _inst.value = (_inst.value == "mov") ? "movzx" : _inst.value;
                                     }
                                 }
                                 catch { }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Xml.Linq;
 
 namespace Qscript
 {
@@ -80,7 +82,9 @@ namespace Qscript
             analis(rightNode, z_buffer + 1);
             int leftSize = getFormulaNodeSize(leftNode);
             int rightSize = getFormulaNodeSize(rightNode);
-            if (leftSize != rightSize && root.token.value != "=") Syntax.SyntaxError($"Нельзя оперировать: {leftNode.token.value} с {rightNode.token.value}", root);
+            string leftType = getFormulaType(leftNode);
+            string rightType = getFormulaType(rightNode);
+            if (!ast.operatorFunctions.ContainsKey((root.token.value, leftType, rightType)) && leftSize != rightSize && root.token.value != "=") Syntax.SyntaxError($"Нельзя оперировать: {leftNode.token.value} с {rightNode.token.value}", root);
         }
         private static void analisFloatoper(CommonNode root, int z_buffer)
         {
@@ -281,8 +285,27 @@ namespace Qscript
                     case "TYPEOF":
                     case "NUMBER":
                     case "ADDRESS":
+                        size = 4;
+                        break;
                     case "BINOPER":
                         size = 4;
+
+                        int _size1 = getFormulaNodeSize(node.childs[0]);
+                        int _size2 = getFormulaNodeSize(node.childs[1]);
+
+                        string _type1 = getFormulaType(node.childs[0]);
+                        string _type2 = getFormulaType(node.childs[1]);
+
+                        if (_size1 == _size2) size = _size1;
+
+                        if (ast.operatorFunctions.ContainsKey((node.token.value, _type1, _type2)))
+                        {
+                            string OperatorName = ast.operatorFunctions[(node.token.value, _type1, _type2)];
+
+                            type = ast.resualtFunc[OperatorName].token.value;
+                            if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                            else size = getStructSize(type);
+                        }
                         break;
                     case "FLOAT":
                     case "FLOATOPER":
@@ -313,6 +336,69 @@ namespace Qscript
                 }
             } catch { size = 4; }
             return size;
+        }
+        private static string getFormulaType(CommonNode node)
+        {
+            string type;
+            try
+            {
+                switch (node.type)
+                {
+                    case "VAR":
+                    case "POSTUNAROPER":
+                    case "PREUNAROPER":
+                        type = varSpace.GetType(node.token.value).token.value;
+                        break;
+                    case "SIZEOF":
+                    case "TYPEOF":
+                    case "NUMBER":
+                    case "ADDRESS":
+                        type = "int";
+                        break;
+                    case "BINOPER":
+                        type = "BINOPER";
+
+                        string _type1 = getFormulaType(node.childs[0]);
+                        string _type2 = getFormulaType(node.childs[0]);
+
+                        if (_type1 == _type2) type = _type1;
+
+                        string leftType = (_type1 == "STRING") ? "string" : _type1;
+                        string rightType = (_type2 == "STRING") ? "string" : _type2;
+
+                        if (ast.operatorFunctions.ContainsKey((node.token.value, leftType, rightType)))
+                        {
+                            string OperatorName = ast.operatorFunctions[(node.token.value, leftType, rightType)];
+
+                            type = ast.resualtFunc[OperatorName].token.value;
+                        }
+                        break;
+                    case "FLOAT":
+                    case "FLOATOPER":
+                        type = "float";
+                        break;
+                    case "STRING":
+                        type = "string";
+                        break;
+                    case "CHAR":
+                        type = "char";
+                        break;
+                    case "BOOL":
+                        type = "bool";
+                        break;
+                    case "TYPEOPER":
+                        type = node.token.value;
+                        break;
+                    case "CALL":
+                        type = varSpace.GetType(node.token.value).token.value;
+                        break;
+                    default:
+                        type = "int";
+                        break;
+                }
+            }
+            catch { type = "BINOPER"; }
+            return type;
         }
         public static int getStructSize(string type)
         {
