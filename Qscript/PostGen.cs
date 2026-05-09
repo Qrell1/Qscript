@@ -625,44 +625,31 @@ namespace Qscript
                                 resualtMemory = strs[0];
                             }
                             _inst.pattern[j].value = "[" + resualtMemory + "]";
-                            if (type != string.Empty) for (int k = 0; k < _inst.pattern.Count; k++)
+                            type = vars[strs[0]];
+                            if (type != string.Empty) 
+                                for (int k = 0; k < _inst.pattern.Count; k++)
                                 {
-                                    if (_inst.pattern[k].value == "esi")
+
+                                    if (_inst.pattern[k].key == "r")
                                     {
-                                        if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
-                                            _inst.pattern[k].value = "esi";
-                                        else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
+                                        string size = string.Empty;
+                                        int sizeIndex = 0;
+
+                                        if (typeVar == "INDICATOR") size = "dword";
+                                        else if (Compiler.typesarg.ContainsKey(type)) size = Compiler.typesarg[type].ToLower();
+                                        else size = "dword";
+
+                                        switch (size)
                                         {
-                                            string reg = string.Empty;
-                                            switch (Compiler.typesregs[type])
-                                            {
-                                                case "rax": _inst.pattern[k].value = "rsi"; break;
-                                                case "eax": _inst.pattern[k].value = "esi"; break;
-                                                case "ax": _inst.pattern[k].value = "si"; break;
-                                                default: _inst.pattern[k].value = "ah"; break;
-                                            }
+                                            case "qword": sizeIndex = 0; break;
+                                            case "dword": sizeIndex = 1; break;
+                                            case "word": sizeIndex = 2; break;
+                                            case "byte": sizeIndex = 3; break;
+                                            default: sizeIndex = 0; break;
                                         }
-                                    }      // DELETE: Временное решение fix1
-                                    else if (_inst.pattern[k].value == "edi")
-                                    {
-                                        if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
-                                            _inst.pattern[k].value = "edi";
-                                        else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
-                                        {
-                                            string reg = string.Empty;
-                                            switch (Compiler.typesregs[type])
-                                            {
-                                                case "rax": _inst.pattern[k].value = "rdi"; break;
-                                                case "eax": _inst.pattern[k].value = "edi"; break;
-                                                case "ax": _inst.pattern[k].value = "di"; break;
-                                                default: _inst.pattern[k].value = "dh"; break;
-                                            }
-                                        }
-                                    } // DELETE: Временное решение fix1
-                                    else if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
-                                        _inst.pattern[k].value = "eax".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
-                                    else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
-                                        _inst.pattern[k].value = GetReg(type).Replace("a", Compiler.regschars[_inst.pattern[k].value]);
+
+                                        _inst.pattern[k].value = Compiler.regs[_inst.pattern[k].value][sizeIndex];
+                                    }
                                     /*if (patterns[0].key == "r"
                                         && _inst.pattern[k].key == "r"
                                         && _inst.pattern[k].value != "esi"
@@ -670,70 +657,6 @@ namespace Qscript
                                         && !_inst.pattern[k].value.StartsWith("e")) _inst.value = (_inst.value == "mov") ? "movzx" : _inst.value;*/
                                     //if (_inst.pattern[k].key == "r" && _inst.value == "mov" && !_inst.pattern[k].value.Contains("e")) _inst.value = "movzx";
                                 }
-                            else
-                            {
-                                try // FIXME: fix1 Как же мне всё таки сделать чтобы esi && edi не попадалюсь на 8 битные задачи
-                                {
-                                    type = vars[strs[0]];
-                                    for (int k = 0; k < _inst.pattern.Count; k++)
-                                    { // rax eax ax al ah
-                                        if (_inst.pattern[k].value == "esi")
-                                        {
-                                            if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
-                                                _inst.pattern[k].value = "esi";
-                                            else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
-                                            {
-                                                string reg = string.Empty;
-                                                switch (Compiler.typesregs[type])
-                                                {
-                                                    case "rax": _inst.pattern[k].value = "rsi"; break;
-                                                    case "eax": _inst.pattern[k].value = "esi"; break;
-                                                    case "ax": _inst.pattern[k].value = "si"; break;
-                                                    default: _inst.pattern[k].value = "ah"; break;
-                                                }
-                                            }
-                                            else if (_inst.pattern[k].key == "r" && type == "QWORD") _inst.pattern[k].value = "rsi";
-                                            else if (_inst.pattern[k].key == "r" && type == "DWORD") _inst.pattern[k].value = "esi";
-                                            else if (_inst.pattern[k].key == "r" && type == "WORD") _inst.pattern[k].value = "si";
-                                        }      // DELETE: Временное решение fix1
-                                        else if (_inst.pattern[k].value == "edi")
-                                        {
-                                            if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
-                                                _inst.pattern[k].value = "edi";
-                                            else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
-                                            {
-                                                string reg = string.Empty;
-                                                switch (Compiler.typesregs[type])
-                                                {
-                                                    case "rax": _inst.pattern[k].value = "rdi"; break;
-                                                    case "eax": _inst.pattern[k].value = "edi"; break;
-                                                    case "ax": _inst.pattern[k].value = "di"; break;
-                                                    default: _inst.pattern[k].value = "dh"; break;
-                                                }
-                                            }
-                                            else if (_inst.pattern[k].key == "r" && type == "QWORD") _inst.pattern[k].value = "rdi";
-                                            else if (_inst.pattern[k].key == "r" && type == "DWORD") _inst.pattern[k].value = "edi";
-                                            else if (_inst.pattern[k].key == "r" && type == "WORD") _inst.pattern[k].value = "di";
-                                        } // DELETE: Временное решение fix1
-                                        else if (_inst.pattern[k].key == "r" && typeVar == "INDICATOR")
-                                            _inst.pattern[k].value = "eax".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
-                                        else if (_inst.pattern[k].key == "r" && Compiler.typesregs.ContainsKey(type))
-                                            _inst.pattern[k].value = GetReg(type).Replace("a", Compiler.regschars[_inst.pattern[k].value]);
-                                        else if (_inst.pattern[k].key == "r" && type == "QWORD")
-                                            _inst.pattern[k].value = "rax".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
-                                        else if (_inst.pattern[k].key == "r" && type == "DWORD")
-                                            _inst.pattern[k].value = "eax".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
-                                        else if (_inst.pattern[k].key == "r" && type == "WORD")
-                                            _inst.pattern[k].value = "ax".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
-                                        else if (_inst.pattern[k].key == "r" && type == "BYTE")
-                                            _inst.pattern[k].value = "al".Replace("a", Compiler.regschars[_inst.pattern[k].value]);
-                                        //if (_inst.pattern[k].key == "r" && _inst.value == "mov" && !_inst.pattern[k].value.Contains("e")) _inst.value = "movzx";
-                                        //if (_inst.pattern[k].key == "r" && patterns[0].key == "r"
-                                        //    && !_inst.pattern[k].value.StartsWith("e")) _inst.value = (_inst.value == "mov") ? "movzx" : _inst.value;
-                                    }
-                                }
-                                catch { }
-                            }
                         }
                     }
                     resualt.Append(InstructConcat(_inst));
