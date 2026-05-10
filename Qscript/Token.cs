@@ -88,7 +88,7 @@ namespace Qscript
             tokenTypes.Add("NUMBER", new TokenType("NUMBER", "[0-9]+"));
             tokenTypes.Add("PREFIX", new TokenType("PREFIX", "(\\+\\+|--|\\<>|\\?|&)"));
             tokenTypes.Add("REGDECL", new TokenType("REGDECL", "\\$"));
-            tokenTypes.Add("OPER", new TokenType("OPER", "(@|\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-\\*/%=|!:~])"));
+            tokenTypes.Add("OPER", new TokenType("OPER", "(=>|@|\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-\\*/%=|!:~])"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", "<"));
             //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", ">"));
 
@@ -120,6 +120,7 @@ namespace Qscript
             tokenTypes.Add("ENUMERATOR", new TokenType("ENUMERATOR", @"\benumerator\b"));
             tokenTypes.Add("REPT", new TokenType("REPT", @"\brept\b"));
 
+            tokenTypes.Add("LAMBDA", new TokenType("LAMBDA", @"\blambda\b"));
             tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"(\bstruct\b|\bструктура\b)"));
             tokenTypes.Add("CLASS", new TokenType("CLASS", @"(\bclass\b|\bкласс\b)"));
             tokenTypes.Add("ENUM", new TokenType("ENUM", @"(\benum\b|\bсловарь\b)"));

@@ -13,8 +13,10 @@ namespace Qscript
         public ProgramNode ast;
         public VarSpace varSpace = new VarSpace();
 
-        public List<string> strings = new List<string>();
-        public List<string> varRegisters = new List<string>();
+        private List<string> strings = new List<string>();
+        private List<string> varRegisters = new List<string>();
+
+        private int lambdaIndex;
 
         public AbbreviationParser() { }
 
@@ -35,6 +37,10 @@ namespace Qscript
             astNode = varRegisterCheakUses(astNode);
             // Const Remove
             astNode = constRemove(astNode);
+            // Lambda Preparing
+            astNode = lambdaPreparing(astNode);
+            // Lambda Queue
+            foreach (var child in ast.lambdaQueue) astNode.childs.Add(child);
             // Replace Constant Var Value
             astNode = replaceConstantVarValue(astNode);
             // BinOper Cheak Float
@@ -120,6 +126,106 @@ namespace Qscript
         {
             foreach (var var in vars) if (var.Key.token.value == root.token.value) return var.Value;
             return null;
+        }
+        private CommonNode functionTypePreparing(CommonNode root)
+        {
+            Dictionary<string, CommonNode> varsLocal = new Dictionary<string, CommonNode>();
+            foreach (CommonNode node in root.childs[1].childs) varsLocal.Add(node.token.value, node.childs[0]);
+
+            List<CommonNode> recurse(CommonNode commonNode)
+            {
+                List<CommonNode> types = null;
+                foreach (var child in commonNode.childs)
+                {
+                    if (child.childs.Count == 1 && child.childs[0].type == "TYPE")
+                    {
+                        if (types == null) types = new List<CommonNode>();
+                        types.Add(child);
+                    }
+                    else
+                    {
+                        List<CommonNode> types2 = recurse(child);
+                        if (types2 != null)
+                        {
+                            if (types == null) types = new List<CommonNode>();
+                            types.AddRange(types2);
+                        }
+                    }
+                }
+                return types;
+            }
+            List<CommonNode> vars = recurse(root.childs[2]);
+            if (vars != null) foreach (var node in vars) varsLocal.Add(node.token.value, node.childs[0]);
+
+            List<CommonNode> parseReturns(CommonNode commonNode)
+            {
+                List<CommonNode> types = null;
+                foreach (var child in commonNode.childs)
+                {
+                    if (child.type == "RETURN")
+                    {
+                        if (types == null) types = new List<CommonNode>();
+                        types.Add(child.childs[0]);
+                    }
+                    else
+                    {
+                        List<CommonNode> types2 = parseReturns(child);
+                        if (types2 != null)
+                        {
+                            if (types == null) types = new List<CommonNode>();
+                            types.AddRange(types2);
+                        }
+                    }
+                }
+                return types;
+            }
+            List<CommonNode> Returns = parseReturns(root.childs[2]);
+            if (Returns == null || Returns.Count == 0)
+            {
+                root.childs[0].token.value = "void";
+                if (!ast.resualtFunc.ContainsKey(root.token.value))
+                    ast.resualtFunc.Add(root.token.value, null);
+            }
+            else
+            {
+                string ReturnType = Returns[0].type;
+                string ReturnValue = getTypeFromNode(Returns[0], varsLocal);
+                foreach (CommonNode returnNode in Returns)
+                {
+                    string ReturnValueLast = getTypeFromNode(returnNode, varsLocal);
+                    if (ReturnValueLast != ReturnValue)
+                    {
+                        if (Compiler.types.ContainsKey(ReturnValue) && Compiler.types.ContainsKey(ReturnValueLast))
+                        {
+                            int aling_first = 0;
+                            int aling_second = -1;
+                            aling_first = Compiler.aligns[ReturnValue];
+                            aling_second = Compiler.aligns[ReturnValueLast];
+                            if (aling_first != aling_second) Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
+                        }
+                        else Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
+                    }
+                }
+                //ReturnType = Returns[0].type;
+                string type = getTypeFromNode(Returns[0], varsLocal);
+                root.childs[0].token.value = type;
+                if (!ast.resualtFunc.ContainsKey(root.token.value))
+                    ast.resualtFunc.Add(root.token.value, root.childs[0]);
+                else ast.resualtFunc[root.token.value].token.value = type;
+            }
+            // VAR
+            // BINOPER
+            // FLOATOPER
+            // NUMBER
+            // PREUNAROPER
+            // ADDRESS
+            // SIZEOF
+            // TYPEOF
+            // STRING
+            // CHAR
+            // BOOL
+            // FLOAT
+            return root;
         }
         private string getTypeFromNode(CommonNode root, Dictionary<string, CommonNode> vars)
         {
@@ -623,93 +729,7 @@ namespace Qscript
             }
             if (root.childs[0].token.value != "function") return root;
 
-            Dictionary<string, CommonNode> varsLocal = new Dictionary<string, CommonNode>();
-            foreach (CommonNode node in root.childs[1].childs) varsLocal.Add(node.token.value, node.childs[0]);
-
-            List<CommonNode> recurse(CommonNode commonNode)
-            {
-                List<CommonNode> types = null;
-                foreach (var child in commonNode.childs)
-                {
-                    if (child.childs.Count == 1 && child.childs[0].type == "TYPE")
-                    {
-                        if (types == null) types = new List<CommonNode>();
-                        types.Add(child);
-                    }
-                    else
-                    {
-                        List<CommonNode> types2 = recurse(child);
-                        if (types2 != null)
-                        {
-                            if (types == null) types = new List<CommonNode>();
-                            types.AddRange(types2);
-                        }
-                    }
-                }
-                return types;
-            }
-            List<CommonNode> vars = recurse(root.childs[2]);
-            if (vars != null) foreach (var node in vars) varsLocal.Add(node.token.value, node.childs[0]);
-
-            List<CommonNode> parseReturns(CommonNode commonNode)
-            {
-                List<CommonNode> types = null;
-                foreach (var child in commonNode.childs)
-                {
-                    if (child.type == "RETURN")
-                    {
-                        if (types == null) types = new List<CommonNode>();
-                        types.Add(child.childs[0]);
-                    }
-                    else
-                    {
-                        List<CommonNode> types2 = parseReturns(child);
-                        if (types2 != null)
-                        {
-                            if (types == null) types = new List<CommonNode>();
-                            types.AddRange(types2);
-                        }
-                    }
-                }
-                return types;
-            }
-            List<CommonNode> Returns = parseReturns(root.childs[2]);
-            if (Returns == null || Returns.Count == 0) root.childs[0].token.value = "void";
-            else {
-                string ReturnType = Returns[0].type;
-                string ReturnValue = getTypeFromNode(Returns[0], varsLocal);
-                foreach (CommonNode returnNode in Returns)
-                {
-                    string ReturnValueLast = getTypeFromNode(returnNode, varsLocal);
-                    if (ReturnValueLast != ReturnValue)
-                    { 
-                        if (Compiler.types.ContainsKey(ReturnValue) && Compiler.types.ContainsKey(ReturnValueLast))
-                        {
-                            int aling_first = 0;
-                            int aling_second = -1;
-                            aling_first = Compiler.aligns[ReturnValue];
-                            aling_second = Compiler.aligns[ReturnValueLast];
-                            if (aling_first != aling_second) Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
-                        } else Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
-                    }
-                }
-                //ReturnType = Returns[0].type;
-                string type = getTypeFromNode(Returns[0], varsLocal);
-                root.childs[0].token.value = type;
-                ast.resualtFunc[root.token.value].token.value = type;
-            }
-            // VAR
-            // BINOPER
-            // FLOATOPER
-            // NUMBER
-            // PREUNAROPER
-            // ADDRESS
-            // SIZEOF
-            // TYPEOF
-            // STRING
-            // CHAR
-            // BOOL
-            // FLOAT
+            root = functionTypePreparing(root);
 
             return root;
         }
@@ -805,6 +825,48 @@ namespace Qscript
 
             return root;
         }
+        private CommonNode lambdaPreparing(CommonNode root)
+        {
+            if (root.type != "LAMBDA")
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = lambdaPreparing(root.childs[i]);
+                }
+                return root;
+            }
+
+            if (root.childs.Count > 1)
+            {
+                CommonNode signatureCallNode = take(root, 0);
+                CommonNode templeteNode = take(root, 1);
+
+                templeteNode.token.value = $"lambda{lambdaIndex++}";
+                templeteNode.type = "FUNC";
+                templeteNode = functionTypePreparing(templeteNode);
+                ast.lambdaQueue.Add(templeteNode);
+
+                CommonNode callNode = new CommonNode("CALL", new Token(null, templeteNode.token.value, signatureCallNode.token.pos));
+                callNode.childs.Add(signatureCallNode);
+                return callNode;
+            }
+            else
+            {
+                CommonNode templeteNode = take(root, 0);
+
+                templeteNode.token.value = $"lambda{lambdaIndex++}";
+                templeteNode.type = "FUNC";
+                templeteNode = functionTypePreparing(templeteNode);
+                ast.lambdaQueue.Add(templeteNode);
+
+                CommonNode addressNode = new CommonNode("ADDRESS", new Token(null, "&", templeteNode.token.pos));
+                CommonNode callNode = new CommonNode("CALLADDRESS", templeteNode.token);
+                addressNode.childs.Add(callNode);
+                return addressNode;
+            }
+
+            return root;
+        }
 
         private CommonNode parse(CommonNode root, int z_buffer)
         {
@@ -830,12 +892,15 @@ namespace Qscript
                     return parseFor(root, z_buffer);
                 case "ENUMERATOR":
                     return parseEnumerator(root, z_buffer);
+                case "ADDRESS":
+                    return root;
                 default:
                     if (root.childs.Count == 0)
                         break;
                     for (int i = 0; i < root.childs.Count; i++)
                     {
-                        root.childs[i] = parse(root.childs[i], z_buffer + 1);
+                        if (root.childs[i].type != "ADDRESS")
+                            root.childs[i] = parse(root.childs[i], z_buffer + 1);
                     }
                     return root;
             }

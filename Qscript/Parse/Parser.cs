@@ -76,6 +76,22 @@ namespace Qscript
             //throw new Exception($"На позиции:{pos} Ожидался Токен:{type}");
         }
         /// <summary>
+        /// Сентаксическая функциия которая явно указывает что тут должен быть токен нужного типа и значение!
+        /// </summary>
+        /// <param name="type"></param>
+        /// <returns></returns>
+        /// <exception cref="Exception"></exception>
+        private bool expect(string type, string value)
+        {
+            if (tokens[pos].type.type == type && tokens[pos].value == value)
+            {
+                return true;
+            }
+            Syntax.SyntaxError($"На позиции:{pos} Ожидался Токен:{type} с значением: {value}", tokens[pos].pos);
+            return false;
+            //throw new Exception($"На позиции:{pos} Ожидался Токен:{type}");
+        }
+        /// <summary>
         /// Сентаксическая функциия которая явно указывает что тут должен быть токен нужного типа!
         /// </summary>
         /// <param name="types"></param>
@@ -265,7 +281,7 @@ namespace Qscript
                 if (tokens[pos].value == "(" && tokens[pos + 1].value == ")")
                 {
                     skip(); skip();
-                    node = new CommonNode("CALL", take());
+                    node = new CommonNode("ADDRESS", take());
                     node = tryParseVarPath(node);
                     node.childs.Add(new CommonNode("SIGNATURE", new Token(null, "()", node.token.pos)));
                     addr.childs.Add(node);
@@ -341,6 +357,7 @@ namespace Qscript
                 return node;
             }
 
+            if (token.type.type == "LAMBDA") return parseLambda(token);
             if (token.type.type == "NUMBER") return new CommonNode("NUMBER", token);
             if (token.type.type == "STRING") return new CommonNode("STRING", token);
             if (token.type.type == "CHAR")   return new CommonNode("CHAR",   token);
@@ -351,7 +368,32 @@ namespace Qscript
             Syntax.SyntaxError($"Ошибка в парсинге формулы из-за Токена:{token.value}", token);
             return null;
         }
+        private CommonNode parseLambda(Token lambdaToken)
+        {
+            CommonNode lambdaNode = new CommonNode("LAMBDA", lambdaToken);
 
+            if (peek("LPAR"))
+            {
+                CommonNode signatureCallNode = parseFormulaSignature();
+                lambdaNode.childs.Add(signatureCallNode);
+            }
+
+            if (tokens[pos].value == "->")
+            {
+                CommonNode functionTempleteNode = new CommonNode("FUNCTEMPLETE", take());
+                CommonNode functionSignatureNode = parseVarWTypeSignature();
+                expect("OPER", "=>"); skip();
+
+                functionTempleteNode.childs.Add(new CommonNode("TYPE", new Token(null, "function", lambdaNode.token.pos)));
+                functionTempleteNode.childs.Add(functionSignatureNode);
+                functionTempleteNode.childs.Add(parseBody());
+                lambdaNode.childs.Add(functionTempleteNode);
+                return lambdaNode;
+            }
+
+            Syntax.SyntaxError($"Неправильное объявление лямбда функции", tokens[pos]);
+            return null;
+        }
 
         private CommonNode parseFormula(CommonNode leftOper = null)
         {
@@ -841,6 +883,12 @@ namespace Qscript
                 unarOper.childs.Add(varNode);
                 return unarOper;
             }
+            if (tokens[pos].value == "&")
+            {
+                CommonNode useAddressVarNode = new CommonNode("USEADDRESSVAR", take());
+                useAddressVarNode.childs.Add(varNode);
+                varNode = useAddressVarNode;
+            }
 
 
             if (peek("VAR") && varNode.token.value == "qs")
@@ -950,6 +998,7 @@ namespace Qscript
             SyntaxError();
             return null;
         }
+
         private CommonNode parseInline()
         {
 
@@ -981,6 +1030,7 @@ namespace Qscript
             SyntaxError();
             return null;
         }
+
         private CommonNode parseAsmInline()
         {
             skip(); expect("VAR");
@@ -1685,7 +1735,7 @@ namespace Qscript
             return root;
         }
 
-        public CommonNode parse() // 22 keywords
+        public CommonNode parse() // 30 keywords
         {
             if (peek("VAR"))
             {

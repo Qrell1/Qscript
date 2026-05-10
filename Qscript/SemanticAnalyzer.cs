@@ -162,6 +162,7 @@ namespace Qscript
         private static void analisCall(CommonNode root, int z_buffer)
         {
             //Console.WriteLine($"Call {root.token.value}");
+            if (varSpace.ContainsKey(root.token.value) && varSpace.GetTypeValue(root.token.value) == "function") return;
             foreach (var externLibrary in ast.externFuncs)
             {
                 if (externLibrary.Value.Contains(root.token.value)) return;
