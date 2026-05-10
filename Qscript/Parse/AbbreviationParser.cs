@@ -84,6 +84,8 @@ namespace Qscript
             //ast.childs = new List<CommonNode>() { callCheak(ast) };
             CommonNode newAst = callCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
+            newAst = varTypePreparing(ast);
+            ast.childs = new List<CommonNode>(newAst.childs);
             newAst = funcCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = callCheak(ast);
@@ -267,6 +269,70 @@ namespace Qscript
                     type = "long";
                     break;
             }
+            return type;
+        }
+        private string getFormulaType(CommonNode node)
+        {
+            string type;
+            try
+            {
+                switch (node.type)
+                {
+                    case "LAMBDA":
+                        type = "function";
+                        break;
+                    case "VAR":
+                    case "POSTUNAROPER":
+                    case "PREUNAROPER":
+                        type = varSpace.GetType(node.token.value).token.value;
+                        break;
+                    case "SIZEOF":
+                    case "TYPEOF":
+                    case "NUMBER":
+                    case "ADDRESS":
+                        type = "int";
+                        break;
+                    case "BINOPER":
+                        type = "BINOPER";
+
+                        string _type1 = getFormulaType(node.childs[0]);
+                        string _type2 = getFormulaType(node.childs[0]);
+
+                        if (_type1 == _type2) type = _type1;
+
+
+                        if (ast.operatorFunctions.ContainsKey((node.token.value, _type1, _type2)))
+                        {
+                            string OperatorName = ast.operatorFunctions[(node.token.value, _type1, _type2)];
+
+                            type = ast.resualtFunc[OperatorName].token.value;
+                        }
+                        break;
+                    case "FLOAT":
+                    case "FLOATOPER":
+                        type = "float";
+                        break;
+                    case "STRING":
+                        type = "string";
+                        break;
+                    case "CHAR":
+                        type = "char";
+                        break;
+                    case "BOOL":
+                        type = "bool";
+                        break;
+                    case "TYPEOPER":
+                        type = node.token.value;
+                        break;
+                    case "CALL":
+                        type = varSpace.GetType(node.token.value).token.value;
+                        break;
+                    default:
+                        type = "int";
+                        break;
+                }
+            }
+            catch { type = "BINOPER"; }
             return type;
         }
 
@@ -865,6 +931,34 @@ namespace Qscript
                 return addressNode;
             }
 
+            return root;
+        }
+        private CommonNode varTypePreparing(CommonNode root)
+        {
+            if (root.type == "VARDECL")
+            {
+                CommonNode varNode = take(root, 0);
+                CommonNode exprNode = take(root, 1);
+
+                varNode.childs[0].token.value = getFormulaType(exprNode);
+                root.childs[0] = varNode;
+                root.type = "BINOPER";
+                return root;
+            }
+            else if (root.type == "VAR" && root.childs.Count > 0 && root.childs[0].type == "TYPE")
+            {
+                if (!varSpace.ContainsKey(root.token.value)) varSpace.AddVar(root.token.value, root.childs[0]);
+            }
+            else
+            {
+                varSpace.OpenSpace();
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = varTypePreparing(root.childs[i]);
+                }
+                varSpace.CloseSpace();
+                return root;
+            }
             return root;
         }
 

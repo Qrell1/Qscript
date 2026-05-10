@@ -68,7 +68,7 @@ namespace Qscript
             //tokenTypes.Add("FLOATTYPE", new TokenType("FLOATTYPE", "float"));
             //tokenTypes.Add("STRINGTYPE", new TokenType("STRINGTYPE", "string"));
             //tokenTypes.Add("CHARTYPE", new TokenType("CHARTYPE", "char"));
-
+            //tokenTypes.Add("DECLVAR", new TokenType("DECLVAR", @"\bvar\b"));
             // Logic
             tokenTypes.Add("ELSEIF", new TokenType("ELSEIF", @"\belse-if\b"));
             tokenTypes.Add("IF", new TokenType("IF", @"\bif\b"));
@@ -114,7 +114,7 @@ namespace Qscript
             tokenTypes.Add("CONTINUE", new TokenType("CONTINUE", @"(\bcontinue\b|\bпродолжить\b)"));
             tokenTypes.Add("JMP", new TokenType("JMP", @"(\bjump\b|\bпрыгнуть\b)"));
 
-            tokenTypes.Add("ITER", new TokenType("ITER", @"\biter\b"));
+            tokenTypes.Add("ITER", new TokenType("ITER", @"\biter\b")); tokenTypes.Add("VARDECL", new TokenType("VARDECL", @"(\bvarriable\b|\blet\b)"));
             tokenTypes.Add("FOR", new TokenType("FOR", @"\bfor\b"));
             tokenTypes.Add("WHILE", new TokenType("WHILE", @"\bwhile\b"));
             tokenTypes.Add("ENUMERATOR", new TokenType("ENUMERATOR", @"\benumerator\b"));

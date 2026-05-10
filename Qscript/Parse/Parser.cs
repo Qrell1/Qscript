@@ -973,7 +973,24 @@ namespace Qscript
             SyntaxError($"Невозможный Токен:{tokens[pos].value}");
             return null;
         }
-       
+        private CommonNode parseVarDeclaration()
+        {
+            CommonNode typeNode = new CommonNode("TYPE", take());
+            if (tokens[pos].value == "*") { skip(); typeNode.type = "INDICATOR"; } expect("VAR");
+            CommonNode varNode = new CommonNode("VAR", take());
+            varNode = tryParseVarPath(varNode);
+
+            varNode.childs.Add(typeNode);
+
+            expect("OPER", "=");
+
+            CommonNode varDeclNode = new CommonNode("VARDECL", take());
+            varDeclNode.childs.Add(varNode);
+            varDeclNode.childs.Add(parseFormula());
+            return varDeclNode;
+        }
+
+
         private CommonNode parseCall(CommonNode varNode)
         {
             varNode = tryParseVarPath(varNode);
@@ -998,7 +1015,6 @@ namespace Qscript
             SyntaxError();
             return null;
         }
-
         private CommonNode parseInline()
         {
 
@@ -1030,7 +1046,6 @@ namespace Qscript
             SyntaxError();
             return null;
         }
-
         private CommonNode parseAsmInline()
         {
             skip(); expect("VAR");
@@ -1121,7 +1136,6 @@ namespace Qscript
             }
             return ifNode;
         }
-
         private CommonNode parseFormulaIf()
         {
             CommonNode ifNode = new CommonNode("IF", tokens[pos]);
@@ -1193,7 +1207,6 @@ namespace Qscript
             SyntaxError();
             return null;
         }
-
         private CommonNode parseCycle()
         {
             expect(new string[] { "FOR", "WHILE", "ITER", "ENUMERATOR", "REPT" });
@@ -1333,7 +1346,6 @@ namespace Qscript
             SyntaxError("Неправильное объявление члена структуры данных");
             return null;
         }
-
         private CommonNode parseStrurct()
         {
             expect(new string[] { "STRUCT", "CLASS" }); Token typeStructToken = take();
@@ -1515,7 +1527,6 @@ namespace Qscript
 
             return usingNode;
         }
-
         private CommonNode parseExtern()
         {
             expect(new string[] { "EXTERN", "EXTERNLIBRARY", "EXTERNFUNC" });
@@ -1577,7 +1588,6 @@ namespace Qscript
             }
             return null;
         }
-
         private CommonNode parseConst()
         {
             expect("CONST"); skip();  expect("VAR");
@@ -1588,7 +1598,6 @@ namespace Qscript
             if (!root.consts.ContainsKey(constNode.token.value)) root.consts.Add(constNode.token.value, valueNode);
             return null;
         }
-
         private CommonNode parseTypeif()
         {
             expect("TYPEIF");
@@ -1621,7 +1630,6 @@ namespace Qscript
             NamespaceString = "";
             return recurse(bodyNode);
         }
-
         private CommonNode parseEnum()
         {
             skip(); expect("VAR");
@@ -1646,7 +1654,6 @@ namespace Qscript
             }
             return null;
         }
-
         private CommonNode parseOperator()
         {
             skip(); expect("VAR");
@@ -1705,7 +1712,6 @@ namespace Qscript
             }
             return regDeclationNode;
         }
-
         private CommonNode parseAsm()
         {
             CommonNode asmNode = new CommonNode("ASM", take());
@@ -1737,6 +1743,10 @@ namespace Qscript
 
         public CommonNode parse() // 30 keywords
         {
+            if (peek("VARDECL"))
+            {
+                return parseVarDeclaration();
+            }
             if (peek("VAR"))
             {
                 return parseVarOperation();

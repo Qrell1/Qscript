@@ -1841,6 +1841,9 @@ namespace Qscript
             {
                 switch (node.type)
                 {
+                    case "LAMBDA":
+                        type = "function";
+                        break;
                     case "VAR":
                     case "POSTUNAROPER":
                     case "PREUNAROPER":
