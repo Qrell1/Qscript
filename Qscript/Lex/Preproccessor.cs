@@ -76,15 +76,15 @@ namespace Qscript.Lex
                     string name = code[i].value; i++; if (code[i].type != TT.VAR) Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
                     string value = code[i].value;
 
-                    string t_t = Compiler.types[value];
-                    string a_t = Compiler.typesarg[value];
-                    int    l_t = Compiler.aligns[value];
-                    string r_t = Compiler.typesregs[value];
+                    string t_t = DataBase.types[value];
+                    string a_t = DataBase.typesarg[value];
+                    int    l_t = DataBase.aligns[value];
+                    string r_t = DataBase.typesregs[value];
 
-                    if (!Compiler.types.ContainsKey(name)) Compiler.types.Add(name, t_t);
-                    if (!Compiler.typesarg.ContainsKey(name)) Compiler.typesarg.Add(name, a_t);
-                    if (!Compiler.aligns.ContainsKey(name)) Compiler.aligns.Add(name, l_t);
-                    if (!Compiler.typesregs.ContainsKey(name)) Compiler.typesregs.Add(name, r_t);
+                    if (!DataBase.types.ContainsKey(name)) DataBase.types.Add(name, t_t);
+                    if (!DataBase.typesarg.ContainsKey(name)) DataBase.typesarg.Add(name, a_t);
+                    if (!DataBase.aligns.ContainsKey(name)) DataBase.aligns.Add(name, l_t);
+                    if (!DataBase.typesregs.ContainsKey(name)) DataBase.typesregs.Add(name, r_t);
 
                     continue;
                 } else {  tokens.Add(code[i]); }

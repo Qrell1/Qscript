@@ -519,7 +519,7 @@ namespace Qscript
                         for (int j = 1; j < patterns.Count; j++)
                         {
                             patterns[j].value = patterns[j].value.Remove(patterns[j].value.Length - 1, 1);
-                            if (!Compiler.typesarg.ContainsValue(patterns[j + 1].value))
+                            if (!DataBase.typesarg.ContainsValue(patterns[j + 1].value))
                             {
                                 resualtProcString += $" {patterns[j].value}:DWORD ,";
                                 if (vars.ContainsKey(patterns[j].value))
@@ -636,7 +636,7 @@ namespace Qscript
                                         int sizeIndex = 0;
 
                                         if (typeVar == "INDICATOR") size = "dword";
-                                        else if (Compiler.typesarg.ContainsKey(type)) size = Compiler.typesarg[type].ToLower();
+                                        else if (DataBase.typesarg.ContainsKey(type)) size = DataBase.typesarg[type].ToLower();
                                         else size = "dword";
 
                                         switch (size)
@@ -648,7 +648,7 @@ namespace Qscript
                                             default: sizeIndex = 0; break;
                                         }
 
-                                        _inst.pattern[k].value = Compiler.regs[_inst.pattern[k].value][sizeIndex];
+                                        _inst.pattern[k].value = DataBase.regs[_inst.pattern[k].value][sizeIndex];
                                     }
                                     /*if (patterns[0].key == "r"
                                         && _inst.pattern[k].key == "r"
@@ -875,7 +875,7 @@ namespace Qscript
 
         public static string GetReg (string type)
         {
-            return Compiler.typesregs[type];
+            return DataBase.typesregs[type];
         }
         public static (List<patternNode>, string) GetPattern (inst _instruct)
         {

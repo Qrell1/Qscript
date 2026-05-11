@@ -197,12 +197,12 @@ namespace Qscript
                     string ReturnValueLast = getTypeFromNode(returnNode, varsLocal);
                     if (ReturnValueLast != ReturnValue)
                     {
-                        if (Compiler.types.ContainsKey(ReturnValue) && Compiler.types.ContainsKey(ReturnValueLast))
+                        if (DataBase.types.ContainsKey(ReturnValue) && DataBase.types.ContainsKey(ReturnValueLast))
                         {
                             int aling_first = 0;
                             int aling_second = -1;
-                            aling_first = Compiler.aligns[ReturnValue];
-                            aling_second = Compiler.aligns[ReturnValueLast];
+                            aling_first = DataBase.aligns[ReturnValue];
+                            aling_second = DataBase.aligns[ReturnValueLast];
                             if (aling_first != aling_second) Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
                         }
                         else Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
@@ -1041,7 +1041,7 @@ namespace Qscript
                     signature.childs[i].childs[0] = type;
                 }
             }
-            if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !Compiler.types.ContainsKey(ast.resualtFunc[root.token.value].token.value) && ast.resualtFunc[root.token.value].type != NT.INDICATOR)
+            if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !DataBase.types.ContainsKey(ast.resualtFunc[root.token.value].token.value) && ast.resualtFunc[root.token.value].type != NT.INDICATOR)
             {
                 CommonNode resualtVar = new CommonNode(NT.VAR, new Token(TT.NULL, "resualtPtr", signature.token.pos));
                 resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
@@ -1132,7 +1132,7 @@ namespace Qscript
                                 case NT.NUMBER:
                                 case NT.ADDRESS:
                                 case NT.BINOPER:
-                                    if (!Compiler.types.ContainsKey(functionType)) flag = false;
+                                    if (!DataBase.types.ContainsKey(functionType)) flag = false;
                                     break;
                                 case NT.FLOAT:
                                 case NT.FLOATOPER:

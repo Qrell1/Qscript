@@ -271,7 +271,7 @@ namespace Qscript
                 if (tokens[pos].value == "(" && tokens[pos + 1].value == ")")
                 {
                     skip(); skip();
-                    node = new CommonNode(NT.ADDRESS, take());
+                    node = new CommonNode(NT.CALLADDRESS, take());
                     node = tryParseVarPath(node);
                     node.childs.Add(new CommonNode(NT.SIGNATURE, new Token(TT.NULL, "()", node.token.pos)));
                     addr.childs.Add(node);
@@ -1626,9 +1626,9 @@ namespace Qscript
             Token enumToken = take();
             CommonNode consts = parseEnumStack(TT.VAR);
             int index = 0;
-            Compiler.types.Add(enumToken.value, Compiler.types["long"]);
-            Compiler.typesarg.Add(enumToken.value, Compiler.typesarg["long"]);
-            Compiler.aligns.Add(enumToken.value, Compiler.aligns["long"]);
+            DataBase.types.Add(enumToken.value, DataBase.types["long"]);
+            DataBase.typesarg.Add(enumToken.value, DataBase.typesarg["long"]);
+            DataBase.aligns.Add(enumToken.value, DataBase.aligns["long"]);
             foreach (CommonNode cnst in consts.childs)
             {
                 if (cnst.childs.Count > 0)

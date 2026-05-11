@@ -43,10 +43,10 @@ namespace Qscript
 
             foreach (var v in Vars)
             {
-                if (!Compiler.aligns.ContainsKey(v.Value)) structs.Add(v.Key, allStructs[allNames.IndexOf(v.Value)].getStructSize(ref allStructs, ref allNames));
+                if (!DataBase.aligns.ContainsKey(v.Value)) structs.Add(v.Key, allStructs[allNames.IndexOf(v.Value)].getStructSize(ref allStructs, ref allNames));
                 else
                 {
-                    switch (Compiler.aligns[v.Value])
+                    switch (DataBase.aligns[v.Value])
                     {
                         case 8: sort8b.Add(v.Key); break;
                         case 4: sort4b.Add(v.Key); break;
@@ -85,8 +85,8 @@ namespace Qscript
             int fullSize = 0;
             foreach (var v in Vars)
             {
-                if (Compiler.aligns.ContainsKey(v.Value)) continue;
-                if (!Compiler.aligns.ContainsKey(v.Value))
+                if (DataBase.aligns.ContainsKey(v.Value)) continue;
+                if (!DataBase.aligns.ContainsKey(v.Value))
                 {
                     int size = allStructs[allNames.IndexOf(v.Value)].getStructSize(ref allStructs, ref allNames);
                     int a = 8 - (fullSize % 8);
@@ -97,7 +97,7 @@ namespace Qscript
             
             foreach (var v in Vars)
             {
-                if (Compiler.aligns.ContainsKey(v.Value)) fullSize += Compiler.aligns[v.Value];
+                if (DataBase.aligns.ContainsKey(v.Value)) fullSize += DataBase.aligns[v.Value];
             }
 
             return fullSize;
@@ -105,8 +105,8 @@ namespace Qscript
         public int getSize (string type, ref List<AsmStruct> allStructs, ref List<string> allNames)
         {
             int size = 0;
-            if (!Compiler.aligns.ContainsKey(type)) size = allStructs.ElementAt(allNames.IndexOf(type)).getStructSize(ref allStructs, ref allNames);
-            else size = Compiler.aligns[type];            
+            if (!DataBase.aligns.ContainsKey(type)) size = allStructs.ElementAt(allNames.IndexOf(type)).getStructSize(ref allStructs, ref allNames);
+            else size = DataBase.aligns[type];            
             return size;
         }
     }
@@ -159,7 +159,7 @@ namespace Qscript
                 {
                     tempAsm.Append(str);
                     string type = str.Trim().Split(' ')[1];
-                    if (!Compiler.types.ContainsKey(type)) tempIncludes.Add(type);
+                    if (!DataBase.types.ContainsKey(type)) tempIncludes.Add(type);
                     continue;
                 }
                 else

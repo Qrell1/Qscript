@@ -165,15 +165,15 @@ namespace Qscript
             }
             if (typeApp == TypeApp.program64)
             {
-                Compiler.types["long"] = "dq";
-                Compiler.typesarg["long"] = "QWORD";
-                Compiler.aligns["long"] = 8;
-                Compiler.typesregs["long"] = "rax";
+                DataBase.types["long"] = "dq";
+                DataBase.typesarg["long"] = "QWORD";
+                DataBase.aligns["long"] = 8;
+                DataBase.typesregs["long"] = "rax";
 
-                Compiler.types["half"] = "dd";
-                Compiler.typesarg["half"] = "DWORD";
-                Compiler.aligns["half"] = 4;
-                Compiler.typesregs["half"] = "eax";
+                DataBase.types["half"] = "dd";
+                DataBase.typesarg["half"] = "DWORD";
+                DataBase.aligns["half"] = 4;
+                DataBase.typesregs["half"] = "eax";
             }
 
             (string code, CodeStruct codeStruct) = commentLexer.lexCodes(codes);

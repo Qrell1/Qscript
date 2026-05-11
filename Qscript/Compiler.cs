@@ -40,110 +40,7 @@ namespace Qscript
 
         private VarSpace varSpace = new VarSpace();
 
-        public static Dictionary<string, string> types = new Dictionary<string, string>()
-        {
-            {"int64", "dq"},
-            {"int32", "dd"},
-            {"int16", "dw"},
-            {"int8", "db"},
-            {"byte", "db"},
-            {"string", "du"},
-            {"char", "db"},
-            {"wchar", "dw"},
-            {"float", "dd"},
-            {"double", "dq"},
-            {"int32_a", "dd"},
-            {"bool", "db"},
-            {"long", "dd"},
-            {"half", "dw"},
-            {"function", "dd"},
-            {"dq", "dq"},
-            {"dd", "dd"},
-            {"dw", "dw"},
-            {"db", "db"}
-        };
-        public static Dictionary<string, string> typesarg = new Dictionary<string, string>()
-        {
-            {"int64", "QWORD"},
-            {"int32", "DWORD"},
-            {"int16", "WORD"},
-            {"int8", "BYTE"},
-            {"byte", "BYTE"},
-            {"string", "DWORD"},
-            {"char", "BYTE"},
-            {"wchar", "WORD"},
-            {"float", "DWORD"},
-            {"double", "QWORD"},
-            {"int32_a", "DWORD"},
-            {"bool", "BYTE"},
-            {"long", "DWORD"},
-            {"half", "WORD"},
-            {"function", "DWORD"},
-            {"dq", "QWORD"},
-            {"dd", "DWORD"},
-            {"dw", "WORD"},
-            {"db", "BYTE"}
-        };
-        public static Dictionary<string, int> aligns = new Dictionary<string, int>()
-        {
-            {"int64",   8},
-            {"int32",   4},
-            {"int16",   2},
-            {"int8",    1},
-            {"byte",    1},
-            {"string",  2},
-            {"char",    1},
-            {"wchar",   2},
-            {"float",   4},
-            {"double",  8},
-            {"int32_a", 4},
-            {"bool",    1},
-            {"long",    4},
-            {"half",    2},
-            {"function",4},
-            {"dq",      8},
-            {"dd",      4},
-            {"dw",      2},
-            {"db",      1}
-        };
-        public static Dictionary<string, string> typesregs = new Dictionary<string, string>()
-        {
-            {"int64",   "rax"},
-            {"int32",   "eax"},
-            {"int16",   "ax"},
-            {"int8",    "al"},
-            {"byte",    "al"},
-            {"string",  "ax"},
-            {"char",    "al"},
-            {"wchar",   "ax"},
-            {"float",   "eax"},
-            {"double",  "rax"},
-            {"int32_a", "eax"},
-            {"bool",    "al"},
-            {"long",    "eax"},
-            {"half",    "ax"},
-            {"function", "eax"},
-            {"dq",      "rax"},
-            {"dd",      "eax"},
-            {"dw",      "ax"},
-            {"db",      "al"}
-        };
-        public static Dictionary<string, string[]> regs = new Dictionary<string, string[]>()
-        {
-            {"eax", new string[] {"rax","eax","ax","al"}},
-            {"ecx", new string[] {"rcx","ecx","cx","cl"}},
-            {"edx", new string[] {"rdx","edx","dx","dl"}},
-            {"ebx", new string[] {"rbx","ebx","bx","bl"}},
-            {"edi", new string[] {"rdi","edi","di","ah"}},
-            {"esi", new string[] {"rsi","esi","si","ch"}}
-        };
-        public static Dictionary<string, string> regschars = new Dictionary<string, string>()
-        {
-            {"eax", "a"},
-            {"ebx", "b"},
-            {"edx", "d"},
-            {"ecx", "c"}
-        };
+
         public Dictionary<string, string> stringConsts = new Dictionary<string, string>();
         public int stringConstsIndex;
 
@@ -610,9 +507,9 @@ namespace Qscript
             CommonNode varNode = take(root, 0);
 
             regReturn = $".reg{regIndex+1}{regPrefer}";
-            if (types.ContainsKey(varNode.token.value))
+            if (DataBase.types.ContainsKey(varNode.token.value))
             {
-                switch (types[varNode.token.value])
+                switch (DataBase.types[varNode.token.value])
                 {
                     case "dq": _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, 8\n"); return;
                     case "dd": _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, 4\n"); return;
@@ -620,7 +517,7 @@ namespace Qscript
                     case "db": _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, 1\n"); return;       
                     case "du": _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, 2\n"); return;
                 }
-                _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {aligns["long"]}\n");
+                _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {DataBase.aligns["long"]}\n");
             }
             else { _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, SIZE_{varNode.token.value.ToUpper()}\n"); }
         }
@@ -643,7 +540,7 @@ namespace Qscript
             CommonNode returnValue = take(root, 0);
 
 
-            if (!typesarg.Keys.Contains(returnType.token.value))
+            if (!DataBase.typesarg.Keys.Contains(returnType.token.value))
             {
                 Translation(returnValue, z_buffer + 1);
                 _objProg.code.Append($"mov esi, {regReturn}\n");
@@ -961,7 +858,7 @@ namespace Qscript
                 regReturn = $".reg{regIndex-1}{regPrefer}";
                 return;
             }
-            if (varType != null && root.childs.Count == 0 && !types.ContainsKey(varType))
+            if (varType != null && root.childs.Count == 0 && !DataBase.types.ContainsKey(varType))
             {
                 _objProg.code.Append($"lea .reg{regIndex++}{regPrefer}, [{root.token.value}]\n");
                 regReturn = $".reg{regIndex-1}{regPrefer}";
@@ -976,8 +873,8 @@ namespace Qscript
 
             CommonNode type = take(root, 0);
             string classes = "";
-            if (types.Keys.Contains(type.token.value))
-                classes = types[type.token.value];
+            if (DataBase.types.Keys.Contains(type.token.value))
+                classes = DataBase.types[type.token.value];
             else
                 classes = type.token.value;
             if (root.childs.Count > 0 && root.childs[0].type == NT.INDICATOR)
@@ -1047,7 +944,7 @@ namespace Qscript
                 else if (rightChild.type == NT.CALL)
                 {
                     //regPrefer = "eax";
-                    if (types.ContainsKey(ProgramAst.resualtFunc[rightChild.token.value].token.value) || ProgramAst.resualtFunc[rightChild.token.value].type == NT.INDICATOR)
+                    if (DataBase.types.ContainsKey(ProgramAst.resualtFunc[rightChild.token.value].token.value) || ProgramAst.resualtFunc[rightChild.token.value].type == NT.INDICATOR)
                     { translationCall(rightChild, z_buffer + 1); _objProg.code.Append($"mov {varString}, .reg{regIndex++}eax\n"); }
                     else translationCall(rightChild, z_buffer + 1, $"lea .reg{regIndex++}eax, {varString}\n");
                 }
@@ -1459,10 +1356,10 @@ namespace Qscript
                 else if (child.type == NT.VAR)
                 {
                     int varsize = 0;
-                    if (types.Keys.Contains(take(child, 0).token.value))
+                    if (DataBase.types.Keys.Contains(take(child, 0).token.value))
                     {
-                        _objProg.code.Append($"    {child.token.value} {types[take(child, 0).token.value]} 0\n");
-                        varsize = aligns[take(child, 0).token.value];
+                        _objProg.code.Append($"    {child.token.value} {DataBase.types[take(child, 0).token.value]} 0\n");
+                        varsize = DataBase.aligns[take(child, 0).token.value];
                     }
                     else
                     {
@@ -1503,10 +1400,10 @@ namespace Qscript
                     _objProg.data.Append($"{root.token.value}{i} dd 0\n");
                     args.Add($"{signatureInline.childs[i].token.value}", "dd");
                     argsInline += signatureInline.childs[i].token.value + $"_{root.token.value}" + ",";
-                } else if (types.ContainsKey(signatureInline.childs[i].childs[0].token.value))
+                } else if (DataBase.types.ContainsKey(signatureInline.childs[i].childs[0].token.value))
                 {
-                    _objProg.data.Append($"{root.token.value}{i} {types[signatureInline.childs[i].childs[0].token.value]} 0\n");
-                    args.Add($"{signatureInline.childs[i].token.value}", types[signatureInline.childs[i].childs[0].token.value]);
+                    _objProg.data.Append($"{root.token.value}{i} {DataBase.types[signatureInline.childs[i].childs[0].token.value]} 0\n");
+                    args.Add($"{signatureInline.childs[i].token.value}", DataBase.types[signatureInline.childs[i].childs[0].token.value]);
                     argsInline += signatureInline.childs[i].token.value + $"_{root.token.value}" + ",";
                 } else
                 {
@@ -1562,7 +1459,7 @@ namespace Qscript
             string args = string.Empty;
             for (int i = 0; i < signature.childs.Count; i++)
             {
-                if (!Compiler.types.ContainsKey(signature.childs[i].childs[0].token.value) && signature.childs[i].token.value != "resualtPtr")
+                if (!DataBase.types.ContainsKey(signature.childs[i].childs[0].token.value) && signature.childs[i].token.value != "resualtPtr")
                     signature.childs[i].childs[0].type = NT.INDICATOR;
             }
             for (int i = ((qsFunc) ? 1 : 0); i < signature.childs.Count; i++)
@@ -1570,8 +1467,8 @@ namespace Qscript
                 if (i != 0 && i != ((qsFunc)?1:0)) args += " , ";
                 if (signature.childs[i].token.value == "resualtPtr")
                     args += $"{signature.childs[i].token.value}:DWORD";
-                else if (typesarg.ContainsKey(signature.childs[i].childs[0].token.value))
-                    args += $"{signature.childs[i].token.value}:{typesarg[signature.childs[i].childs[0].token.value]}";
+                else if (DataBase.typesarg.ContainsKey(signature.childs[i].childs[0].token.value))
+                    args += $"{signature.childs[i].token.value}:{DataBase.typesarg[signature.childs[i].childs[0].token.value]}";
                 else
                     args += $"{signature.childs[i].token.value}:{signature.childs[i].childs[0].token.value}";
                 args += " ";
@@ -1604,7 +1501,7 @@ namespace Qscript
             {
 
             }
-            else if (typesarg.Keys.Contains(ProgramAst.resualtFunc[root.token.value].token.value) || ProgramAst.resualtFunc[root.token.value].type == NT.INDICATOR)
+            else if (DataBase.typesarg.Keys.Contains(ProgramAst.resualtFunc[root.token.value].token.value) || ProgramAst.resualtFunc[root.token.value].type == NT.INDICATOR)
                 _objProg.code.Append($"{root.token.value}.return:\n");
             else
             {
@@ -1736,9 +1633,9 @@ namespace Qscript
             regPrefer = "";
             if (qsFunc && firstArg != null)
             {
-                if (firstArg.type == NT.VAR && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[0].childs[0].token.value) && ProgramAst.varTypes[firstArg.token.value].type == NT.INDICATOR)
+                if (firstArg.type == NT.VAR && !DataBase.typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[0].childs[0].token.value) && ProgramAst.varTypes[firstArg.token.value].type == NT.INDICATOR)
                     _objProg.code.Append($"mov eax, [{firstArg.token.value}]\n");
-                else if (firstArg.type == NT.VAR && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[0].childs[0].token.value))
+                else if (firstArg.type == NT.VAR && !DataBase.typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[0].childs[0].token.value))
                     _objProg.code.Append($"lea eax, [{firstArg.token.value}]\n");
                 else if (firstArg.type == NT.STRING)
                 {
@@ -1808,14 +1705,14 @@ namespace Qscript
                 type = ProgramAst.structs[strct][strs[n+1]];
                 strct = type.token.value;
                 //if (n == strs.Length) { }
-                if (!types.ContainsKey(type.token.value)) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
+                if (!DataBase.types.ContainsKey(type.token.value)) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
             } else type = varSpace.GetType(name);
             //CommonNode type = ProgramAst.varTypes[name];
             string classes = "";
             string sizeConst = "";
-            if (types.Keys.Contains(type.token.value))
+            if (DataBase.types.Keys.Contains(type.token.value))
             {
-                classes = types[type.token.value];
+                classes = DataBase.types[type.token.value];
                 switch (classes)
                 {
                     case "db": sizeConst = "1"; break;
@@ -1954,9 +1851,9 @@ namespace Qscript
             foreach (var _var in ProgramAst.structs[type].Values)
             {
                 if (_var.type == NT.INDICATOR) size += 4;
-                else if (types.ContainsKey(_var.token.value))
+                else if (DataBase.types.ContainsKey(_var.token.value))
                 {
-                    string classsize = types[_var.token.value];
+                    string classsize = DataBase.types[_var.token.value];
                     if (classsize == "dq") size += 8;
                     else if (classsize == "dd") size += 4;
                     else if (classsize == "dw") size += 2;

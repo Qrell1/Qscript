@@ -282,7 +282,7 @@ namespace Qscript
                     case NT.PREUNAROPER:
                         type = varSpace.GetType(node.token.value).token.value;
                         if (varSpace.GetType(node.token.value).type == NT.INDICATOR) size = 4;
-                        else if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                        else if (DataBase.aligns.ContainsKey(type)) size = DataBase.aligns[type];
                         else size = getStructSize(type);
                         break;
                     case NT.SIZEOF:
@@ -307,7 +307,7 @@ namespace Qscript
                             string OperatorName = ast.operatorFunctions[(node.token.value, _type1, _type2)];
 
                             type = ast.resualtFunc[OperatorName].token.value;
-                            if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                            if (DataBase.aligns.ContainsKey(type)) size = DataBase.aligns[type];
                             else size = getStructSize(type);
                         }
                         break;
@@ -326,12 +326,12 @@ namespace Qscript
                         break;
                     case NT.TYPEOPER:
                         type = node.token.value;
-                        if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                        if (DataBase.aligns.ContainsKey(type)) size = DataBase.aligns[type];
                         else size = getStructSize(type);
                         break;
                     case NT.CALL:
                         type = varSpace.GetType(node.token.value).token.value;
-                        if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
+                        if (DataBase.aligns.ContainsKey(type)) size = DataBase.aligns[type];
                         else size = getStructSize(type);
                         break;
                     default:
@@ -414,9 +414,9 @@ namespace Qscript
             foreach (var _var in ast.structs[type].Values)
             {
                 if (_var.type == NT.INDICATOR) size += 4;
-                else if (Compiler.types.ContainsKey(_var.token.value))
+                else if (DataBase.types.ContainsKey(_var.token.value))
                 {
-                    string classsize = Compiler.types[_var.token.value];
+                    string classsize = DataBase.types[_var.token.value];
                     if (_var.token.value == "dq") size += 8;
                     else if (_var.token.value == "dd") size += 4;
                     else if (_var.token.value == "dw") size += 2;

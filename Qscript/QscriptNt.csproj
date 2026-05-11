@@ -63,6 +63,7 @@
   <ItemGroup>
     <Compile Include="CodeStruct.cs" />
     <Compile Include="CrossCompiler.cs" />
+    <Compile Include="DataBase.cs" />
     <Compile Include="Parse\AbbreviationParser.cs" />
     <Compile Include="Compiler.cs" />
     <Compile Include="PostGen.cs" />
