@@ -26,10 +26,10 @@ namespace Qscript.Lex
 
             for (int i = 0; i < code.Count; i++)
             {
-                if (code[i].type.type == "INCLUDE")
+                if (code[i].type == TT.INCLUDE)
                 {
-                    i++; if (code[i].type.type == "STRING") { includes.Add(code[i].value); i++; }
-                    if (code[i].type.type != "SEM") Syntax.SyntaxError("Неправильное подключение файла", code[i]); 
+                    i++; if (code[i].type == TT.STRING) { includes.Add(code[i].value); i++; }
+                    if (code[i].type != TT.SEM) Syntax.SyntaxError("Неправильное подключение файла", code[i]); 
                     continue;
                 }
                 else nonIncludeCode.Add(code[i]);
@@ -46,7 +46,7 @@ namespace Qscript.Lex
             {
                 if (code[i].value == "define")
                 {
-                    i += 1; if (code[i].type.type != "VAR") Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
+                    i += 1; if (code[i].type != TT.VAR) Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
                     string replace = code[i].value; i++;
                     Token value = code[i];
                     if (!defines.ContainsKey(replace)) defines.Add(replace, value);
@@ -72,8 +72,8 @@ namespace Qscript.Lex
             {
                 if (code[i].value == "typedef")
                 {
-                    i += 1; if (code[i].type.type != "VAR") Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
-                    string name = code[i].value; i++; if (code[i].type.type != "VAR") Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
+                    i += 1; if (code[i].type != TT.VAR) Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
+                    string name = code[i].value; i++; if (code[i].type != TT.VAR) Syntax.SyntaxError($"Неверный Токен: {code[i].value}", code[i]);
                     string value = code[i].value;
 
                     string t_t = Compiler.types[value];

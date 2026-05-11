@@ -48,15 +48,15 @@ namespace Qscript.Lex
             List<Token> tokens = new List<Token>();
             for (int i = 0; i < tokenList.Count; i++)
             {
-                if (tokenList[i].type.type != "SPACE" &&
-                    tokenList[i].type.type != "TAB" &&
-                    tokenList[i].type.type != "COMMENT")
+                if (tokenList[i].type != TT.SPACE &&
+                    tokenList[i].type != TT.TAB &&
+                    tokenList[i].type != TT.COMMENT)
                 {
                     tokens.Add(tokenList[i]);
 
                     // Отладочный вывод
                     string spaces = "";
-                    for (int j = 0; j < 20 - tokenList[i].type.type.Length; j++)
+                    for (int j = 0; j < 20 - tokenList[i].type.ToString().Length; j++)
                     {
                         spaces += " ";
                     }
@@ -93,38 +93,38 @@ namespace Qscript.Lex
             }*/
 
             // Обрабатываем остальные токены
-            foreach (TokenType tokenType in TokenTypeList.tokenTypes.Values)
+            foreach (var tokenType in TokenTypeList.tokenTypes)
             {
                 /*if (tokenType.type == "SPACE" ||
                     tokenType.type == "TAB")
                 {
                     continue;
                 }*/
-                Match regx = Regex.Match(code.strings[stringIndex].Substring(pos), "^" + tokenType.regx);
+                Match regx = Regex.Match(code.strings[stringIndex].Substring(pos), "^" + tokenType.Value);
                 if (regx.Success && !string.IsNullOrEmpty(regx.Value))
                 {
                     //tokenValue = regx.Value.Length;
                     //Console.WriteLine($"[LEXER] Найден токен: {tokenType.type} значение: {regx.Value}");
                     if (regx.Value == "&" && code.strings[stringIndex][pos+1] == '&')
                     {
-                        Token tokenCmp = new Token(TokenTypeList.tokenTypes["OPER"], "&&", pos);
+                        Token tokenCmp = new Token(TT.OPER, "&&", pos);
                         tokenList.Add(tokenCmp);
                         pos+=2;
                         return true;
                     }
                     int length = regx.Value.Length;
                     Token token;
-                    if (tokenType.type == "STRING")
+                    if (tokenType.Key == TT.STRING)
                     {
                         string value = regx.Value;
                         value = value.Substring(1, value.Length - 2);
                         value = value.Replace("\\\"", "\"").Replace("\\\\", "\\");
-                        token = new Token(tokenType, value, stringIndex);
+                        token = new Token(tokenType.Key, value, stringIndex);
                     }
-                    else if (tokenType.type == "ASM")
+                    else if (tokenType.Key == TT.ASM)
                     {
                         (string value, int len) = lexAsmInsert(pos, code.strings[stringIndex]);
-                        token = new Token(tokenType, value, stringIndex);
+                        token = new Token(tokenType.Key, value, stringIndex);
                         //length = len;
                         length = 3;
                         tokenList.Add(token);
@@ -132,7 +132,7 @@ namespace Qscript.Lex
                     }
                     else
                     {
-                        token = new Token(tokenType, regx.Value, stringIndex);
+                        token = new Token(tokenType.Key, regx.Value, stringIndex);
                         length = regx.Value.Length;
                     }
 

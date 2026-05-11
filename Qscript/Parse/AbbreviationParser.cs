@@ -629,8 +629,8 @@ namespace Qscript
             }
             if (strt.childs.Count == 0)
             {
-                strt.childs.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], "value", strt.token.pos)));
-                strt.childs[0].childs.Add(new CommonNode("TYPE", new Token(TokenTypeList.tokenTypes["VAR"], "int32", strt.token.pos)));
+                strt.childs.Add(new CommonNode("VAR", new Token(TT.VAR, "value", strt.token.pos)));
+                strt.childs[0].childs.Add(new CommonNode("TYPE", new Token(TT.VAR, "int32", strt.token.pos)));
             }
             if (declarationNode != null) ast.declarotivePatternsStruct.Add(strt.token.value,  strt);
             if (declarationNode != null) ast.declarativeClassNames.Add(strt.token.value);
@@ -643,8 +643,8 @@ namespace Qscript
                 List<CommonNode> commonNodes = new List<CommonNode>();
                 
                 foreach (CommonNode cn in signatureFuncNode.childs) commonNodes.Add(cn);
-                commonNodes.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], "this", signatureFuncNode.token.pos)));
-                commonNodes.Last().childs.Add(new CommonNode("TYPE", new Token(TokenTypeList.tokenTypes["VAR"], root.token.value, signatureFuncNode.token.pos)));
+                commonNodes.Add(new CommonNode("VAR", new Token(TT.VAR, "this", signatureFuncNode.token.pos)));
+                commonNodes.Last().childs.Add(new CommonNode("TYPE", new Token(TT.VAR, root.token.value, signatureFuncNode.token.pos)));
                 signatureFuncNode.childs = commonNodes;
                 if (declarationNode == null) ast.resualtFunc.Add(newRoot.token.value, newRoot.childs[0]);
                 //ast.typesArgsFunc.Add(node.token.value, signatureFuncNode);
@@ -734,7 +734,7 @@ namespace Qscript
                 {
                     if (ast.structs[root.token.value].ContainsKey(child.Key)) continue;
                     ast.structs[root.token.value].Add(child.Key, child.Value);
-                    CommonNode varNode = new CommonNode("VAR", new Token(null, child.Key, child.Value.token.pos));
+                    CommonNode varNode = new CommonNode("VAR", new Token(TT.NULL, child.Key, child.Value.token.pos));
                     varNode.childs.Add(child.Value);
                     root.childs.Add(varNode);
                 }
@@ -912,7 +912,7 @@ namespace Qscript
                 templeteNode = functionTypePreparing(templeteNode);
                 ast.lambdaQueue.Add(templeteNode);
 
-                CommonNode callNode = new CommonNode("CALL", new Token(null, templeteNode.token.value, signatureCallNode.token.pos));
+                CommonNode callNode = new CommonNode("CALL", new Token(TT.NULL, templeteNode.token.value, signatureCallNode.token.pos));
                 callNode.childs.Add(signatureCallNode);
                 return callNode;
             }
@@ -925,7 +925,7 @@ namespace Qscript
                 templeteNode = functionTypePreparing(templeteNode);
                 ast.lambdaQueue.Add(templeteNode);
 
-                CommonNode addressNode = new CommonNode("ADDRESS", new Token(null, "&", templeteNode.token.pos));
+                CommonNode addressNode = new CommonNode("ADDRESS", new Token(TT.NULL, "&", templeteNode.token.pos));
                 CommonNode callNode = new CommonNode("CALLADDRESS", templeteNode.token);
                 addressNode.childs.Add(callNode);
                 return addressNode;
@@ -1043,7 +1043,7 @@ namespace Qscript
             }
             if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !Compiler.types.ContainsKey(ast.resualtFunc[root.token.value].token.value) && ast.resualtFunc[root.token.value].type != "INDICATOR")
             {
-                CommonNode resualtVar = new CommonNode("VAR", new Token(null, "resualtPtr", signature.token.pos));
+                CommonNode resualtVar = new CommonNode("VAR", new Token(TT.NULL, "resualtPtr", signature.token.pos));
                 resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                 childs.Add(resualtVar);
             }
@@ -1185,7 +1185,7 @@ namespace Qscript
                     name.Remove(0, 1);
                     List<CommonNode> argsNew = new List<CommonNode>();
                     foreach (CommonNode node in root.childs[0].childs) argsNew.Add(node);
-                    argsNew.Add(new CommonNode("VAR", new Token(TokenTypeList.tokenTypes["VAR"], strs[0], root.childs[0].token.pos)));
+                    argsNew.Add(new CommonNode("VAR", new Token(TT.VAR, strs[0], root.childs[0].token.pos)));
                     root.childs[0].childs = argsNew;
                     root.token.value = strs[strs.Length-1] + "_" + type;
                 }

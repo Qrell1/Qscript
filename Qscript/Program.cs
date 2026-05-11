@@ -21,11 +21,11 @@ namespace Qscript
             foreach (Token token in list)
             {
                 string spaces = "";
-                for (int i = 0; i < 16 - token.type.type.Length; i++)
+                for (int i = 0; i < 16 - token.type.ToString().Length; i++)
                 {
                     spaces += " ";
                 }
-                Console.WriteLine($"[DEBUG] Токен позиция:{token.pos} тип:{token.type.type}" + spaces + $"значение:{token.value}");
+                Console.WriteLine($"[DEBUG] Токен позиция:{token.pos} тип:{token.type}" + spaces + $"значение:{token.value}");
             }
         }
 

@@ -17,10 +17,10 @@ namespace Qscript
             tokens = _tokens;
         }
 
-        public bool match(string type)
+        public bool match(TT type)
         {
             Token currentToken = tokens[pos];
-            if (type == currentToken.type.type)
+            if (type == currentToken.type)
             {
 
                 return true;
@@ -34,7 +34,7 @@ namespace Qscript
 
             foreach (Token token in tokens)
             {
-                if (token.type.type == "SEM")
+                if (token.type == TT.SEM)
                 {
                     stringsTokens.Add(tokenString);
                     tokenString = new List<Token>();

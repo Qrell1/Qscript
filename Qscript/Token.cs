@@ -12,34 +12,50 @@ namespace Qscript
     //string content = regx.Groups[1].Value;
     public class Token
     {
-        public TokenType type;
+        public TT type;
         public string value;
         public int pos;
         public int posCode;
 
-        public Token(TokenType _type, string _value, int _pos)
+        public Token(TT _type, string _value, int _pos)
         {
             type = _type;
             value = _value;
             pos = _pos;
         }
-    }
-    public class TokenType
-    {
-        public string type;
-        public string regx;
-
-        public TokenType(string _type, string _regx)
+        public Token(string _value, int _pos)
         {
-            type = _type;
-            regx = _regx;
+            type = TT.NULL;
+            value = _value;
+            pos = _pos;
         }
+    }
+
+    public enum TT
+    {   
+        COMMENT,
+        ELSEIF, IF, ELSE,
+        FLOAT, NUMBER,
+        PREFIX, REGDECL, OPER, VARDECL,
+        ENDINCLUDE, ASMINCLUDE, INCLUDE, USING, 
+        NAMESPACE, EXTERNFUNC, EXTERNLIBRARY, EXTERN, FROM,
+        ASM, SEM, 
+        RETURN, BREAK, CONTINUE, JMP, 
+        ITER, FOR, WHILE, ENUMERATOR, REPT,
+        LAMBDA, STRUCT, CLASS, ENUM, VIRTUAL, OVERRIDE, 
+        DEFINE, TYPEDEF, TYPEIF,
+        CONST, SECTION, NATIVE, INLINE, ASMINLINE, OPERATOR, 
+        SIZEOF, TYPEOF, IN, MODIFIER,
+        BOOL, VAR, CHAR, STRING, 
+        LPAR, RPAR, PARS, LFIG, RFIG, LK, RK, LKN, RKN,
+        SPACE, TAB, N, PS, TS,
+        NULL
     }
 
     public static class TokenTypeList
     {
-        public static Dictionary<string, TokenType> tokenTypes = new Dictionary<string, TokenType>();
-        public static Dictionary<string, string> rightPar = new Dictionary<string, string>();
+        public static Dictionary<TT, string> tokenTypes = new Dictionary<TT, string>();
+        public static Dictionary<TT, TT> rightPar = new Dictionary<TT, TT>();
 
         public static Dictionary<string, int> permissionOper = new Dictionary<string, int>()
         {
@@ -57,9 +73,10 @@ namespace Qscript
 
         static TokenTypeList()
         {
-            tokenTypes.Add("COMMENT", new TokenType("COMMENT", @"//.*$|/\*[\s\S]*?\*/"));
+            tokenTypes.Add(TT.COMMENT, @"//.*$|/\*[\s\S]*?\*/");
+            //tokenTypes.Add("COMMENT", new TokenType("COMMENT", @"//.*$|/\*[\s\S]*?\*/"));
+            
             // TYPES
-
             //tokenTypes.Add("TYPE", new TokenType("TYPE", "(int32|int16|int8|float|string|char)"));
             //tokenTypes.Add("TYPE", new TokenType("TYPE", ":?"));
             //tokenTypes.Add("INT32TYPE", new TokenType("INT32TYPE", "int32"));
@@ -70,9 +87,9 @@ namespace Qscript
             //tokenTypes.Add("CHARTYPE", new TokenType("CHARTYPE", "char"));
             //tokenTypes.Add("DECLVAR", new TokenType("DECLVAR", @"\bvar\b"));
             // Logic
-            tokenTypes.Add("ELSEIF", new TokenType("ELSEIF", @"\belse-if\b"));
-            tokenTypes.Add("IF", new TokenType("IF", @"\bif\b"));
-            tokenTypes.Add("ELSE", new TokenType("ELSE", @"\belse\b"));
+            tokenTypes.Add(TT.ELSEIF, @"\belse-if\b");
+            tokenTypes.Add(TT.IF,     @"\bif\b");
+            tokenTypes.Add(TT.ELSE,   @"\belse\b");
 
             // Logic Values
             //tokenTypes.Add("SAMEOPER", new TokenType("SAME", "=="));
@@ -84,115 +101,99 @@ namespace Qscript
             //tokenTypes.Add("OPER", new TokenType("OPER", @"(==|!=|<<|>>|<=|>=|=<|=>|=?)"));
             //tokenTypes.Add("INC", new TokenType("INC", "[\\--]*"));
             //tokenTypes.Add("DEC", new TokenType("DEC", "[\\++]*"));
-            tokenTypes.Add("FLOAT", new TokenType("FLOAT", @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)"));
-            tokenTypes.Add("NUMBER", new TokenType("NUMBER", "[0-9]+"));
-            tokenTypes.Add("PREFIX", new TokenType("PREFIX", "(\\+\\+|--|\\<>|\\?|&)"));
-            tokenTypes.Add("REGDECL", new TokenType("REGDECL", "\\$"));
-            tokenTypes.Add("OPER", new TokenType("OPER", "(=>|@|\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-\\*/%=|!:~])"));
-            //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", "<"));
-            //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", ">"));
+            tokenTypes.Add(TT.FLOAT,   @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)");
+            tokenTypes.Add(TT.NUMBER,  "[0-9]+");
+            tokenTypes.Add(TT.PREFIX,  "(\\+\\+|--|\\<>|\\?|&)");
+            tokenTypes.Add(TT.REGDECL, "\\$");
+            tokenTypes.Add(TT.OPER,    "(=>|@|\\+=|==|!=|<=|>=|<|>|&&|\\|\\||-=|\\*=|\\/=|%=|&=|\\|=|\\^=|<<=|>>=|->|[+\\-\\*/%=|!:~])");
+            tokenTypes.Add(TT.VARDECL, @"(\bvarriable\b|\blet\b)");
 
-            // Keys
-            //tokenTypes.Add("OUT", new TokenType("OUT", "out"));
-            tokenTypes.Add("ENDINCLUDE", new TokenType("ENDINCLUDE", @"\bend-include\b"));
-            tokenTypes.Add("ASMINCLUDE", new TokenType("ASMINCLUDE", @"\basm-include\b"));
-            tokenTypes.Add("INCLUDE", new TokenType("INCLUDE", @"\binclude\b"));
-            tokenTypes.Add("USING", new TokenType("USING", @"\busing\b"));
+            tokenTypes.Add(TT.ENDINCLUDE, @"\bend-include\b");
+            tokenTypes.Add(TT.ASMINCLUDE, @"\basm-include\b");
+            tokenTypes.Add(TT.INCLUDE,    @"\binclude\b");
+            tokenTypes.Add(TT.USING,      @"\busing\b");
 
-            tokenTypes.Add("NAMESPACE", new TokenType("NAMESPACE", @"\bnamespace\b"));
-            tokenTypes.Add("EXTERNFUNC", new TokenType("EXTERNFUNC", @"\bextern-func\b"));
-            tokenTypes.Add("EXTERNLIBRARY", new TokenType("EXTERNLIBRARY", @"\bextern-library\b"));
-            tokenTypes.Add("EXTERN", new TokenType("EXTERN", @"\bextern\b"));
-            tokenTypes.Add("FROM", new TokenType("FROM", @"\bfrom\b"));
+            tokenTypes.Add(TT.NAMESPACE,     @"\bnamespace\b");
+            tokenTypes.Add(TT.EXTERNFUNC,    @"\bextern-func\b");
+            tokenTypes.Add(TT.EXTERNLIBRARY, @"\bextern-library\b");
+            tokenTypes.Add(TT.EXTERN,        @"\bextern\b");
+            tokenTypes.Add(TT.FROM,          @"\bfrom\b");
 
-            tokenTypes.Add("ASM", new TokenType("ASM", @"\basm\b"));
-            tokenTypes.Add("SEM", new TokenType("SEM", ";"));
+            tokenTypes.Add(TT.ASM, @"\basm\b");
+            tokenTypes.Add(TT.SEM, ";");
             //tokenTypes.Add("MACRO", new TokenType("MACRO", "macro[A-Z]+"));
             //tokenTypes.Add("MACRO", new TokenType("MACRO", "macro"));
-            tokenTypes.Add("RETURN", new TokenType("RETURN", @"(\breturn\b|\bвернуть\b)"));
-            tokenTypes.Add("BREAK", new TokenType("BREAK", @"(\bbreak\b|\bпрервать\b)"));
-            tokenTypes.Add("CONTINUE", new TokenType("CONTINUE", @"(\bcontinue\b|\bпродолжить\b)"));
-            tokenTypes.Add("JMP", new TokenType("JMP", @"(\bjump\b|\bпрыгнуть\b)"));
+            tokenTypes.Add(TT.RETURN,    @"(\breturn\b|\bвернуть\b)");
+            tokenTypes.Add(TT.BREAK,     @"(\bbreak\b|\bпрервать\b)");
+            tokenTypes.Add(TT.CONTINUE,  @"(\bcontinue\b|\bпродолжить\b)");
+            tokenTypes.Add(TT.JMP,       @"(\bjump\b|\bпрыгнуть\b)");
 
-            tokenTypes.Add("ITER", new TokenType("ITER", @"\biter\b")); tokenTypes.Add("VARDECL", new TokenType("VARDECL", @"(\bvarriable\b|\blet\b)"));
-            tokenTypes.Add("FOR", new TokenType("FOR", @"\bfor\b"));
-            tokenTypes.Add("WHILE", new TokenType("WHILE", @"\bwhile\b"));
-            tokenTypes.Add("ENUMERATOR", new TokenType("ENUMERATOR", @"\benumerator\b"));
-            tokenTypes.Add("REPT", new TokenType("REPT", @"\brept\b"));
+            
+            tokenTypes.Add(TT.ITER,       @"\biter\b");
+            tokenTypes.Add(TT.FOR,        @"\bfor\b");
+            tokenTypes.Add(TT.WHILE,      @"\bwhile\b");
+            tokenTypes.Add(TT.ENUMERATOR, @"\benumerator\b");
+            tokenTypes.Add(TT.REPT,       @"\brept\b");
 
-            tokenTypes.Add("LAMBDA", new TokenType("LAMBDA", @"\blambda\b"));
-            tokenTypes.Add("STRUCT", new TokenType("STRUCT", @"(\bstruct\b|\bструктура\b)"));
-            tokenTypes.Add("CLASS", new TokenType("CLASS", @"(\bclass\b|\bкласс\b)"));
-            tokenTypes.Add("ENUM", new TokenType("ENUM", @"(\benum\b|\bсловарь\b)"));
+            tokenTypes.Add(TT.LAMBDA,  @"\blambda\b");
+            tokenTypes.Add(TT.STRUCT,  @"(\bstruct\b|\bструктура\b)");
+            tokenTypes.Add(TT.CLASS,   @"(\bclass\b|\bкласс\b)");
+            tokenTypes.Add(TT.ENUM,    @"(\benum\b|\bсловарь\b)");
 
-            tokenTypes.Add("VIRTUAL", new TokenType("VIRTUAL", @"\bvirtual\b"));
-            tokenTypes.Add("OVERRIDE", new TokenType("OVERRIDE", @"\boverride\b"));
+            tokenTypes.Add(TT.VIRTUAL,  @"\bvirtual\b");
+            tokenTypes.Add(TT.OVERRIDE, @"\boverride\b");
             //tokenTypes.Add("FUNCTION", new TokenType("FUNCTION", @"\bfunction\b"));
 
-            tokenTypes.Add("DEFINE", new TokenType("DEFINE", @"(\bdefine\b|\bзаменить\b)"));
-            tokenTypes.Add("TYPEDEF", new TokenType("TYPEDEF", @"(\btypedef\b|\bсоздать_тип\b)"));
-            tokenTypes.Add("TYPEIF", new TokenType("TYPEIF", @"(\btypeif\b|\bесли_тип\b)"));
+            tokenTypes.Add(TT.DEFINE,   @"(\bdefine\b|\bзаменить\b)");
+            tokenTypes.Add(TT.TYPEDEF,  @"(\btypedef\b|\bсоздать_тип\b)");
+            tokenTypes.Add(TT.TYPEIF,   @"(\btypeif\b|\bесли_тип\b)");
 
-            tokenTypes.Add("CONST", new TokenType("CONST", @"(\bconst\b|\bконст\b)"));
+            tokenTypes.Add(TT.CONST,    @"(\bconst\b|\bконст\b)");
 
-            tokenTypes.Add("SECTION", new TokenType("SECTION", @"\bsection\b"));
-            tokenTypes.Add("NATIVE", new TokenType("NATIVE", @"\bnative\b"));
-            tokenTypes.Add("INLINE", new TokenType("INLINE", @"\binline\b"));
-            tokenTypes.Add("ASMINLINE", new TokenType("ASMINLINE", @"(\basm-inline\b|\basminline\b)"));
-            tokenTypes.Add("OPERATOR", new TokenType("OPERATOR", @"(\boperator\b|\bоператор\b)"));
-            tokenTypes.Add("SIZEOF", new TokenType("SIZEOF", @"\bsizeof\b"));
-            tokenTypes.Add("TYPEOF", new TokenType("TYPEOF", @"\btypeof\b"));
+            tokenTypes.Add(TT.SECTION,    @"\bsection\b");
+            tokenTypes.Add(TT.NATIVE,     @"\bnative\b");
+            tokenTypes.Add(TT.INLINE,     @"\binline\b");
+            tokenTypes.Add(TT.ASMINLINE,  @"(\basm-inline\b|\basminline\b)");
+            tokenTypes.Add(TT.OPERATOR,   @"(\boperator\b|\bоператор\b)");
+            tokenTypes.Add(TT.SIZEOF,     @"\bsizeof\b");
+            tokenTypes.Add(TT.TYPEOF,     @"\btypeof\b");
 
-            tokenTypes.Add("IN", new TokenType("IN", @"\bin\b"));
-
-            // modifecator модификаторы 
-            //tokenTypes.Add("PUBLIC", new TokenType("PUBLIC", "public"));
-            //tokenTypes.Add("PRIVATE", new TokenType("PRIVATE", "private"));
-            //tokenTypes.Add("PROTECTED", new TokenType("PROTECTED", "protected"));
-            tokenTypes.Add("MODIFIER", new TokenType("MODIFIER", @"(\bpublic\b|\bprivate\b|\bprotected\b)"));
+            tokenTypes.Add(TT.IN,         @"\bin\b");
 
 
-            tokenTypes.Add("BOOL", new TokenType("BOOL", @"(\btrue\b|\bfalse\b)"));
-            //tokenTypes.Add("CONST", new TokenType("CONST", @"\b[A-Z]*\b"));
-            tokenTypes.Add("VAR", new TokenType("VAR", @"[_а-я_А-Я_a-z_A-Z_][а-я_А-Я_a-z_A-Z_0-9_]*"));
-            //tokenTypes.Add("CONST", new TokenType("CONST", @"[A-Z]*"));
-            //tokenTypes.Add("FLOAT", new TokenType("FLOAT", @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)"));
-            //tokenTypes.Add("NUMBER", new TokenType("NUMBER", "[0-9]+"));
-            tokenTypes.Add("CHAR", new TokenType("CHAR", @"'[^'\\]*(?:\\.[^'\\]*)*'"));
-            tokenTypes.Add("STRING", new TokenType("STRING", @"""[^""]*"""));//@"""[^""//]*[^""\\]*(?:\\.[^""\\]*)*"""));
+            tokenTypes.Add(TT.MODIFIER,   @"(\bpublic\b|\bprivate\b|\bprotected\b)");
+
+
+            tokenTypes.Add(TT.BOOL,       @"(\btrue\b|\bfalse\b)");
+            tokenTypes.Add(TT.VAR,        @"[_а-я_А-Я_a-z_A-Z_][а-я_А-Я_a-z_A-Z_0-9_]*");
+            tokenTypes.Add(TT.CHAR,       @"'[^'\\]*(?:\\.[^'\\]*)*'");
+            tokenTypes.Add(TT.STRING,     @"""[^""]*""");//@"""[^""//]*[^""\\]*(?:\\.[^""\\]*)*"""));
             //tokenTypes.Add("CHAR", new TokenType("CHAR", @"'[^'\\]*(?:\\.[^'\\]*)*'"));
 
-            // Arifmetic
-            //tokenTypes.Add("ASSIGN", new TokenType("ASSIGN", "="));
-            //tokenTypes.Add("PLUS", new TokenType("PLUS", "\\+"));
-            //tokenTypes.Add("MINUS", new TokenType("MINUS", "\\-"));
-            //tokenTypes.Add("MUL", new TokenType("MUL", "\\*"));
-            //tokenTypes.Add("DIV", new TokenType("DIV", "\\/"));
-            // Pars
-            tokenTypes.Add("LPAR", new TokenType("LPAR", "\\("));
-            tokenTypes.Add("RPAR", new TokenType("RPAR", "\\)"));
-            tokenTypes.Add("PARS", new TokenType("PARS", "\\'"));
+            tokenTypes.Add(TT.LPAR,  "\\(");
+            tokenTypes.Add(TT.RPAR,  "\\)");
+            tokenTypes.Add(TT.PARS,  "\\'");
 
-            tokenTypes.Add("LFIG", new TokenType("LFIG", "\\{"));
-            tokenTypes.Add("RFIG", new TokenType("RFIG", "\\}"));
+            tokenTypes.Add(TT.LFIG, "\\{");
+            tokenTypes.Add(TT.RFIG, "\\}");
 
-            tokenTypes.Add("LK", new TokenType("LK", "\\["));
-            tokenTypes.Add("RK", new TokenType("RK", "\\]"));
+            tokenTypes.Add(TT.LK, "\\[");
+            tokenTypes.Add(TT.RK, "\\]");
 
-            tokenTypes.Add("LKN", new TokenType("LKN", "\\<"));
-            tokenTypes.Add("RKN", new TokenType("RKN", "\\>"));
+            tokenTypes.Add(TT.LKN, "\\<");
+            tokenTypes.Add(TT.RKN, "\\>");
 
-            tokenTypes.Add("SPACE", new TokenType("SPACE", " "));
-            tokenTypes.Add("TAB", new TokenType("TAB", "\t"));
-            tokenTypes.Add("N", new TokenType("N", "\n"));
+            tokenTypes.Add(TT.SPACE, " ");
+            tokenTypes.Add(TT.TAB,   "\t");
+            tokenTypes.Add(TT.N,     "\n");
 
-            tokenTypes.Add("PS", new TokenType("PS", "\\,"));
-            tokenTypes.Add("TS", new TokenType("TS", "\\."));
+            tokenTypes.Add(TT.PS, "\\,");
+            tokenTypes.Add(TT.TS, "\\.");
 
-            rightPar.Add("LPAR", "RPAR");
-            rightPar.Add("LFIG", "RFIG");
-            rightPar.Add("LK", "RK");
-            rightPar.Add("LKN", "RKN");
+            rightPar.Add(TT.LPAR, TT.RPAR);
+            rightPar.Add(TT.LFIG, TT.RFIG);
+            rightPar.Add(TT.LK,   TT.RK);
+            rightPar.Add(TT.LKN,  TT.RKN);
             //tokenTypes.Add("SP", new TokenType("SP", " "));
         }
     }

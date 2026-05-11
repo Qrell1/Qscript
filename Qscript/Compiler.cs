@@ -1083,10 +1083,10 @@ namespace Qscript
                 varRegisters.Add(reg1, reg1);
                 varRegisters.Add(reg2, reg2);
 
-                CommonNode callNode = new CommonNode("CALL", new Token(null, OperatorName, root.token.pos));
-                callNode.childs.Add(new CommonNode("SIGNATURE", new Token(null, "()", root.token.pos)));
-                callNode.childs[0].childs.Add(new CommonNode("REGUSE", new Token(null, reg1, root.childs[0].token.pos)));
-                callNode.childs[0].childs.Add(new CommonNode("REGUSE", new Token(null, reg2, root.childs[1].token.pos)));
+                CommonNode callNode = new CommonNode("CALL", new Token(TT.NULL, OperatorName, root.token.pos));
+                callNode.childs.Add(new CommonNode("SIGNATURE", new Token(TT.NULL, "()", root.token.pos)));
+                callNode.childs[0].childs.Add(new CommonNode("REGUSE", new Token(TT.NULL, reg1, root.childs[0].token.pos)));
+                callNode.childs[0].childs.Add(new CommonNode("REGUSE", new Token(TT.NULL, reg2, root.childs[1].token.pos)));
                 //regPrefer = "eax";
                 translationCall(callNode, z_buffer + 1);
                 if (root.token.value.Contains("=")) _objProg.code.Append($"mov [{root.childs[0].token.value}], {regReturn}\n");
@@ -1982,7 +1982,7 @@ namespace Qscript
 
             while (pos < str.Length)
             {
-                Match regx = Regex.Match(str.Substring(pos), "^" + TokenTypeList.tokenTypes["STRING"].regx);
+                Match regx = Regex.Match(str.Substring(pos), "^" + TokenTypeList.tokenTypes[TT.STRING]);
                 if (regx.Success && !string.IsNullOrEmpty(regx.Value))
                     pos += regx.Length;
                 else
@@ -2134,7 +2134,7 @@ namespace Qscript
 
                 while (pos < str.Length)
                 {
-                    Match regx = Regex.Match(str.Substring(pos), "^" + TokenTypeList.tokenTypes["STRING"].regx);
+                    Match regx = Regex.Match(str.Substring(pos), "^" + TokenTypeList.tokenTypes[TT.STRING]);
                     if (regx.Success && !string.IsNullOrEmpty(regx.Value))
                         pos += regx.Length;
                     else
