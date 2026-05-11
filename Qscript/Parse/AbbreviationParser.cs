@@ -77,7 +77,7 @@ namespace Qscript
             for (int i = 0; i < ast.childs.Count; i++)
             {
                 if (ast.declarotivePatternsStruct.ContainsKey(ast.childs[i].token.value)
-                    ) ast.childs[i] = new CommonNode("AIR", astNode.childs[i].token);
+                    ) ast.childs[i] = new CommonNode(NT.AIR, astNode.childs[i].token);
             }
             //foreach (var cl in ast.classMethods.Values)
                 //ast.childs.AddRange(cl);
@@ -102,7 +102,7 @@ namespace Qscript
         private Dictionary<CommonNode, CommonNode> cheakAllVarInLocal(CommonNode root)
         {
             if (root == null) return null;
-            if (root.type == "VAR" && root.childs.Count != 0 && root.childs[0].type == "TYPE")
+            if (root.type == NT.VAR && root.childs.Count != 0 && root.childs[0].type == NT.TYPE)
                 return new Dictionary<CommonNode, CommonNode> { { root, null } };
 
             Dictionary<CommonNode, CommonNode> resualt = new Dictionary<CommonNode, CommonNode>();
@@ -139,7 +139,7 @@ namespace Qscript
                 List<CommonNode> types = null;
                 foreach (var child in commonNode.childs)
                 {
-                    if (child.childs.Count == 1 && child.childs[0].type == "TYPE")
+                    if (child.childs.Count == 1 && child.childs[0].type == NT.TYPE)
                     {
                         if (types == null) types = new List<CommonNode>();
                         types.Add(child);
@@ -164,7 +164,7 @@ namespace Qscript
                 List<CommonNode> types = null;
                 foreach (var child in commonNode.childs)
                 {
-                    if (child.type == "RETURN")
+                    if (child.type == NT.RETURN)
                     {
                         if (types == null) types = new List<CommonNode>();
                         types.Add(child.childs[0]);
@@ -190,7 +190,7 @@ namespace Qscript
             }
             else
             {
-                string ReturnType = Returns[0].type;
+                NT ReturnType = Returns[0].type;
                 string ReturnValue = getTypeFromNode(Returns[0], varsLocal);
                 foreach (CommonNode returnNode in Returns)
                 {
@@ -234,35 +234,35 @@ namespace Qscript
             string type = string.Empty;
             switch (root.type)
             {
-                case "VAR":
-                case "POSTUNAROPER":
-                case "PREUNAROPER":
+                case NT.VAR:
+                case NT.POSTUNAROPER:
+                case NT.PREUNAROPER:
                     type = vars[root.token.value].token.value;
                     break;
-                case "SIZEOF":
-                case "TYPEOF":
-                case "NUMBER":
-                case "ADDRESS":
-                case "BINOPER":
+                case NT.SIZEOF:
+                case NT.TYPEOF:
+                case NT.NUMBER:
+                case NT.ADDRESS:
+                case NT.BINOPER:
                     type = "long";
                     break;
-                case "FLOAT":
-                case "FLOATOPER":
+                case NT.FLOAT:
+                case NT.FLOATOPER:
                     type = "float";
                     break;
-                case "STRING":
+                case NT.STRING:
                     type = "string";
                     break;
-                case "CHAR":
+                case NT.CHAR:
                     type = "char";
                     break;
-                case "BOOL":
+                case NT.BOOL:
                     type = "bool";
                     break;
-                case "TYPEOPER":
+                case NT.TYPEOPER:
                     type = root.token.value;
                     break;
-                case "CALL":
+                case NT.CALL:
                     type = ast.resualtFunc[root.token.value].token.value;
                     break;
                 default:
@@ -278,21 +278,21 @@ namespace Qscript
             {
                 switch (node.type)
                 {
-                    case "LAMBDA":
+                    case NT.LAMBDA:
                         type = "function";
                         break;
-                    case "VAR":
-                    case "POSTUNAROPER":
-                    case "PREUNAROPER":
+                    case NT.VAR:
+                    case NT.POSTUNAROPER:
+                    case NT.PREUNAROPER:
                         type = varSpace.GetType(node.token.value).token.value;
                         break;
-                    case "SIZEOF":
-                    case "TYPEOF":
-                    case "NUMBER":
-                    case "ADDRESS":
+                    case NT.SIZEOF:
+                    case NT.TYPEOF:
+                    case NT.NUMBER:
+                    case NT.ADDRESS:
                         type = "int";
                         break;
-                    case "BINOPER":
+                    case NT.BINOPER:
                         type = "BINOPER";
 
                         string _type1 = getFormulaType(node.childs[0]);
@@ -308,23 +308,23 @@ namespace Qscript
                             type = ast.resualtFunc[OperatorName].token.value;
                         }
                         break;
-                    case "FLOAT":
-                    case "FLOATOPER":
+                    case NT.FLOAT:
+                    case NT.FLOATOPER:
                         type = "float";
                         break;
-                    case "STRING":
+                    case NT.STRING:
                         type = "string";
                         break;
-                    case "CHAR":
+                    case NT.CHAR:
                         type = "char";
                         break;
-                    case "BOOL":
+                    case NT.BOOL:
                         type = "bool";
                         break;
-                    case "TYPEOPER":
+                    case NT.TYPEOPER:
                         type = node.token.value;
                         break;
-                    case "CALL":
+                    case NT.CALL:
                         type = varSpace.GetType(node.token.value).token.value;
                         break;
                     default:
@@ -338,36 +338,36 @@ namespace Qscript
 
         private CommonNode replaceConstantVarValue(CommonNode root, Dictionary<CommonNode, CommonNode> varsLocal = null)
         {
-            if (root.token.value == "=" && root.childs[0].type == "VAR"
+            if (root.token.value == "=" && root.childs[0].type == NT.VAR
                 && varsLocal != null && varContains(root.childs[0], varsLocal)
-                && (root.childs[1].type == "NUMBER" || root.childs[1].type == "FLOAT" || root.childs[1].type == "STRING" || root.childs[1].type == "CHAR")
+                && (root.childs[1].type == NT.NUMBER || root.childs[1].type == NT.FLOAT || root.childs[1].type == NT.STRING || root.childs[1].type == NT.CHAR)
                 )
             {
                 varsLocal[getVar(root.childs[0], varsLocal)] = root.childs[1];
             }
-            if (root.type == "BINOPER" && root.token.value != "=" && root.childs[0].type == "VAR" && varsLocal != null
+            if (root.type == NT.BINOPER && root.token.value != "=" && root.childs[0].type == NT.VAR && varsLocal != null
                 && varContains(root.childs[0], varsLocal) && getVarValue(root.childs[0], varsLocal) != null)
             {
                 varsLocal[getVar(root.childs[0], varsLocal)] = null;
             }
-            if (root.type == "BINOPER" && root.token.value != "=" && root.childs[1].type == "VAR" && varsLocal != null
+            if (root.type == NT.BINOPER && root.token.value != "=" && root.childs[1].type == NT.VAR && varsLocal != null
                 && varContains(root.childs[1], varsLocal) && getVarValue(root.childs[1], varsLocal) != null)
             {
                 varsLocal[getVar(root.childs[1], varsLocal)] = null;
             }
-            if (root.type == "BINOPER" && root.token.value != "=" && root.childs[0].type == "VAR" && varsLocal != null
+            if (root.type == NT.BINOPER && root.token.value != "=" && root.childs[0].type == NT.VAR && varsLocal != null
                 && varContains(root.childs[0], varsLocal) && getVarValue(root.childs[0], varsLocal) != null)
             {
                 root.childs[0] = getVarValue(root.childs[0], varsLocal);
             }
-            if (root.type == "BINOPER" && root.childs[1].type == "VAR" && varsLocal != null
+            if (root.type == NT.BINOPER && root.childs[1].type == NT.VAR && varsLocal != null
                 && varContains(root.childs[1], varsLocal) && getVarValue(root.childs[1], varsLocal) != null)
             {
                 root.childs[1] = getVarValue(root.childs[1], varsLocal);
             }
             for (int i = 0; i < root.childs.Count; i++)
             {
-                if (root.type != "BINOPER" && root.type != "FLOATBINOPER" && root.childs[i].type == "VAR"
+                if (root.type != NT.BINOPER && root.type != NT.FLOATBINOPER && root.childs[i].type == NT.VAR
                     && root.childs[i].childs.Count == 0 && varsLocal != null
                     && varContains(root.childs[i], varsLocal) && getVarValue(root.childs[i], varsLocal) != null)
                     root.childs[i] = getVarValue(root.childs[i], varsLocal);
@@ -392,7 +392,7 @@ namespace Qscript
              * Некоторые признаки основной узел TYPEOPER и его значени float и ещё конечно переменные флотовые
              * Ещё функции с результатом флота или же сами флот числа
              */
-            if (root.type != "BINOPER")
+            if (root.type != NT.BINOPER)
             {
                 for (int i = 0; i < root.childs.Count; i++) root.childs[i] = binOperCheak(root.childs[i]);
                 return root;
@@ -405,32 +405,32 @@ namespace Qscript
 
             bool flagFloat = false;
 
-            if (leftNode.type == "VAR" && varSpace.VarIsType(leftNode.token.value, "float")) flagFloat = true;
-            if (rightNode.type == "VAR" && varSpace.VarIsType(rightNode.token.value, "float")) flagFloat = true;
+            if (leftNode.type == NT.VAR && varSpace.VarIsType(leftNode.token.value, "float")) flagFloat = true;
+            if (rightNode.type == NT.VAR && varSpace.VarIsType(rightNode.token.value, "float")) flagFloat = true;
 
-            if (leftNode.type == "VAR" && ast.resualtFunc.ContainsKey(leftNode.token.value) && ast.resualtFunc[leftNode.token.value].token.value == "float") flagFloat = true;
-            if (rightNode.type == "VAR" && ast.resualtFunc.ContainsKey(rightNode.token.value) && ast.resualtFunc[rightNode.token.value].token.value == "float") flagFloat = true;
+            if (leftNode.type == NT.VAR && ast.resualtFunc.ContainsKey(leftNode.token.value) && ast.resualtFunc[leftNode.token.value].token.value == "float") flagFloat = true;
+            if (rightNode.type == NT.VAR && ast.resualtFunc.ContainsKey(rightNode.token.value) && ast.resualtFunc[rightNode.token.value].token.value == "float") flagFloat = true;
 
-            if (leftNode.type == "VAR" && ast.typesArgsFunc.ContainsKey(leftNode.token.value) && ast.typesArgsFunc[leftNode.token.value].token.value == "float") flagFloat = true;
-            if (rightNode.type == "VAR" && ast.typesArgsFunc.ContainsKey(rightNode.token.value) && ast.typesArgsFunc[rightNode.token.value].token.value == "float") flagFloat = true;
+            if (leftNode.type == NT.VAR && ast.typesArgsFunc.ContainsKey(leftNode.token.value) && ast.typesArgsFunc[leftNode.token.value].token.value == "float") flagFloat = true;
+            if (rightNode.type == NT.VAR && ast.typesArgsFunc.ContainsKey(rightNode.token.value) && ast.typesArgsFunc[rightNode.token.value].token.value == "float") flagFloat = true;
 
-            if (leftNode.type == "FLOATBINOPER") flagFloat = true;
-            if (rightNode.type == "FLOATBINOPER") flagFloat = true;
+            if (leftNode.type == NT.FLOATBINOPER) flagFloat = true;
+            if (rightNode.type == NT.FLOATBINOPER) flagFloat = true;
 
 
-            if (leftNode.type == "TYPEOPER")
+            if (leftNode.type == NT.TYPEOPER)
             {
                 if (leftNode.token.value == "float") flagFloat = true;
                 leftNode = leftNode.childs[0];
             }
 
-            if (rightNode.type == "TYPEOPER")
+            if (rightNode.type == NT.TYPEOPER)
             {
                 if (rightNode.token.value == "float") flagFloat = true;
                 rightNode = rightNode.childs[0];
             }
 
-            if (flagFloat) root.type = "FLOATBINOPER";
+            if (flagFloat) root.type = NT.FLOATBINOPER;
 
             return root;
         }
@@ -441,7 +441,7 @@ namespace Qscript
              * Ну конечно во первых если 2 оператора числа или флоты но это для флотовых
              * 
              */
-            if (root.type != "BINOPER" && root.type != "FLOATBINOPER")
+            if (root.type != NT.BINOPER && root.type != NT.FLOATBINOPER)
             {
                 for (int i = 0; i < root.childs.Count; i++) root.childs[i] = binOperReFresh(root.childs[i]);
                 return root;
@@ -454,45 +454,45 @@ namespace Qscript
 
             CommonNode reFreshNode = null;
 
-            if (root.type == "FLOATBINOPER")
+            if (root.type == NT.FLOATBINOPER)
             {
-                if (leftNode.type == "FLOAT" && rightNode.type == "FLOAT")
+                if (leftNode.type == NT.FLOAT && rightNode.type == NT.FLOAT)
                     switch (root.token.value)
                     {
-                        case "+": reFreshNode = new CommonNode("FLOAT", new Token(leftNode.token.type,
+                        case "+": reFreshNode = new CommonNode(NT.FLOAT, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToDouble(leftNode.token.value) + Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
                         case "-":
-                            reFreshNode = new CommonNode("FLOAT", new Token(leftNode.token.type,
+                            reFreshNode = new CommonNode(NT.FLOAT, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToDouble(leftNode.token.value) - Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
                         case "*":
-                            reFreshNode = new CommonNode("FLOAT", new Token(leftNode.token.type,
+                            reFreshNode = new CommonNode(NT.FLOAT, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToDouble(leftNode.token.value) * Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
                         case "/":
-                            reFreshNode = new CommonNode("FLOAT", new Token(leftNode.token.type,
+                            reFreshNode = new CommonNode(NT.FLOAT, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToDouble(leftNode.token.value) / Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
                         case "%":
-                            reFreshNode = new CommonNode("FLOAT", new Token(leftNode.token.type,
+                            reFreshNode = new CommonNode(NT.FLOAT, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToDouble(leftNode.token.value) % Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
                     }
-            } else if (root.type == "BINOPER")
+            } else if (root.type == NT.BINOPER)
             {
-                if (leftNode.type == "NUMBER" && rightNode.type == "NUMBER")
+                if (leftNode.type == NT.NUMBER && rightNode.type == NT.NUMBER)
                     switch (root.token.value)
                     {
                         case "+":
-                            reFreshNode = new CommonNode("NUMBER", new Token(leftNode.token.type,
+                            reFreshNode = new CommonNode(NT.NUMBER, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToInt32(leftNode.token.value) + Convert.ToInt32(rightNode.token.value)), root.token.pos)); break;
                         case "-":
-                            reFreshNode = new CommonNode("NUMBER", new Token(leftNode.token.type,
+                            reFreshNode = new CommonNode(NT.NUMBER, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToInt32(leftNode.token.value) - Convert.ToInt32(rightNode.token.value)), root.token.pos)); break;
                         case "*":
-                            reFreshNode = new CommonNode("NUMBER", new Token(leftNode.token.type,
+                            reFreshNode = new CommonNode(NT.NUMBER, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToInt32(leftNode.token.value) * Convert.ToInt32(rightNode.token.value)), root.token.pos)); break;
                         case "/":
-                            reFreshNode = new CommonNode("NUMBER", new Token(leftNode.token.type,
+                            reFreshNode = new CommonNode(NT.NUMBER, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToInt32(leftNode.token.value) / Convert.ToInt32(rightNode.token.value)), root.token.pos)); break;
                         case "%":
-                            reFreshNode = new CommonNode("NUMBER", new Token(leftNode.token.type,
+                            reFreshNode = new CommonNode(NT.NUMBER, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToInt32(leftNode.token.value) % Convert.ToInt32(rightNode.token.value)), root.token.pos)); break;
                     }
             }
@@ -508,7 +508,7 @@ namespace Qscript
              * //Ну конечно во первых если 2 оператора числа или флоты но это для флотовых
              * 
              */
-            if (root.type != "CMP")
+            if (root.type != NT.CMP)
             {
                 for (int i = 0; i < root.childs.Count; i++) root.childs[i] = cmpReFresh(root.childs[i]);
                 return root;
@@ -519,12 +519,12 @@ namespace Qscript
             CommonNode leftNode = take(root, 0);
             CommonNode rightNode = take(root, 1);
 
-            if (leftNode.type == "CMP" && (leftNode.token.value == "true") &&
-                rightNode.type == "CMP" && (rightNode.token.value == "true")) return new CommonNode(root.type, new Token(root.token.type, "true", root.token.pos));
-            if (leftNode.type == "CMP" && (leftNode.token.value == "false") &&
-                rightNode.type == "CMP" && (rightNode.token.value == "false")) return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
-            if (leftNode.type == "CMP" && rightNode.type == "CMP" && root.token.value == "&&") return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
-            if (leftNode.type == "CMP" && rightNode.type == "CMP" && root.token.value == "||") return new CommonNode(root.type, new Token(root.token.type, "true", root.token.pos));
+            if (leftNode.type == NT.CMP && (leftNode.token.value == "true") &&
+                rightNode.type == NT.CMP && (rightNode.token.value == "true")) return new CommonNode(root.type, new Token(root.token.type, "true", root.token.pos));
+            if (leftNode.type == NT.CMP && (leftNode.token.value == "false") &&
+                rightNode.type == NT.CMP && (rightNode.token.value == "false")) return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
+            if (leftNode.type == NT.CMP && rightNode.type == NT.CMP && root.token.value == "&&") return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
+            if (leftNode.type == NT.CMP && rightNode.type == NT.CMP && root.token.value == "||") return new CommonNode(root.type, new Token(root.token.type, "true", root.token.pos));
 
             bool cmpB = false;
             bool cmp = false;
@@ -534,11 +534,11 @@ namespace Qscript
             leftNode.token.value = leftNode.token.value.Replace(".", ",");
             rightNode.token.value = rightNode.token.value.Replace(".", ",");
 
-            if (leftNode.type == "FLOAT") leftNode.token.value = leftNode.token.value.Replace("f", "");
-            if (rightNode.type == "FLOAT") rightNode.token.value = rightNode.token.value.Replace("f", "");
+            if (leftNode.type == NT.FLOAT) leftNode.token.value = leftNode.token.value.Replace("f", "");
+            if (rightNode.type == NT.FLOAT) rightNode.token.value = rightNode.token.value.Replace("f", "");
 
-            if (leftNode.type == "NUMBER" || leftNode.type == "FLOAT") leftValue = Convert.ToDecimal(leftNode.token.value);
-            if (rightNode.type == "NUMBER" || rightNode.type == "FLOAT") rightValue = Convert.ToDecimal(rightNode.token.value);
+            if (leftNode.type == NT.NUMBER || leftNode.type == NT.FLOAT) leftValue = Convert.ToDecimal(leftNode.token.value);
+            if (rightNode.type == NT.NUMBER || rightNode.type == NT.FLOAT) rightValue = Convert.ToDecimal(rightNode.token.value);
 
             if (leftValue != decimal.Zero && rightValue != decimal.Zero)
             {
@@ -558,7 +558,7 @@ namespace Qscript
         }
         private CommonNode cmpCheakDelete(CommonNode root)
         {
-            if (root.type != "IF")
+            if (root.type != NT.IF)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -570,14 +570,14 @@ namespace Qscript
             CommonNode cmpNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
 
-            if (cmpNode.token.value == "false") return new CommonNode("AIR", root.token);
+            if (cmpNode.token.value == "false") return new CommonNode(NT.AIR, root.token);
             if (cmpNode.token.value == "true") return bodyNode;
 
             return root;
         }
         private CommonNode classReFresh(CommonNode root)
         {
-            if (root.type != "CLASS")
+            if (root.type != NT.CLASS)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -595,11 +595,11 @@ namespace Qscript
 
             foreach (CommonNode node in root.childs)
             {
-                if (node.type == "VAR") varNodes.Add(node);
-                else if (node.type == "FUNC") methodNodes.Add(node);
-                else if (node.type == "CONSTRUCTOR") constructorNode = node;
-                else if (node.type == "DESTRUCTOR") destructorNode = node;
-                else if (node.type == "DECLARATOR") declarationNode = node;
+                if (node.type == NT.VAR) varNodes.Add(node);
+                else if (node.type == NT.FUNC) methodNodes.Add(node);
+                else if (node.type == NT.CONSTRUCTOR) constructorNode = node;
+                else if (node.type == NT.DESTRUCTOR) destructorNode = node;
+                else if (node.type == NT.DECLARATOR) declarationNode = node;
             }
             /*if (ast.ClassesInheritances.ContainsKey(root.token.value)
                 && ast.classMethods.ContainsKey(ast.ClassesInheritances[root.token.value])
@@ -616,7 +616,7 @@ namespace Qscript
             // * методы преобразовать в void print () {}   -> void print (ClASS this) {}
             // * Конструкторы и деструкторы пока что не трогаем
 
-            CommonNode strt = new CommonNode("STRUCT", root.token);
+            CommonNode strt = new CommonNode(NT.STRUCT, root.token);
             ast.declarotiveClassVars.Add(root.token.value, new List<CommonNode>());
             if (declarationNode != null)
             {
@@ -629,8 +629,8 @@ namespace Qscript
             }
             if (strt.childs.Count == 0)
             {
-                strt.childs.Add(new CommonNode("VAR", new Token(TT.VAR, "value", strt.token.pos)));
-                strt.childs[0].childs.Add(new CommonNode("TYPE", new Token(TT.VAR, "int32", strt.token.pos)));
+                strt.childs.Add(new CommonNode(NT.VAR, new Token(TT.VAR, "value", strt.token.pos)));
+                strt.childs[0].childs.Add(new CommonNode(NT.TYPE, new Token(TT.VAR, "int32", strt.token.pos)));
             }
             if (declarationNode != null) ast.declarotivePatternsStruct.Add(strt.token.value,  strt);
             if (declarationNode != null) ast.declarativeClassNames.Add(strt.token.value);
@@ -643,8 +643,8 @@ namespace Qscript
                 List<CommonNode> commonNodes = new List<CommonNode>();
                 
                 foreach (CommonNode cn in signatureFuncNode.childs) commonNodes.Add(cn);
-                commonNodes.Add(new CommonNode("VAR", new Token(TT.VAR, "this", signatureFuncNode.token.pos)));
-                commonNodes.Last().childs.Add(new CommonNode("TYPE", new Token(TT.VAR, root.token.value, signatureFuncNode.token.pos)));
+                commonNodes.Add(new CommonNode(NT.VAR, new Token(TT.VAR, "this", signatureFuncNode.token.pos)));
+                commonNodes.Last().childs.Add(new CommonNode(NT.TYPE, new Token(TT.VAR, root.token.value, signatureFuncNode.token.pos)));
                 signatureFuncNode.childs = commonNodes;
                 if (declarationNode == null) ast.resualtFunc.Add(newRoot.token.value, newRoot.childs[0]);
                 //ast.typesArgsFunc.Add(node.token.value, signatureFuncNode);
@@ -656,7 +656,7 @@ namespace Qscript
         }
         private CommonNode classInheritancesMethods(CommonNode root)
         {
-            if (root.type != "STRUCT")
+            if (root.type != NT.STRUCT)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -694,7 +694,7 @@ namespace Qscript
 
         private CommonNode structCheak(CommonNode root)
         {
-            if (root.type != "STRUCT")
+            if (root.type != NT.STRUCT)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -704,8 +704,8 @@ namespace Qscript
             }
             //ast.structs.Add
             //parseStruct(root, 0);
-            if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
-            //if (ast.declarotiveNames.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+            if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
+            //if (ast.declarotiveNames.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
             Dictionary<string, CommonNode> typesVar = new Dictionary<string, CommonNode>();
             foreach (CommonNode var in root.childs)
             {
@@ -719,7 +719,7 @@ namespace Qscript
         private CommonNode structInheritancesCheak(CommonNode root)
         {
 
-            if (root.type != "STRUCT")
+            if (root.type != NT.STRUCT)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -734,7 +734,7 @@ namespace Qscript
                 {
                     if (ast.structs[root.token.value].ContainsKey(child.Key)) continue;
                     ast.structs[root.token.value].Add(child.Key, child.Value);
-                    CommonNode varNode = new CommonNode("VAR", new Token(TT.NULL, child.Key, child.Value.token.pos));
+                    CommonNode varNode = new CommonNode(NT.VAR, new Token(TT.NULL, child.Key, child.Value.token.pos));
                     varNode.childs.Add(child.Value);
                     root.childs.Add(varNode);
                 }
@@ -744,7 +744,7 @@ namespace Qscript
         }
         private CommonNode varDeclaratorCheak(CommonNode root, ref CommonNode _ast)
         {
-            if (root.type != "VAR")
+            if (root.type != NT.VAR)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -757,7 +757,7 @@ namespace Qscript
             {
                 CommonNode type = root.childs[0];
 
-                if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
+                if (type.childs.Count > 0 && root.childs[0].type != NT.OFFSET)
                 {
                     type.token.value = generationDeclarationStruct(type, type.childs[0]);
                     _ast.childs.Add(ast.childs[ast.childs.Count - 1]);
@@ -767,12 +767,12 @@ namespace Qscript
                     root.childs[0].token.value = type.token.value;
                 }
             }
-            if (ast.declarotivePatternsStruct.ContainsKey(root.token.value)) return new CommonNode("AIR", root.token);
+            if (ast.declarotivePatternsStruct.ContainsKey(root.token.value)) return new CommonNode(NT.AIR, root.token);
             return root;
         }
         private CommonNode callCheak(CommonNode root)
         {
-            if (root.type != "CALL")
+            if (root.type != NT.CALL)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -785,7 +785,7 @@ namespace Qscript
         }
         private CommonNode funcCheak(CommonNode root)
         {
-            if (root.type != "FUNC")
+            if (root.type != NT.FUNC)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -801,7 +801,7 @@ namespace Qscript
         }
         private CommonNode defineCheak(CommonNode root)
         {
-            if (root.type != "TYPEIF")
+            if (root.type != NT.TYPEIF)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -816,11 +816,11 @@ namespace Qscript
 
             if (typeFirstNode.token.value == typeSecondNode.token.value)
                 return bodyNode;
-            return new CommonNode("AIR", root.token);
+            return new CommonNode(NT.AIR, root.token);
         }
         private CommonNode constRemove(CommonNode root)
         {
-            if (root.type != "VAR")
+            if (root.type != NT.VAR)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -834,7 +834,7 @@ namespace Qscript
         }
         private CommonNode includeParentsStructs(CommonNode root)
         {
-            if (root.type != "STRUCT")
+            if (root.type != NT.STRUCT)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -861,7 +861,7 @@ namespace Qscript
                 Console.WriteLine($"Struct {root.token.value}-> Count: {root.childs.Count}");
                 Console.WriteLine($"Struct v {root.token.value}-> Count: {ast.structs[root.token.value].Count}");
                 ast.structs[root.token.value] = varsStruct;
-                CommonNode strt = new CommonNode("STRUCT", root.token);
+                CommonNode strt = new CommonNode(NT.STRUCT, root.token);
                 Console.WriteLine(varsStruct.Count);
                 Console.WriteLine(varsStructParent.Count);
                 foreach (var child in varsStruct) strt.childs.Add(child.Value);
@@ -874,13 +874,13 @@ namespace Qscript
 
         private CommonNode varRegisterCheakUses(CommonNode root)
         {
-            if (root.type == "VAR" && varRegisters.Contains(root.token.value))
+            if (root.type == NT.VAR && varRegisters.Contains(root.token.value))
             {
-                root.type = "REGUSE";
-            } else if (root.type == "REGDECL" && !varRegisters.Contains(root.token.value))
+                root.type = NT.REGUSE;
+            } else if (root.type == NT.REGDECL && !varRegisters.Contains(root.token.value))
             {
                 varRegisters.Add(root.token.value);
-            } else if (root.type != "REGDECL")
+            } else if (root.type != NT.REGDECL)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -893,7 +893,7 @@ namespace Qscript
         }
         private CommonNode lambdaPreparing(CommonNode root)
         {
-            if (root.type != "LAMBDA")
+            if (root.type != NT.LAMBDA)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -908,11 +908,11 @@ namespace Qscript
                 CommonNode templeteNode = take(root, 1);
 
                 templeteNode.token.value = $"lambda{lambdaIndex++}";
-                templeteNode.type = "FUNC";
+                templeteNode.type = NT.FUNC;
                 templeteNode = functionTypePreparing(templeteNode);
                 ast.lambdaQueue.Add(templeteNode);
 
-                CommonNode callNode = new CommonNode("CALL", new Token(TT.NULL, templeteNode.token.value, signatureCallNode.token.pos));
+                CommonNode callNode = new CommonNode(NT.CALL, new Token(TT.NULL, templeteNode.token.value, signatureCallNode.token.pos));
                 callNode.childs.Add(signatureCallNode);
                 return callNode;
             }
@@ -921,12 +921,12 @@ namespace Qscript
                 CommonNode templeteNode = take(root, 0);
 
                 templeteNode.token.value = $"lambda{lambdaIndex++}";
-                templeteNode.type = "FUNC";
+                templeteNode.type = NT.FUNC;
                 templeteNode = functionTypePreparing(templeteNode);
                 ast.lambdaQueue.Add(templeteNode);
 
-                CommonNode addressNode = new CommonNode("ADDRESS", new Token(TT.NULL, "&", templeteNode.token.pos));
-                CommonNode callNode = new CommonNode("CALLADDRESS", templeteNode.token);
+                CommonNode addressNode = new CommonNode(NT.ADDRESS, new Token(TT.NULL, "&", templeteNode.token.pos));
+                CommonNode callNode = new CommonNode(NT.CALLADDRESS, templeteNode.token);
                 addressNode.childs.Add(callNode);
                 return addressNode;
             }
@@ -935,17 +935,17 @@ namespace Qscript
         }
         private CommonNode varTypePreparing(CommonNode root)
         {
-            if (root.type == "VARDECL")
+            if (root.type == NT.VARDECL)
             {
                 CommonNode varNode = take(root, 0);
                 CommonNode exprNode = take(root, 1);
 
                 varNode.childs[0].token.value = getFormulaType(exprNode);
                 root.childs[0] = varNode;
-                root.type = "BINOPER";
+                root.type = NT.BINOPER;
                 return root;
             }
-            else if (root.type == "VAR" && root.childs.Count > 0 && root.childs[0].type == "TYPE")
+            else if (root.type == NT.VAR && root.childs.Count > 0 && root.childs[0].type == NT.TYPE)
             {
                 if (!varSpace.ContainsKey(root.token.value)) varSpace.AddVar(root.token.value, root.childs[0]);
             }
@@ -966,34 +966,34 @@ namespace Qscript
         {
             switch (root.type)
             {
-                case "INLINE":
+                case NT.INLINE:
                     return parseInline(root, z_buffer);
-                case "FUNC":
+                case NT.FUNC:
                     return parseFunc(root, z_buffer);
-                case "CALL":
+                case NT.CALL:
                     return parseCall(root, z_buffer);
-                case "STRUCT":
+                case NT.STRUCT:
                     return parseStruct(root, z_buffer);
-                case "CLASS":
+                case NT.CLASS:
                     return parseClass(root, z_buffer);
-                case "USING":
+                case NT.USING:
                     return parseUsing(root, z_buffer);
-                case "VAR":
+                case NT.VAR:
                     return parseVar(root, z_buffer);
-                case "MODIFIER":
+                case NT.MODIFIER:
                     return parseModifier(root, z_buffer);
-                case "FOR":
+                case NT.FOR:
                     return parseFor(root, z_buffer);
-                case "ENUMERATOR":
+                case NT.ENUMERATOR:
                     return parseEnumerator(root, z_buffer);
-                case "ADDRESS":
+                case NT.ADDRESS:
                     return root;
                 default:
                     if (root.childs.Count == 0)
                         break;
                     for (int i = 0; i < root.childs.Count; i++)
                     {
-                        if (root.childs[i].type != "ADDRESS")
+                        if (root.childs[i].type != NT.ADDRESS)
                             root.childs[i] = parse(root.childs[i], z_buffer + 1);
                     }
                     return root;
@@ -1006,7 +1006,7 @@ namespace Qscript
             for (int i = 0; i < body.childs.Count; i++)
             {
                 body.childs[i] = parse(body.childs[i], z_buffer + 2);
-                if (body.childs[i].type == "RETURN")
+                if (body.childs[i].type == NT.RETURN)
                     throw new Exception("Ошибка в инлайн функции не может быть return");
             }
             ast.inlineNames.Add(root.token.value);
@@ -1018,7 +1018,7 @@ namespace Qscript
             for (int i = 0; i < body.childs.Count; i++)
             {
                 body.childs[i] = parse(body.childs[i], z_buffer + 2);
-                if (body.childs[i].type == "RETURN")
+                if (body.childs[i].type == NT.RETURN)
                     throw new Exception("Ошибка в инлайн функции не может быть return");
             }
             ast.inlineNames.Add(root.token.value);
@@ -1026,7 +1026,7 @@ namespace Qscript
         }
         private CommonNode parseFunc(CommonNode root, int z_buffer)
         {
-            if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+            if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
             CommonNode signature = take(root, 1);
             CommonNode bodyFunc = take(root, 2);
             List<CommonNode> childs = new List<CommonNode>();
@@ -1034,16 +1034,16 @@ namespace Qscript
             {
                 CommonNode type = signature.childs[i].childs[0];
 
-                if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
+                if (type.childs.Count > 0 && root.childs[0].type != NT.OFFSET)
                 {
                     type.token.value = generationDeclarationStruct(type, type.childs[0]);
                     type.childs.Clear();
                     signature.childs[i].childs[0] = type;
                 }
             }
-            if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !Compiler.types.ContainsKey(ast.resualtFunc[root.token.value].token.value) && ast.resualtFunc[root.token.value].type != "INDICATOR")
+            if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !Compiler.types.ContainsKey(ast.resualtFunc[root.token.value].token.value) && ast.resualtFunc[root.token.value].type != NT.INDICATOR)
             {
-                CommonNode resualtVar = new CommonNode("VAR", new Token(TT.NULL, "resualtPtr", signature.token.pos));
+                CommonNode resualtVar = new CommonNode(NT.VAR, new Token(TT.NULL, "resualtPtr", signature.token.pos));
                 resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                 childs.Add(resualtVar);
             }
@@ -1077,13 +1077,13 @@ namespace Qscript
         {
             for (int i = 0; i < root.childs.Count; i++)
             {
-                if (root.childs[i].type != "VAR") root.childs[i] = parse(root.childs[i], z_buffer + 1);
+                if (root.childs[i].type != NT.VAR) root.childs[i] = parse(root.childs[i], z_buffer + 1);
             }
             return root;
         }
         private CommonNode parseStruct(CommonNode root, int z_buffer)
         {
-            if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+            if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
             Dictionary<string, CommonNode> typesVar = new Dictionary<string, CommonNode>();
             foreach (CommonNode var in root.childs)
             {
@@ -1097,12 +1097,12 @@ namespace Qscript
             if (root.childs.Count != 2) return root;
             CommonNode name = take(root, 0);
             CommonNode mode = take(root, 1);
-            if (mode.type == "INLINE" && name.childs.Count == 0) ast.inlineNames.Add(name.token.value);
-            else if (mode.type == "INLINE")
+            if (mode.type == NT.INLINE && name.childs.Count == 0) ast.inlineNames.Add(name.token.value);
+            else if (mode.type == NT.INLINE)
             {
                 foreach (CommonNode childName in name.childs) ast.inlineNames.Add(childName.token.value);
             }
-            return new CommonNode("AIR", root.token);
+            return new CommonNode(NT.AIR, root.token);
         }
         private CommonNode parseCall(CommonNode root, int z_buffer)
         {
@@ -1118,39 +1118,39 @@ namespace Qscript
                         for (int j = 0; j < ast.functionOver[root.token.value][i].childs[1].childs.Count; j++)
                         {
                             string childValue = root.childs[0].childs[j].token.value;
-                            string childType = root.childs[0].childs[j].type;
+                            NT childType = root.childs[0].childs[j].type;
                             string functionType = ast.functionOver[root.token.value][i].childs[1].childs[j].token.value;
                             switch (childType)
                             {
-                                case "VAR":
-                                case "POSTUNAROPER":
-                                case "PREUNAROPER":
+                                case NT.VAR:
+                                case NT.POSTUNAROPER:
+                                case NT.PREUNAROPER:
                                     if (varSpace.GetTypeValue(childValue) != functionType) flag = false;
                                     break;
-                                case "SIZEOF":
-                                case "TYPEOF":
-                                case "NUMBER":
-                                case "ADDRESS":
-                                case "BINOPER":
+                                case NT.SIZEOF:
+                                case NT.TYPEOF:
+                                case NT.NUMBER:
+                                case NT.ADDRESS:
+                                case NT.BINOPER:
                                     if (!Compiler.types.ContainsKey(functionType)) flag = false;
                                     break;
-                                case "FLOAT":
-                                case "FLOATOPER":
+                                case NT.FLOAT:
+                                case NT.FLOATOPER:
                                     if (functionType != "float" && functionType != "double") flag = false;
                                     break;
-                                case "STRING":
-                                    if (functionType != "string") flag = false;
+                                case NT.STRING:
+                                    if (functionType != "STRING") flag = false;
                                     break;
-                                case "CHAR":
+                                case NT.CHAR:
                                     if (functionType != "char" && functionType != "byte" && functionType != "int8") flag = false;
                                     break;
-                                case "BOOL":
+                                case NT.BOOL:
                                     if (functionType != "bool") flag = false;
                                     break;
-                                case "TYPEOPER":
+                                case NT.TYPEOPER:
                                     if (functionType != childValue) flag = false;
                                     break;
-                                case "CALL":
+                                case NT.CALL:
                                     if (functionType != ast.resualtFunc[childValue].token.value) flag = false;
                                     break;
                             }
@@ -1185,13 +1185,13 @@ namespace Qscript
                     name.Remove(0, 1);
                     List<CommonNode> argsNew = new List<CommonNode>();
                     foreach (CommonNode node in root.childs[0].childs) argsNew.Add(node);
-                    argsNew.Add(new CommonNode("VAR", new Token(TT.VAR, strs[0], root.childs[0].token.pos)));
+                    argsNew.Add(new CommonNode(NT.VAR, new Token(TT.VAR, strs[0], root.childs[0].token.pos)));
                     root.childs[0].childs = argsNew;
                     root.token.value = strs[strs.Length-1] + "_" + type;
                 }
             } catch { }
             if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) root = generationDeclarationFunc(root);
-            if (take(root, 0).type == "DECLARATOR") Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
+            if (take(root, 0).type == NT.DECLARATOR) Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
 
             CommonNode signatureCall = take(root, 0);
            
@@ -1204,13 +1204,13 @@ namespace Qscript
         {
             if (root.childs.Count > 0)
             {
-                if (!root.token.value.Contains(".") && root.childs[0].type != "OFFSET" && varSpace.ContainsKey(root.token.value))
+                if (!root.token.value.Contains(".") && root.childs[0].type != NT.OFFSET && varSpace.ContainsKey(root.token.value))
                     Syntax.SyntaxError($"В текущей области видимости Переменная: {root.token.value} уже объявлена!", root);
 
                 CommonNode type = root.childs[0];
                 
 
-                if (type.childs.Count > 0 && root.childs[0].type != "OFFSET")
+                if (type.childs.Count > 0 && root.childs[0].type != NT.OFFSET)
                 {
                     CommonNode _ast = ast;
                     string oldType = type.token.value;
@@ -1256,7 +1256,7 @@ namespace Qscript
                     type.childs.Clear();
                     root.childs[0] = type;
                 }
-                if (root.childs[0].type != "OFFSET")
+                if (root.childs[0].type != NT.OFFSET)
                 {
                     if (varSpace.VarsSpaces.Count == 0) varSpace.VarsData.Add(root.token.value, type);
                     else varSpace.AddVar(root.token.value, type);
@@ -1271,7 +1271,7 @@ namespace Qscript
             {
                 foreach (var child in commonNode.childs)
                 {
-                    if (child.childs.Count == 1 && child.childs[0].type == "TYPE") return child;
+                    if (child.childs.Count == 1 && child.childs[0].type == NT.TYPE) return child;
                     return recurse(child);
                 }
                 return null;
@@ -1294,7 +1294,7 @@ namespace Qscript
         }
         private CommonNode parseClass(CommonNode root, int z_buffer)
         {
-            if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode("AIR", root.token);
+            if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
             return root;
         }
 
@@ -1322,7 +1322,7 @@ namespace Qscript
             }
             for (int i = 0; i < rootNode.childs.Count; i++)
             {
-                if (root.type == "TYPE" && rootNode.childs[i].type == "DECLARATOR")
+                if (root.type == NT.TYPE && rootNode.childs[i].type == NT.DECLARATOR)
                 {
                     //Console.WriteLine($"{root.token.value} + {root.type}");
 
@@ -1330,18 +1330,18 @@ namespace Qscript
                     string name = generationDeclarationStruct(root, replace);
                     replace.token.value = name;
                     root = replace;
-                    root.type = "TYPE";
+                    root.type = NT.TYPE;
                     root.childs.Clear();
                     continue;
                 }
-                if (root.type == "INDICATOR")
+                if (root.type == NT.INDICATOR)
                 {
                     //Console.ReadKey(); Console.WriteLine("REPLACE INDICATOR");
                     CommonNode replace = replaceNodes(rootNode.childs[i], ref table);
                     string name = generationDeclarationStruct(root, replace);
                     replace.token.value = name;
                     root = replace;
-                    root.type = "INDICATOR";
+                    root.type = NT.INDICATOR;
                     root.childs.Clear();
                     continue;
                 }
@@ -1353,7 +1353,7 @@ namespace Qscript
         private string generationDeclarationStruct (CommonNode type, CommonNode declarator)
         {
             string secondDeclarator = string.Empty;
-            if (declarator.childs.Count > 0 && declarator.childs[0].childs.Count > 0 && declarator.childs[0].childs[0].type == "DECLARATOR")
+            if (declarator.childs.Count > 0 && declarator.childs[0].childs.Count > 0 && declarator.childs[0].childs[0].type == NT.DECLARATOR)
                 secondDeclarator = generationDeclarationStruct(declarator.childs[0], declarator.childs[0].childs[0]);
             if (!ast.declarotivePatternsStruct.Keys.Contains(type.token.value)) Syntax.SyntaxError($"Невозможно объявить декларотивный Тип:{type.token.value} так как его не существует!", type);
             CommonNode pattern = ast.declarotivePatternsStruct[type.token.value];
@@ -1399,7 +1399,7 @@ namespace Qscript
         private string generationDeclarationStruct(CommonNode type, CommonNode declarator, ref Dictionary<string, CommonNode> types)
         {
             string secondDeclarator = string.Empty;
-            if (declarator.childs.Count > 0 && declarator.childs[0].childs.Count > 0 && declarator.childs[0].childs[0].type == "DECLARATOR")
+            if (declarator.childs.Count > 0 && declarator.childs[0].childs.Count > 0 && declarator.childs[0].childs[0].type == NT.DECLARATOR)
                 secondDeclarator = generationDeclarationStruct(declarator.childs[0], declarator.childs[0].childs[0]);
             if (!ast.declarotivePatternsStruct.Keys.Contains(type.token.value)) Syntax.SyntaxError($"Невозможно объявить декларотивный Тип:{type.token.value} так как его не существует!", type);
             CommonNode pattern = ast.declarotivePatternsStruct[type.token.value];

@@ -85,7 +85,7 @@ namespace Qscript
             if (VarsData.ContainsKey(key)) VarsData[key].token.value = newTypeValue;
             if (VarsSpaces.Count != 0 && VarsSpaces.Peek().ContainsKey(key)) VarsSpaces.Peek()[key].token.value = newTypeValue;
         }
-        public void SwapTypeType(string key, string newTypeType)
+        public void SwapTypeType(string key, NT newTypeType)
         {
             if (VarsData.ContainsKey(key)) VarsData[key].type = newTypeType;
             if (VarsSpaces.Count != 0 && VarsSpaces.Peek().ContainsKey(key)) VarsSpaces.Peek()[key].type = newTypeType;

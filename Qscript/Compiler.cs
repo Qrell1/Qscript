@@ -222,7 +222,7 @@ namespace Qscript
                 //_objProg.code.Append("  ");
             switch (root.type)
             {
-                case "ROOT":
+                case NT.ROOT:
                     setWriteData(CodeData.codeData);
                     for (int i = 0; i < root.childs.Count; i++)
                     {
@@ -230,120 +230,120 @@ namespace Qscript
                         Translation(child, z_buffer + 1);
                     }
                     break;
-                case "VAR":
+                case NT.VAR:
                     translationVar(root, z_buffer);
                     break;
-                case "BINOPER":
+                case NT.BINOPER:
                     translationBinOper(root, z_buffer);
                     break;
-                case "FLOATBINOPER":
+                case NT.FLOATBINOPER:
                     translationFloatBinOper(root, z_buffer);
                     break;
-                case "NUMBER":
+                case NT.NUMBER:
                     _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {root.token.value}\n");
                     regReturn = $".reg{regIndex-1}{regPrefer}";
                     break;
-                case "BOOL":
+                case NT.BOOL:
                     char boolChar = (root.token.value == "true") ? '1' : '0'; _objProg.code.Append($"mov .reg{regIndex++}, {boolChar}\n");
                     regReturn = $".reg{regIndex-1}";
                     break;
-                case "CONST":
+                case NT.CONST:
                     translationConst(root, z_buffer);
                     break;
-                case "STRING":
+                case NT.STRING:
                     translationString(root, z_buffer);
                     break;
-                case "CHAR":
+                case NT.CHAR:
                     translationChar(root, z_buffer);
                     break;
-                case "FUNC":
+                case NT.FUNC:
                     translationFunc(root, z_buffer);
                     break;
-                case "INLINE":
+                case NT.INLINE:
                     translationInline(root, z_buffer);
                     break;
-                case "ASMINLINE":
+                case NT.ASMINLINE:
                     translationAsmInline(root, z_buffer);
                     break;
-                case "STRUCT":
+                case NT.STRUCT:
                     translationStruct(root, z_buffer);
                     break;
-                case "ALLOCMEMSTATICOBJECT":
+                case NT.ALLOCMEMSTATICOBJECT:
                     Translation(take(root, 0), z_buffer + 1);
                     break;
-                case "CALL":
+                case NT.CALL:
                     translationCall(root, z_buffer);
                     break;
-                case "CMP":
+                case NT.CMP:
                     translationCmp(root, z_buffer);
                     break;
-                case "IF":
+                case NT.IF:
                     translationIf(root, z_buffer);
                     break;
-                case "ELSEIF":
+                case NT.ELSEIF:
                     translationIf(root, z_buffer);
                     break;
-                case "ELSE":
+                case NT.ELSE:
                     translationElse(root, z_buffer);
                     break;
-                case "ITER":
+                case NT.ITER:
                     translationIter(root, z_buffer);
                     break;
-                case "FOR":
+                case NT.FOR:
                     translationFor(root, z_buffer);
                     break;
-                case "WHILE":
+                case NT.WHILE:
                     translationWhile(root, z_buffer);
                     break;
-                case "ENUMERATOR":
+                case NT.ENUMERATOR:
                     translationEnumerator(root, z_buffer);
                     break;
-                case "REPT":
+                case NT.REPT:
                     translationRept(root, z_buffer);
                     break;
-                case "RETURN":
+                case NT.RETURN:
                     translationReturn(root, z_buffer);
                     break;
-                case "REFVAR":
+                case NT.REFVAR:
                     translationRefVar(root, z_buffer);
                     break;
-                case "SIZEOF":
+                case NT.SIZEOF:
                     translationSizeof(root, z_buffer);
                     break;
-                case "TYPEOF":
+                case NT.TYPEOF:
                     translationTypeof(root, z_buffer);
                     break;
-                case "ADDRESS":
+                case NT.ADDRESS:
                     translationAddress(root, z_buffer);
                     break;
-                case "PREUNAROPER":
+                case NT.PREUNAROPER:
                     translationPreUnarOper(root, z_buffer);
                     break;
-                case "POSTUNAROPER":
+                case NT.POSTUNAROPER:
                     translationPostUnarOper(root, z_buffer);
                     break;
-                case "TAG":
+                case NT.TAG:
                     _objProg.code.Append($"{root.token.value}:\n");
                     break;
-                case "JMP":
+                case NT.JMP:
                     _objProg.code.Append($"jmp {take(root, 0).token.value}\n");
                     break;
-                case "REGDECL":
+                case NT.REGDECL:
                     translationRegDeclaration(root, z_buffer);
                     break;
-                case "REGUSE":
+                case NT.REGUSE:
                     translationRegUses(root, z_buffer);
                     break;
-                case "BODY":
+                case NT.BODY:
                     for (int i = 0; i < root.childs.Count; i++)
                     {
                         Translation(root.childs[i], z_buffer + 1);
                     }
                     break;
-                case "ASM":
+                case NT.ASM:
                     parseAsm(root);
                     break;
-                case "USING":
+                case NT.USING:
                     _objProg.includes.Append($"include '{take(root,0).token.value}'\n");
                     break;
             }
@@ -425,21 +425,21 @@ namespace Qscript
             string countString = "ecx";
             switch (countNode.type)
             {
-                case "NUMBER": countString = countNode.token.value; break;
-                case "VAR": _objProg.code.Append($"mov ecx, [{countNode.token.value}]\n"); countString = $"[{countNode.token.value}]"; break;
-                case "FLOATBINOPER": Syntax.SyntaxError("Невозможно использовать флотовую операцию в качестве числа енумераций!", countNode); break;
-                case "FLOAT": Syntax.SyntaxError("Невозможно использовать флотовое число в качестве числа енумераций!", countNode); break;
+                case NT.NUMBER: countString = countNode.token.value; break;
+                case NT.VAR: _objProg.code.Append($"mov ecx, [{countNode.token.value}]\n"); countString = $"[{countNode.token.value}]"; break;
+                case NT.FLOATBINOPER: Syntax.SyntaxError("Невозможно использовать флотовую операцию в качестве числа енумераций!", countNode); break;
+                case NT.FLOAT: Syntax.SyntaxError("Невозможно использовать флотовое число в качестве числа енумераций!", countNode); break;
                 default: Translation(countNode, z_buffer + 1); _objProg.code.Append($"mov ecx, eax\n"); break;
             }
-            if (countNode.type == "NUMBER" && Convert.ToInt32(countString) <= 0) return;
-            if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) <= 10 && totalNodes(bodyNode) <= 32) // plan 1
+            if (countNode.type == NT.NUMBER && Convert.ToInt32(countString) <= 0) return;
+            if (countNode.type == NT.NUMBER && Convert.ToInt32(countNode.token.value) <= 10 && totalNodes(bodyNode) <= 32) // plan 1
             {
                 for (int i = 0; i < Convert.ToInt32(countNode.token.value); i++)
                 {
                     Translation(bodyNode, z_buffer + 1);
                 }
             }
-            else if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) % 3 == 0 && totalNodes(bodyNode) <= 32)
+            else if (countNode.type == NT.NUMBER && Convert.ToInt32(countNode.token.value) % 3 == 0 && totalNodes(bodyNode) <= 32)
             {
                 int newIter = Convert.ToInt32(countNode.token.value) / 3;
                 bool isVarUse = isNodeValue(varNode.token.value, bodyNode);
@@ -461,7 +461,7 @@ namespace Qscript
                 _objProg.code.Append($"cmp {reg}, {newIter}\n");
                 _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
             }
-            else if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) % 2 == 0 && totalNodes(bodyNode) <= 32)
+            else if (countNode.type == NT.NUMBER && Convert.ToInt32(countNode.token.value) % 2 == 0 && totalNodes(bodyNode) <= 32)
             {
                 int newIter = Convert.ToInt32(countNode.token.value) / 2;
                 bool isVarUse = isNodeValue(varNode.token.value, bodyNode);
@@ -481,7 +481,7 @@ namespace Qscript
                 _objProg.code.Append($"cmp {reg}, {newIter}\n");
                 _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
             }
-            else if (countNode.type == "NUMBER")
+            else if (countNode.type == NT.NUMBER)
             {
                 bool isVarUse = isNodeValue(varNode.token.value, bodyNode);
                 string reg = $".reg{regIndex++}safe";
@@ -498,7 +498,7 @@ namespace Qscript
                 _objProg.code.Append($"cmp {reg}, {countString}\n");
                 _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
             }
-            else if (countNode.type == "VAR")
+            else if (countNode.type == NT.VAR)
             {
                 string reg = $".reg{regIndex++}safe";
 
@@ -647,7 +647,7 @@ namespace Qscript
             {
                 Translation(returnValue, z_buffer + 1);
                 _objProg.code.Append($"mov esi, {regReturn}\n");
-            } else if (returnType.type == "VAR")
+            } else if (returnType.type == NT.VAR)
             {
                 Translation(returnValue, z_buffer + 1);
                 _objProg.code.Append($"lea .reg{regIndex++}eax, [{returnValue.token.value}]\n");
@@ -667,9 +667,9 @@ namespace Qscript
             CommonNode bodyNode = take(root, 1);
             int iterNumber = ++iterTagIndex;
             string pre = (funcName != "") ? funcName + "." : "";
-            if (countNode.type == "NUMBER" && Convert.ToInt32(countNode.token.value) <= 0) return;
+            if (countNode.type == NT.NUMBER && Convert.ToInt32(countNode.token.value) <= 0) return;
 
-            else if (countNode.type == "NUMBER"
+            else if (countNode.type == NT.NUMBER
                 && Convert.ToInt32(countNode.token.value) >= 16
                 && Convert.ToInt32(countNode.token.value) % 4 == 0 && totalNodes(bodyNode) <= 32)
             {
@@ -689,7 +689,7 @@ namespace Qscript
                 _objProg.code.Append($"cmp {reg}, {newIter}\n");
                 _objProg.code.Append($"jne iter{iterNumber}\n");
             }
-            else if (countNode.type == "NUMBER"
+            else if (countNode.type == NT.NUMBER
                 && Convert.ToInt32(countNode.token.value) >= 16
                 && Convert.ToInt32(countNode.token.value) % 2 == 0
                 && totalNodes(bodyNode) <= 32)
@@ -712,7 +712,7 @@ namespace Qscript
             { // {reg}
                 string reg = $".reg{regIndex++}safe";
                 string reg2 = string.Empty;
-                if (countNode.type == "NUMBER")
+                if (countNode.type == NT.NUMBER)
                     reg2 = countNode.token.value;
                 else
                 {
@@ -723,11 +723,11 @@ namespace Qscript
                 _objProg.code.Append($"iter{iterNumber}:\n");
 
                 _objProg.code.Append($"push {reg}\n");
-                if (countNode.type != "NUMBER") _objProg.code.Append($"push {reg2}\n");
+                if (countNode.type != NT.NUMBER) _objProg.code.Append($"push {reg2}\n");
 
                 Translation(bodyNode, z_buffer + 1);
 
-                if (countNode.type != "NUMBER") _objProg.code.Append($"pop {reg2}\n");
+                if (countNode.type != NT.NUMBER) _objProg.code.Append($"pop {reg2}\n");
                 _objProg.code.Append($"pop {reg}\n");
 
                 _objProg.code.Append($"inc {reg}\n");
@@ -806,13 +806,13 @@ namespace Qscript
 
                 _objProg.code.Append($"; CMP\n");
 
-                if (leftChild.type == "NUMBER" && rightChild.type == "NUMBER")
+                if (leftChild.type == NT.NUMBER && rightChild.type == NT.NUMBER)
                 {
                     string reg = $".reg{regIndex++}";
                     _objProg.code.Append($"mov {reg}, {leftChild.token.value}\n");
                     _objProg.code.Append($"cmp {reg}, {rightChild.token.value}\n");
                 }
-                if (leftChild.type == "FLOAT" && rightChild.type == "FLOAT")
+                if (leftChild.type == NT.FLOAT && rightChild.type == NT.FLOAT)
                 {
                     string reg = $".reg{regIndex++}";
                     floatVar = getFloatConst(leftChild);
@@ -820,23 +820,23 @@ namespace Qscript
                     _objProg.code.Append($"mov {reg}, [{floatVar}]\n");
                     _objProg.code.Append($"cmp {reg}, [{floatVar2}]\n");
                 }
-                else if (rightChild.type == "NUMBER")
+                else if (rightChild.type == NT.NUMBER)
                 {
                     Translation(leftChild, z_buffer + 1);
                     _objProg.code.Append($"cmp {regReturn}, {rightChild.token.value}\n");
                 }
-                else if (rightChild.type == "FLOAT")
+                else if (rightChild.type == NT.FLOAT)
                 {
                     Translation(leftChild, z_buffer + 1);
                     floatVar = getFloatConst(rightChild);
                     _objProg.code.Append($"cmp {regReturn}, [{floatVar}]\n");
-                } else if (rightChild.type == "BOOL")
+                } else if (rightChild.type == NT.BOOL)
                 {
                     Translation(leftChild, z_buffer + 1);
                     char boolChar = (rightChild.token.value == "true") ? '1' : '0';
                     _objProg.code.Append($"mov .reg{regIndex++}, {boolChar}\n");
                     _objProg.code.Append($"cmp {regReturn}, .reg{regIndex-1}\n");
-                } else if (rightChild.type == "STRING")
+                } else if (rightChild.type == NT.STRING)
                 {
                     Translation(leftChild, z_buffer + 1);
                     translationString(rightChild, z_buffer + 1);
@@ -909,7 +909,7 @@ namespace Qscript
 
                 //_objProg.code.Append($"false{falseTagIndex}:");
                 //falseTagIndex++;
-                //if (leftChild.type == "VAR" && !(new string[] { "+", "-", "*", "/" }.Contains(root.token.value)))
+                //if (leftChild.type == NT.VAR && !(new string[] { "+", "-", "*", "/" }.Contains(root.token.value)))
                 //_objProg.code.Append($"mov [{leftChild.token.value}], eax\n");
             }
         }
@@ -917,13 +917,13 @@ namespace Qscript
         {
             string regReturn1 = string.Empty;
             string regReturn2 = string.Empty;
-            if (leftChild.type == "NUMBER" && rightChild.type == "NUMBER")
+            if (leftChild.type == NT.NUMBER && rightChild.type == NT.NUMBER)
             {
                 _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {leftChild.token.value}\n");
                 _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {rightChild.token.value}\n");
                 return ($".reg{regIndex - 2}{regPrefer}", $".reg{regIndex - 1}{regPrefer}");
             }
-            else if (rightChild.type == "NUMBER")
+            else if (rightChild.type == NT.NUMBER)
             {
                 Translation(leftChild, z_buffer + 1);
                 regReturn1 = regReturn;
@@ -941,7 +941,7 @@ namespace Qscript
         }
         private void translationVar (CommonNode root,  int z_buffer)
         {
-            if (root.childs.Count > 0 && root.childs[0].type == "OFFSET")
+            if (root.childs.Count > 0 && root.childs[0].type == NT.OFFSET)
             {
                 CommonNode offset = root.childs[0];
                 Translation(offset.childs[0], z_buffer);
@@ -955,7 +955,7 @@ namespace Qscript
             }
 
             string varType = varSpace.GetTypeValue(root.token.value);
-            if (varType != null && root.childs.Count == 0 && varSpace.GetType(root.token.value).type == "INDICATOR")
+            if (varType != null && root.childs.Count == 0 && varSpace.GetType(root.token.value).type == NT.INDICATOR)
             {
                 _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, [{root.token.value}]\n");
                 regReturn = $".reg{regIndex-1}{regPrefer}";
@@ -980,7 +980,7 @@ namespace Qscript
                 classes = types[type.token.value];
             else
                 classes = type.token.value;
-            if (root.childs.Count > 0 && root.childs[0].type == "INDICATOR")
+            if (root.childs.Count > 0 && root.childs[0].type == NT.INDICATOR)
             { classes = "*" + $"{root.childs[0].token.value}"; }
             if (!varSpace.PeekContainsKey(root.token.value) && type != null && _objProg.local == false)
             {
@@ -1001,37 +1001,37 @@ namespace Qscript
                 CommonNode rightChild = take(root, 1);
 
                 string varString = string.Empty;
-                if (varChild.type == "USEADDRESSVAR")
+                if (varChild.type == NT.USEADDRESSVAR)
                 {
                     translationUseAddressVar(varChild, z_buffer + 1);
                     varString = $"[{regReturn}]";
                 }
-                else if (varChild.type == "REGDECL")
+                else if (varChild.type == NT.REGDECL)
                 {
                     translationRegDeclaration(varChild, z_buffer + 1);
                     varString = getRegisterUse(varChild.token.value);
                 }
-                else if (varChild.type == "REGUSE") varString = getRegisterUse(varChild.token.value);
+                else if (varChild.type == NT.REGUSE) varString = getRegisterUse(varChild.token.value);
                 else varString = $"[{varChild.token.value}]";
 
 
-                if (rightChild.type == "FLOAT")
+                if (rightChild.type == NT.FLOAT)
                 {
                     _objProg.data.Append($"{varString} dd {rightChild.token.value.Replace("f","")}\n");
                     return;
                 }
 
-                if (varChild.childs.Count > 0 && varChild.childs[0].type == "OFFSET")
+                if (varChild.childs.Count > 0 && varChild.childs[0].type == NT.OFFSET)
                 {
                     translationOffset(varChild, rightChild, z_buffer);
                     return;
                 }
 
-                if (varChild.childs.Count > 0 && varChild.type == "VAR")
+                if (varChild.childs.Count > 0 && varChild.type == NT.VAR)
                     translationVar(varChild, z_buffer + 1);
                 
 
-                if (rightChild.type == "STRING")
+                if (rightChild.type == NT.STRING)
                 {
                     translationString(rightChild, z_buffer + 1);
 
@@ -1039,19 +1039,19 @@ namespace Qscript
                     _objProg.code.Append($"mov {varString}, .reg{regIndex-1}{regPrefer}\n");
                     return;
                 }
-                else if (rightChild.type == "CHAR")
+                else if (rightChild.type == NT.CHAR)
                 {
                     _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {rightChild.token.value}\n");
                     _objProg.code.Append($"mov {varString}, .reg{regIndex-1}{regPrefer}\n");
                 }
-                else if (rightChild.type == "CALL")
+                else if (rightChild.type == NT.CALL)
                 {
                     //regPrefer = "eax";
-                    if (types.ContainsKey(ProgramAst.resualtFunc[rightChild.token.value].token.value) || ProgramAst.resualtFunc[rightChild.token.value].type == "INDICATOR")
+                    if (types.ContainsKey(ProgramAst.resualtFunc[rightChild.token.value].token.value) || ProgramAst.resualtFunc[rightChild.token.value].type == NT.INDICATOR)
                     { translationCall(rightChild, z_buffer + 1); _objProg.code.Append($"mov {varString}, .reg{regIndex++}eax\n"); }
                     else translationCall(rightChild, z_buffer + 1, $"lea .reg{regIndex++}eax, {varString}\n");
                 }
-                else if (rightChild.type == "NUMBER")
+                else if (rightChild.type == NT.NUMBER)
                 {
                     _objProg.code.Append($"mov {varString}, {rightChild.token.value}\n");
                 }
@@ -1083,10 +1083,10 @@ namespace Qscript
                 varRegisters.Add(reg1, reg1);
                 varRegisters.Add(reg2, reg2);
 
-                CommonNode callNode = new CommonNode("CALL", new Token(TT.NULL, OperatorName, root.token.pos));
-                callNode.childs.Add(new CommonNode("SIGNATURE", new Token(TT.NULL, "()", root.token.pos)));
-                callNode.childs[0].childs.Add(new CommonNode("REGUSE", new Token(TT.NULL, reg1, root.childs[0].token.pos)));
-                callNode.childs[0].childs.Add(new CommonNode("REGUSE", new Token(TT.NULL, reg2, root.childs[1].token.pos)));
+                CommonNode callNode = new CommonNode(NT.CALL, new Token(TT.NULL, OperatorName, root.token.pos));
+                callNode.childs.Add(new CommonNode(NT.SIGNATURE, new Token(TT.NULL, "()", root.token.pos)));
+                callNode.childs[0].childs.Add(new CommonNode(NT.REGUSE, new Token(TT.NULL, reg1, root.childs[0].token.pos)));
+                callNode.childs[0].childs.Add(new CommonNode(NT.REGUSE, new Token(TT.NULL, reg2, root.childs[1].token.pos)));
                 //regPrefer = "eax";
                 translationCall(callNode, z_buffer + 1);
                 if (root.token.value.Contains("=")) _objProg.code.Append($"mov [{root.childs[0].token.value}], {regReturn}\n");
@@ -1105,42 +1105,42 @@ namespace Qscript
                 string leftRegM = string.Empty;//$".reg{regIndex++}{regPrefer}";
                 string rightRegM = string.Empty;//$".reg{regIndex++}{regPrefer}";
 
-                if (leftChild.type == "VAR" && rightChild.type == "NUMBER")
+                if (leftChild.type == NT.VAR && rightChild.type == NT.NUMBER)
                 {
                     rightRegM = rightChild.token.value;
                     leftRegM = $".reg{regIndex++}{regPrefer}";
                     _objProg.code.Append($"mov {leftRegM}, [{leftChild.token.value}]");
-                } else if (leftChild.type == "NUMBER" && rightChild.type == "VAR")
+                } else if (leftChild.type == NT.NUMBER && rightChild.type == NT.VAR)
                 {
                     rightRegM = $"[{rightChild.token.value}]";
                     leftRegM = $".reg{regIndex++}{regPrefer}";
                     _objProg.code.Append($"mov {leftRegM}, {leftChild.token.value}");
-                } else if (leftChild.type == "CALL" && rightChild.type == "VAR")
+                } else if (leftChild.type == NT.CALL && rightChild.type == NT.VAR)
                 {
                     rightRegM = $"[{rightChild.token.value}]";
                     //regPrefer = "eax";
                     translationCall(leftChild, z_buffer + 1);
                     leftRegM = regReturn;
-                } else if (leftChild.type == "VAR" && rightChild.type == "CALL")
+                } else if (leftChild.type == NT.VAR && rightChild.type == NT.CALL)
                 {
                     leftRegM = $".reg{regIndex++}{regPrefer}";
                     _objProg.code.Append($"mov {leftRegM}, [{leftChild.token.value}]");
                     //regPrefer = "eax";
                     translationCall(rightChild, z_buffer + 1);
                     rightRegM = regReturn;
-                } else if (leftChild.type == "VAR" && rightChild.type == "BINOPER")
+                } else if (leftChild.type == NT.VAR && rightChild.type == NT.BINOPER)
                 {
                     leftRegM = $".reg{regIndex++}{regPrefer}";
                     translationBinOper(rightChild, z_buffer + 1);
                     rightRegM = regReturn;
                     _objProg.code.Append($"mov {leftRegM}, [{leftChild.token.value}]");
-                } else if (leftChild.type == "BINOPER" && rightChild.type == "VAR")
+                } else if (leftChild.type == NT.BINOPER && rightChild.type == NT.VAR)
                 {
                     translationBinOper(leftChild, z_buffer + 1);
                     leftRegM = regReturn;
                     rightRegM = $".reg{regIndex++}{regPrefer}";
                     _objProg.code.Append($"mov {rightRegM}, [{rightChild.token.value}]");
-                } else if (leftChild.type == "VAR" && rightChild.type == "BINOPER")
+                } else if (leftChild.type == NT.VAR && rightChild.type == NT.BINOPER)
                 {
                     translationBinOper(rightChild, z_buffer + 1);
                     rightRegM = regReturn;
@@ -1197,13 +1197,13 @@ namespace Qscript
                 string leftRegM = $"[{leftChild.token.value}]";
                 string rightRegM = "ebx";
 
-                if (leftChild.type == "REGUSE") leftRegM = getRegisterUse(leftChild.token.value);
+                if (leftChild.type == NT.REGUSE) leftRegM = getRegisterUse(leftChild.token.value);
 
-                if (rightChild.type == "NUMBER")
+                if (rightChild.type == NT.NUMBER)
                 {
                     rightRegM = rightChild.token.value;
                 }
-                else if (rightChild.type == "CALL")
+                else if (rightChild.type == NT.CALL)
                 {
                     //regPrefer = "eax";
                     translationCall(rightChild, z_buffer + 1);
@@ -1255,12 +1255,12 @@ namespace Qscript
                 
 
                 //_objProg.code.Append("xor eax, eax\n");
-                if (rightChild.type == "FLOAT" && varChild.type == "VAR" && varChild.childs.Count > 0)
+                if (rightChild.type == NT.FLOAT && varChild.type == NT.VAR && varChild.childs.Count > 0)
                 {
                     _objProg.data.Append($"{varChild.token.value} dd {rightChild.token.value.Replace("f", "")}\n");
                     return;
                 }
-                if (varChild.childs.Count > 0 && varChild.childs[0].type == "OFFSET")
+                if (varChild.childs.Count > 0 && varChild.childs[0].type == NT.OFFSET)
                 {
                     translationOffset(varChild, rightChild, z_buffer);
                     return;
@@ -1268,41 +1268,41 @@ namespace Qscript
                 if (varChild.childs.Count != 0)
                     Translation(varChild, z_buffer + 1);
                 //Translation (rightChild, z_buffer + 1);
-                if (rightChild.type == "CALL")
+                if (rightChild.type == NT.CALL)
                 {
                     translationCall(rightChild, z_buffer + 1, $"lea .reg{regIndex++}{regPrefer}, [{varChild.token.value}]\n");
                     _objProg.code.Append($"movss xmm1, {regReturn}\n");
                 }
-                else if (rightChild.type == "NUMBER")
+                else if (rightChild.type == NT.NUMBER)
                 {
                     _objProg.code.Append($"mov [{varChild.token.value}], {rightChild.token.value}\n");
                 }
-                else if (rightChild.type == "FLOAT")
+                else if (rightChild.type == NT.FLOAT)
                 {
                     string floatVar = getFloatConst(rightChild);
                     _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, [{floatVar}]\n");
                     _objProg.code.Append($"mov [{varChild.token.value}], .reg{regIndex-1}{regPrefer}\n");
                 }
-                else if (rightChild.type == "FLOATBINOPER")
+                else if (rightChild.type == NT.FLOATBINOPER)
                 {
                     Translation(rightChild, z_buffer + 1);
                     _objProg.code.Append($"movss [{varChild.token.value}], xmm0\n");
                 }
-                else if (rightChild.type == "CALL")
+                else if (rightChild.type == NT.CALL)
                 {
                     //regPrefer = "eax";
                     Translation(rightChild, z_buffer + 1);
                     _objProg.code.Append($"movss xmm0, {regReturn}\n");
                     _objProg.code.Append($"movss [{varChild.token.value}], xmm0\n");
                 }
-                else if (rightChild.type == "VAR" && rightChild.childs.Count > 0 && rightChild.childs[0].type == "OFFSET")
+                else if (rightChild.type == NT.VAR && rightChild.childs.Count > 0 && rightChild.childs[0].type == NT.OFFSET)
                 {
                     translationVar(rightChild, z_buffer + 1);
                     _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, [{rightChild.token.value}]\n");
                     _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, [.reg{regIndex-2}{regPrefer}+.reg{regIndex-3}{regPrefer}]\n");
                     _objProg.code.Append($"mov [{varChild.token.value}], {regReturn}\n");
                 }
-                else if (!(rightChild.type == "NUMBER"))
+                else if (!(rightChild.type == NT.NUMBER))
                 {
                     Translation(rightChild, z_buffer + 1);
                     _objProg.code.Append($"mov [{varChild.token.value}], {regReturn}\n");
@@ -1317,24 +1317,24 @@ namespace Qscript
                 string leftString = "xmm0";
                 string rightString = "xmm1";
 
-                if (leftChild.type == "VAR")
+                if (leftChild.type == NT.VAR)
                 {
                     _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, [{leftChild.token.value}]\n");
                     _objProg.code.Append($"cvtsi2ss xmm0, .reg{regIndex-1}{regPrefer}\n"); // [{leftChild.token.value}]
                     //return;
-                } else if (leftChild.type == "NUMBER")
+                } else if (leftChild.type == NT.NUMBER)
                 {
                     _objProg.code.Append($"movss xmm0, {leftChild.token.value}\n");
-                } else if (leftChild.type == "FLOAT")
+                } else if (leftChild.type == NT.FLOAT)
                 {
                     string floatVar = getFloatConst(leftChild);
                     _objProg.code.Append($"movss xmm0, [{floatVar}]\n");
-                } else if (leftChild.type == "CALL")
+                } else if (leftChild.type == NT.CALL)
                 {
                     //regPrefer = "eax";
                     Translation(leftChild, z_buffer + 1);
                     _objProg.code.Append($"movss xmm0, {regReturn}\n");
-                } else if (leftChild.type == "FLOATBINOPER")
+                } else if (leftChild.type == NT.FLOATBINOPER)
                 {
                     Translation(leftChild, z_buffer + 1);
                 } else
@@ -1343,29 +1343,29 @@ namespace Qscript
                     _objProg.code.Append($"cvtsi2ss xmm0, {regReturn}\n");
                 }
 
-                if (rightChild.type == "VAR")
+                if (rightChild.type == NT.VAR)
                 {
                     rightString = $"[{rightChild.token.value}]";
                     //_objProg.code.Append($"movss xmm0, [{rightChild.token.value}]\n");
                     //return;
                 }
-                else if (rightChild.type == "NUMBER")
+                else if (rightChild.type == NT.NUMBER)
                 {
                     //_objProg.code.Append($"movss xmm0, {rightChild.token.value}\n");
                     rightString = rightChild.token.value;
                 }
-                else if (rightChild.type == "FLOAT")
+                else if (rightChild.type == NT.FLOAT)
                 {
                     string floatVar = getFloatConst(rightChild);
                     _objProg.code.Append($"movss xmm1, [{floatVar}]\n");
                 }
-                else if (rightChild.type == "CALL")
+                else if (rightChild.type == NT.CALL)
                 {
                     //regPrefer = "eax";
                     Translation(rightChild, z_buffer + 1);
                     _objProg.code.Append($"movss xmm1, {regReturn}\n");
                 }
-                else if (rightChild.type == "FLOATBINOPER")
+                else if (rightChild.type == NT.FLOATBINOPER)
                 {
                     Translation(rightChild, z_buffer + 1);
                 } else
@@ -1395,7 +1395,7 @@ namespace Qscript
                         _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, .reg{regIndex-2}edx\n");
                         break;
                 }
-                if (leftChild.type == "VAR" && !(new string[] { "+", "-", "*", "/" }.Contains(root.token.value)))
+                if (leftChild.type == NT.VAR && !(new string[] { "+", "-", "*", "/" }.Contains(root.token.value)))
                     _objProg.code.Append($"movss [{leftChild.token.value}], xmm0\n");
             }
         } // FIXME: Переделать как в биноперах
@@ -1405,13 +1405,13 @@ namespace Qscript
 
             //_objProg.data.Append($"const_{constsIndex} db {root.token.value}");
 
-            if (constValue.type == "STRING")
+            if (constValue.type == NT.STRING)
             {
                 consts.Add(root.token.value, $"const_{constsIndex}");
                 _objProg.data.Append($"{consts[root.token.value]} db {constValue.token.value}\n");
                 constsIndex++;
             }
-            else if (constValue.type == "NUMBER")
+            else if (constValue.type == NT.NUMBER)
             {
                 consts.Add(root.token.value, $"const_{constsIndex}");
                 _objProg.data.Append($"{root.token.value} equ {constValue.token.value}\n");
@@ -1451,12 +1451,12 @@ namespace Qscript
             foreach (CommonNode child in root.childs)
             {
                 if (offset % 4 != 0) _objProg.code.Append($"    align {offset % 4}\n");
-                if (child.type == "VAR" && child.childs[0].type == "INDICATOR")
+                if (child.type == NT.VAR && child.childs[0].type == NT.INDICATOR)
                 {
                     _objProg.code.Append($"    {child.token.value} dd 0\n");
                     offset += 4;
                 }
-                else if (child.type == "VAR")
+                else if (child.type == NT.VAR)
                 {
                     int varsize = 0;
                     if (types.Keys.Contains(take(child, 0).token.value))
@@ -1563,7 +1563,7 @@ namespace Qscript
             for (int i = 0; i < signature.childs.Count; i++)
             {
                 if (!Compiler.types.ContainsKey(signature.childs[i].childs[0].token.value) && signature.childs[i].token.value != "resualtPtr")
-                    signature.childs[i].childs[0].type = "INDICATOR";
+                    signature.childs[i].childs[0].type = NT.INDICATOR;
             }
             for (int i = ((qsFunc) ? 1 : 0); i < signature.childs.Count; i++)
             {
@@ -1604,7 +1604,7 @@ namespace Qscript
             {
 
             }
-            else if (typesarg.Keys.Contains(ProgramAst.resualtFunc[root.token.value].token.value) || ProgramAst.resualtFunc[root.token.value].type == "INDICATOR")
+            else if (typesarg.Keys.Contains(ProgramAst.resualtFunc[root.token.value].token.value) || ProgramAst.resualtFunc[root.token.value].type == NT.INDICATOR)
                 _objProg.code.Append($"{root.token.value}.return:\n");
             else
             {
@@ -1643,13 +1643,13 @@ namespace Qscript
                 for (int i = 0; i < signatureCall.childs.Count; i++)
                 {
                     string child = signatureCall.childs[i].token.value;
-                    if (signatureCall.childs[i].type == "NUMBER")
+                    if (signatureCall.childs[i].type == NT.NUMBER)
                     {
                         if (!ProgramAst.asmInlineNames.Contains(root.token.value))
                             _objProg.code.Append($"mov [{root.token.value}{i}], {child}");
                         args += signatureCall.childs[i].token.value;
                     }
-                    else if (signatureCall.childs[i].type == "VAR")
+                    else if (signatureCall.childs[i].type == NT.VAR)
                     {
                         if (!ProgramAst.asmInlineNames.Contains(root.token.value))
                         {
@@ -1658,7 +1658,7 @@ namespace Qscript
                         }
                         args += signatureCall.childs[i].token.value;
                     }
-                    else if (signatureCall.childs[i].type == "ADDRESS")
+                    else if (signatureCall.childs[i].type == NT.ADDRESS)
                     {
                         if (!ProgramAst.asmInlineNames.Contains(root.token.value))
                         {
@@ -1667,7 +1667,7 @@ namespace Qscript
                         }
                         args += signatureCall.childs[i].token.value;
                     }
-                    else if (signatureCall.childs[i].type == "STRING")
+                    else if (signatureCall.childs[i].type == NT.STRING)
                     {
                         Translation(signatureCall.childs[i], z_buffer + 1);
                         if (!ProgramAst.asmInlineNames.Contains(root.token.value)) _objProg.code.Append($"mov [{root.token.value}{i}], {regReturn}");
@@ -1689,32 +1689,32 @@ namespace Qscript
             for (int i = signatureCall.childs.Count - 1; i >= ((qsFunc)?1:0); i--)
             {
                 //Console.WriteLine($"- {signatureCall.childs[i].token.value}");
-                /*if (signatureCall.childs[i].type == "VAR" && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[i].childs[0].token.value) && varSpace.GetType(signatureCall.childs[i].token.value).type == "INDICATOR")
+                /*if (signatureCall.childs[i].type == NT.VAR && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[i].childs[0].token.value) && varSpace.GetType(signatureCall.childs[i].token.value).type == NT.INDICATOR)
                 {
                     _objProg.code.Append($"mov {regForArgs}, [{signatureCall.childs[i].token.value}]\n");
                     _objProg.code.Append($"push {regForArgs}\n");
                 }
-                else if (signatureCall.childs[i].type == "VAR" && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[i].childs[0].token.value))
+                else if (signatureCall.childs[i].type == NT.VAR && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[i].childs[0].token.value))
                 {
                     _objProg.code.Append($"lea {regForArgs}, [{signatureCall.childs[i].token.value}]\n");
                     _objProg.code.Append($"push {regForArgs}\n");
                 }*/
-                if (signatureCall.childs[i].type == "VAR")
+                if (signatureCall.childs[i].type == NT.VAR)
                 {
                     Translation(take(signatureCall, i), z_buffer + 1);
                     _objProg.code.Append($"push {regReturn}\n");
                 }
-                else if (signatureCall.childs[i].type == "STRING")
+                else if (signatureCall.childs[i].type == NT.STRING)
                 {
                     Translation(take(signatureCall, i), z_buffer + 1);
                     _objProg.code.Append($"push {stringConsts[signatureCall.childs[i].token.value]}\n");
                 }
-                else if (signatureCall.childs[i].type == "VAR" && signatureCall.childs[i].childs.Count > 0 && signatureCall.childs[i].childs[0].type == "OFFSET")
+                else if (signatureCall.childs[i].type == NT.VAR && signatureCall.childs[i].childs.Count > 0 && signatureCall.childs[i].childs[0].type == NT.OFFSET)
                 {
                     Translation(signatureCall.childs[i], z_buffer + 1);
                     _objProg.code.Append($"push {regReturn}\n");
                 } 
-                else if (signatureCall.childs[i].type == "CALL")
+                else if (signatureCall.childs[i].type == NT.CALL)
                 {
                     //regPrefer = "eax";
                     translationCall(take(signatureCall, i), z_buffer + 1);
@@ -1736,16 +1736,16 @@ namespace Qscript
             regPrefer = "";
             if (qsFunc && firstArg != null)
             {
-                if (firstArg.type == "VAR" && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[0].childs[0].token.value) && ProgramAst.varTypes[firstArg.token.value].type == "INDICATOR")
+                if (firstArg.type == NT.VAR && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[0].childs[0].token.value) && ProgramAst.varTypes[firstArg.token.value].type == NT.INDICATOR)
                     _objProg.code.Append($"mov eax, [{firstArg.token.value}]\n");
-                else if (firstArg.type == "VAR" && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[0].childs[0].token.value))
+                else if (firstArg.type == NT.VAR && !typesarg.Keys.Contains(ProgramAst.typesArgsFunc[root.token.value].childs[0].childs[0].token.value))
                     _objProg.code.Append($"lea eax, [{firstArg.token.value}]\n");
-                else if (firstArg.type == "STRING")
+                else if (firstArg.type == NT.STRING)
                 {
                     Translation(firstArg, z_buffer + 1);
                     _objProg.code.Append($"lea eax, [{stringConsts[firstArg.token.value]}]\n");
                 }
-                else if (firstArg.type == "VAR" && firstArg.childs.Count > 0 && firstArg.childs[0].type == "OFFSET")
+                else if (firstArg.type == NT.VAR && firstArg.childs.Count > 0 && firstArg.childs[0].type == NT.OFFSET)
                     Translation(firstArg, z_buffer + 1);
                 else
                     Translation(firstArg, z_buffer + 1);
@@ -1841,21 +1841,21 @@ namespace Qscript
             {
                 switch (node.type)
                 {
-                    case "LAMBDA":
+                    case NT.LAMBDA:
                         type = "function";
                         break;
-                    case "VAR":
-                    case "POSTUNAROPER":
-                    case "PREUNAROPER":
+                    case NT.VAR:
+                    case NT.POSTUNAROPER:
+                    case NT.PREUNAROPER:
                         type = varSpace.GetType(node.token.value).token.value;
                         break;
-                    case "SIZEOF":
-                    case "TYPEOF":
-                    case "NUMBER":
-                    case "ADDRESS":
+                    case NT.SIZEOF:
+                    case NT.TYPEOF:
+                    case NT.NUMBER:
+                    case NT.ADDRESS:
                         type = "int";
                         break;
-                    case "BINOPER":
+                    case NT.BINOPER:
                         type = "BINOPER";
 
                         string _type1 = getFormulaType(node.childs[0]);
@@ -1873,23 +1873,23 @@ namespace Qscript
                             type = ProgramAst.resualtFunc[OperatorName].token.value;
                         }
                         break;
-                    case "FLOAT":
-                    case "FLOATOPER":
+                    case NT.FLOAT:
+                    case NT.FLOATOPER:
                         type = "float";
                         break;
-                    case "STRING":
+                    case NT.STRING:
                         type = "string";
                         break;
-                    case "CHAR":
+                    case NT.CHAR:
                         type = "char";
                         break;
-                    case "BOOL":
+                    case NT.BOOL:
                         type = "bool";
                         break;
-                    case "TYPEOPER":
+                    case NT.TYPEOPER:
                         type = node.token.value;
                         break;
-                    case "CALL":
+                    case NT.CALL:
                         type = varSpace.GetType(node.token.value).token.value;
                         break;
                     default:
@@ -1897,11 +1897,11 @@ namespace Qscript
                         break;
                 }
             }
-            catch { type = "BINOPER"; }
+            catch { type = node.ToString(); }
             return type;
         }
 
-        private static bool isNodeType(string type, CommonNode root)
+        private static bool isNodeType(NT type, CommonNode root)
         {
             bool isNode = false;
 
@@ -1953,7 +1953,7 @@ namespace Qscript
 
             foreach (var _var in ProgramAst.structs[type].Values)
             {
-                if (_var.type == "INDICATOR") size += 4;
+                if (_var.type == NT.INDICATOR) size += 4;
                 else if (types.ContainsKey(_var.token.value))
                 {
                     string classsize = types[_var.token.value];

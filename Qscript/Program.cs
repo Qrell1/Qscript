@@ -37,21 +37,21 @@ namespace Qscript
         public static void PrintAST(CommonNode root, int z_buffer)
         {
             ConsoleColor color;
-            if (root.type == "ROOT")
+            if (root.type == NT.ROOT)
                 color = ConsoleColor.Yellow;
-            else if (root.type == "VAR" || root.type == "REFVAR")
+            else if (root.type == NT.VAR || root.type == NT.REFVAR)
                 color = ConsoleColor.Green;
-            else if (root.type == "CALL")
+            else if (root.type == NT.CALL)
                 color = ConsoleColor.Yellow;
-            else if (root.type == "NUMBER" || root.type == "FLOAT" || root.type == "BOOL")
+            else if (root.type == NT.NUMBER || root.type == NT.FLOAT || root.type == NT.BOOL)
                 color = ConsoleColor.Cyan;
-            else if (root.type == "BINOPER" || root.type == "CMP" || root.type == "FLOATBINOPER" || root.type == "ADDRESS")
+            else if (root.type == NT.BINOPER || root.type == NT.CMP || root.type == NT.FLOATBINOPER || root.type == NT.ADDRESS)
                 color = ConsoleColor.Magenta;
-            else if (root.type == "TYPE" || root.type == "SIZEOF")
+            else if (root.type == NT.TYPE || root.type == NT.SIZEOF)
                 color = ConsoleColor.Blue;
-            else if (root.type == "SIGNATURE" || root.type == "BODY" )//|| root.type == "FUNC")
+            else if (root.type == NT.SIGNATURE || root.type == NT.BODY )//|| root.type == "FUNC")
                 color = ConsoleColor.Yellow;
-            else if (root.type == "ASM" || root.type == "FUNC")
+            else if (root.type == NT.ASM || root.type == NT.FUNC)
                 color = ConsoleColor.DarkRed;
             else
                 color = ConsoleColor.White;
@@ -70,19 +70,19 @@ namespace Qscript
             ConsoleColor color;
             switch(root.type)
             {
-                case "ROOT":
+                case NT.ROOT:
                     color = ConsoleColor.Yellow;
                     break;
-                case "VAR":
+                case NT.VAR:
                     color = ConsoleColor.Green;
                     break;
-                case "NUMBER":
+                case NT.NUMBER:
                     color = ConsoleColor.Cyan;
                     break;
-                case "BINOPER":
+                case NT.BINOPER:
                     color = ConsoleColor.Magenta;
                     break;
-                case "TYPE":
+                case NT.TYPE:
                     color = ConsoleColor.Blue;
                     break;
                 default:
@@ -91,7 +91,7 @@ namespace Qscript
             };
 
             // Формируем содержимое
-            string content = root.type;
+            string content = root.type.ToString();
             if (root.token != null && !string.IsNullOrEmpty(root.token.value))
             {
                 content += $": {root.token.value}";

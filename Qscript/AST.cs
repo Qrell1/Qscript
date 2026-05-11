@@ -60,7 +60,7 @@ namespace Qscript
 
         public Dictionary<string, string> externLibrarys = new Dictionary<string, string>();
         public Dictionary<string, List<string>> externFuncs = new Dictionary<string, List<string>>();
-        public ProgramNode(string type, Token token) : base(type, token)
+        public ProgramNode(NT type, Token token) : base(type, token)
         {}
     }
 
@@ -69,17 +69,62 @@ namespace Qscript
     /// </summary>
     public class CommonNode
     {
-        public string type;
+        public NT type;
         public Token token;
         public List<CommonNode> childs = new List<CommonNode>();//Dictionary<string, CommonNode> childs;
         public Dictionary<string, object> properties = new Dictionary<string, object>();
 
-        public CommonNode(string type, Token token)
+        public CommonNode(NT type, Token token)
         {
             this.type = type;
             this.token = token;
         }
+        public CommonNode(TT type, Token token)
+        {
+            this.type = (NT)type;
+            this.token = token;
+        }
+        public CommonNode(Token token)
+        {
+            this.type = NT.NULL;
+            this.token = token;
+        }
     }
+
+
+    public enum NT
+    {
+        // TT чтобы удобно переводить из TT -> NT (по порядковому номеру)
+        // TODO: Все изменения TT вносить и сюда!
+        COMMENT,
+        ELSEIF, IF, ELSE,
+        FLOAT, NUMBER,
+        PREFIX, REGDECL, OPER, VARDECL,
+        ENDINCLUDE, ASMINCLUDE, INCLUDE, USING,
+        NAMESPACE, EXTERNFUNC, EXTERNLIBRARY, EXTERN, FROM,
+        ASM, SEM,
+        RETURN, BREAK, CONTINUE, JMP,
+        ITER, FOR, WHILE, ENUMERATOR, REPT,
+        LAMBDA, STRUCT, CLASS, ENUM, VIRTUAL, OVERRIDE,
+        DEFINE, TYPEDEF, TYPEIF,
+        CONST, SECTION, NATIVE, INLINE, ASMINLINE, OPERATOR,
+        SIZEOF, TYPEOF, IN, MODIFIER,
+        BOOL, VAR, CHAR, STRING,
+        LPAR, RPAR, PARS, LFIG, RFIG, LK, RK, LKN, RKN,
+        SPACE, TAB, N, PS, TS,
+        NULL,
+        // NT чисто NT без перевода обратно в TT
+        ROOT,
+        ALLOCMEMSTATICOBJECT, REFVAR, BODY,
+        BINOPER, FLOATBINOPER,
+        FUNC,  CALL,
+        CMP,
+        ADDRESS,
+        PREUNAROPER, POSTUNAROPER,
+        TAG, REGUSE, TYPEOPER, SIGNATURE, OFFSET, FUNCTEMPLETE, TYPE, INDICATOR, STACK, DECLARATOR, USEADDRESSVAR,
+        CONSTRUCTOR, DESTRUCTOR, STEP, ELSES, NAME, AIR, FLOATOPER, CALLADDRESS
+    }
+
 
     // НУ типо ноды
     public abstract class Node { }

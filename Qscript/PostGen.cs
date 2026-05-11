@@ -615,7 +615,7 @@ namespace Qscript
                                     }
                                     else resualtMemory += "." + strs[k];
                                     //Console.WriteLine("-- " + strs[k] + " | " + type);
-                                    typeVar = ProgramAst.structs[type][strs[k]].type;
+                                    typeVar = ProgramAst.structs[type][strs[k]].type.ToString();
                                     type = ProgramAst.structs[type][strs[k]].token.value;
                                 }
                                 if (resualtMemory.EndsWith("+")) resualtMemory = resualtMemory.Remove(resualtMemory.Length - 1, 1);

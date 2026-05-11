@@ -30,40 +30,40 @@ namespace Qscript
         {
             switch (root.type)
             {
-                case "BINOPER":
+                case NT.BINOPER:
                     analisBinoper(root, z_buffer);
                     break;
-                case "FLOATBINOPER":
+                case NT.FLOATBINOPER:
                     //analisFloatoper(root, z_buffer);
                     break;
-                case "INLINE":
+                case NT.INLINE:
                     analisInline(root, z_buffer);
                     break;
-                case "FUNC":
+                case NT.FUNC:
                     analisFunc(root, z_buffer);
                     break;
-                case "FOR":
+                case NT.FOR:
                     analisFor(root, z_buffer);
                     break;
-                case "WHILE":
+                case NT.WHILE:
                     analisWhile(root, z_buffer);
                     break;
-                case "ITER":
+                case NT.ITER:
                     analisIter(root, z_buffer);
                     break;
-                case "ENUMERATOR":
+                case NT.ENUMERATOR:
                     analisEnumerator(root, z_buffer);
                     break;
-                case "CALL":
+                case NT.CALL:
                     analisCall(root, z_buffer);
                     break;
-                case "VAR":
+                case NT.VAR:
                     analisVar(root, z_buffer);
                     break;
                 default:
-                    //if (root.childs.Count == 0 || root.type == "SIGNATURE" || root.type == "CMP" || root.type == "STRUCT" || root.type == "FUNC")
+                    //if (root.childs.Count == 0 || root.type == "SIGNATURE" || root.type == "CMP" || root.type == NT.STRUCT || root.type == NT.FUNC)
                     //break;
-                    if (root.type == "STRUCT") break;
+                    if (root.type == NT.STRUCT) break;
                     for (int i = 0; i < root.childs.Count; i++)
                     {
                         analis(root.childs[i], z_buffer + 1);
@@ -120,7 +120,7 @@ namespace Qscript
 
                 foreach (var child in node.childs)
                 {
-                    if (node.type == "VAR" && node.childs.Count > 0 && node.childs[0].type == "TYPE") return true;
+                    if (node.type == NT.VAR && node.childs.Count > 0 && node.childs[0].type == NT.TYPE) return true;
                     else if (child.childs.Count > 0) isNode = (isVarDeclaration(child)) ? true : isNode;
                 }
 
@@ -146,7 +146,7 @@ namespace Qscript
         }
         private static void analisVar(CommonNode root, int z_buffer)
         {
-            if (root.childs.Count > 0 && root.childs[0].type != "OFFSET")
+            if (root.childs.Count > 0 && root.childs[0].type != NT.OFFSET)
             {
 
                 if (varSpace.PeekContainsKey(root.token.value))
@@ -242,7 +242,7 @@ namespace Qscript
             varSpace.CloseSpace();
         }
 
-        private static bool isNodeType(string type, CommonNode root)
+        private static bool isNodeType(NT type, CommonNode root)
         {
             bool isNode = false;
 
@@ -274,24 +274,24 @@ namespace Qscript
             {
                 switch (node.type)
                 {
-                    case "LAMBDA":
+                    case NT.LAMBDA:
                         size = 4;
                         break;
-                    case "VAR":
-                    case "POSTUNAROPER":
-                    case "PREUNAROPER":
+                    case NT.VAR:
+                    case NT.POSTUNAROPER:
+                    case NT.PREUNAROPER:
                         type = varSpace.GetType(node.token.value).token.value;
-                        if (varSpace.GetType(node.token.value).type == "INDICATOR") size = 4;
+                        if (varSpace.GetType(node.token.value).type == NT.INDICATOR) size = 4;
                         else if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
                         else size = getStructSize(type);
                         break;
-                    case "SIZEOF":
-                    case "TYPEOF":
-                    case "NUMBER":
-                    case "ADDRESS":
+                    case NT.SIZEOF:
+                    case NT.TYPEOF:
+                    case NT.NUMBER:
+                    case NT.ADDRESS:
                         size = 4;
                         break;
-                    case "BINOPER":
+                    case NT.BINOPER:
                         size = 4;
 
                         int _size1 = getFormulaNodeSize(node.childs[0]);
@@ -311,25 +311,25 @@ namespace Qscript
                             else size = getStructSize(type);
                         }
                         break;
-                    case "FLOAT":
-                    case "FLOATOPER":
+                    case NT.FLOAT:
+                    case NT.FLOATOPER:
                         size = 4;
                         break;
-                    case "STRING":
+                    case NT.STRING:
                         size = 2;
                         break;
-                    case "CHAR":
+                    case NT.CHAR:
                         size = 2;
                         break;
-                    case "BOOL":
+                    case NT.BOOL:
                         size = 1;
                         break;
-                    case "TYPEOPER":
+                    case NT.TYPEOPER:
                         type = node.token.value;
                         if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
                         else size = getStructSize(type);
                         break;
-                    case "CALL":
+                    case NT.CALL:
                         type = varSpace.GetType(node.token.value).token.value;
                         if (Compiler.aligns.ContainsKey(type)) size = Compiler.aligns[type];
                         else size = getStructSize(type);
@@ -348,21 +348,21 @@ namespace Qscript
             {
                 switch (node.type)
                 {
-                    case "LAMBDA":
+                    case NT.LAMBDA:
                         type = "function";
                         break;
-                    case "VAR":
-                    case "POSTUNAROPER":
-                    case "PREUNAROPER":
+                    case NT.VAR:
+                    case NT.POSTUNAROPER:
+                    case NT.PREUNAROPER:
                         type = varSpace.GetType(node.token.value).token.value;
                         break;
-                    case "SIZEOF":
-                    case "TYPEOF":
-                    case "NUMBER":
-                    case "ADDRESS":
+                    case NT.SIZEOF:
+                    case NT.TYPEOF:
+                    case NT.NUMBER:
+                    case NT.ADDRESS:
                         type = "int";
                         break;
-                    case "BINOPER":
+                    case NT.BINOPER:
                         type = "BINOPER";
 
                         string _type1 = getFormulaType(node.childs[0]);
@@ -380,23 +380,23 @@ namespace Qscript
                             type = ast.resualtFunc[OperatorName].token.value;
                         }
                         break;
-                    case "FLOAT":
-                    case "FLOATOPER":
+                    case NT.FLOAT:
+                    case NT.FLOATOPER:
                         type = "float";
                         break;
-                    case "STRING":
+                    case NT.STRING:
                         type = "string";
                         break;
-                    case "CHAR":
+                    case NT.CHAR:
                         type = "char";
                         break;
-                    case "BOOL":
+                    case NT.BOOL:
                         type = "bool";
                         break;
-                    case "TYPEOPER":
+                    case NT.TYPEOPER:
                         type = node.token.value;
                         break;
-                    case "CALL":
+                    case NT.CALL:
                         type = varSpace.GetType(node.token.value).token.value;
                         break;
                     default:
@@ -404,7 +404,7 @@ namespace Qscript
                         break;
                 }
             }
-            catch { type = "BINOPER"; }
+            catch { type = node.ToString(); }
             return type;
         }
         public static int getStructSize(string type)
@@ -413,7 +413,7 @@ namespace Qscript
 
             foreach (var _var in ast.structs[type].Values)
             {
-                if (_var.type == "INDICATOR") size += 4;
+                if (_var.type == NT.INDICATOR) size += 4;
                 else if (Compiler.types.ContainsKey(_var.token.value))
                 {
                     string classsize = Compiler.types[_var.token.value];
