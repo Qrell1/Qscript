@@ -55,7 +55,7 @@ namespace Qscript
         public Dictionary<string, Dictionary<string, CommonNode>> structs = new Dictionary<string, Dictionary<string, CommonNode>>();
 
         public Dictionary<string, List<CommonNode>> functionOver = new Dictionary<string, List<CommonNode>>();
-        public Dictionary<(string, string, string), string> operatorFunctions = new Dictionary<(string, string, string), string>();
+        public Dictionary<(string, CommonNode, CommonNode), string> operatorFunctions = new Dictionary<(string, CommonNode, CommonNode), string>();
         public List<CommonNode> sectionNodes = new List<CommonNode>();
 
         public Dictionary<string, string> externLibrarys = new Dictionary<string, string>();
@@ -89,6 +89,32 @@ namespace Qscript
             this.type = NT.NULL;
             this.token = token;
         }
+
+        public bool _equals(CommonNode right)
+        {
+            if (ReferenceEquals(right, null)) return false;
+            if (token.value == right.token.value && type == right.type) return true;
+            return false;
+        }
+        /*public static bool operator ==(CommonNode left, CommonNode right)
+        {
+            if (ReferenceEquals(left, null) || ReferenceEquals(right, null)) return false;
+            if (left.token.value == right.token.value && left.type == right.type) return true;
+            return false;
+        }
+        public static bool operator !=(CommonNode left, CommonNode right)
+        {
+            if (ReferenceEquals(left, null) || ReferenceEquals(right, null)) return false;
+            if (left.token.value != right.token.value || left.type != right.type) return true;
+            return false;
+        }
+
+        public override bool Equals(object obj)
+        {
+            if (obj is CommonNode other)
+                return this == other;
+            return false;
+        }*/
     }
 
 

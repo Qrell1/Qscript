@@ -34,7 +34,7 @@ namespace Qscript
                     analisBinoper(root, z_buffer);
                     break;
                 case NT.FLOATBINOPER:
-                    //analisFloatoper(root, z_buffer);
+                    analisBinoper(root, z_buffer);
                     break;
                 case NT.INLINE:
                     analisInline(root, z_buffer);
@@ -80,13 +80,12 @@ namespace Qscript
 
             analis(leftNode, z_buffer + 1);
             analis(rightNode, z_buffer + 1);
-            int leftSize = getFormulaNodeSize(leftNode);
-            int rightSize = getFormulaNodeSize(rightNode);
-            string leftType = getFormulaType(leftNode);
-            string rightType = getFormulaType(rightNode);
-            if (!ast.operatorFunctions.ContainsKey((root.token.value, leftType, rightType)) && leftSize != rightSize && root.token.value != "=") Syntax.SyntaxError($"Нельзя оперировать: {leftNode.token.value} с {rightNode.token.value}", root);
+            (CommonNode leftType, int leftSize) = DataBase.getFormulaNodeInfo(leftNode, ref varSpace, ref ast);
+            (CommonNode rightType, int rightSize) = DataBase.getFormulaNodeInfo(rightNode, ref varSpace, ref ast);
+            if (DataBase.types.ContainsKey(leftType.token.value) && DataBase.types.ContainsKey(rightType.token.value) &&
+                leftSize != rightSize && root.token.value != "=" && DataBase.isRightOperator(root.token.value, leftType, rightType, ref ast) == -1) Syntax.SyntaxError($"Нельзя оперировать: {leftNode.token.value} с {rightNode.token.value}", root);
         }
-        private static void analisFloatoper(CommonNode root, int z_buffer)
+        /*private static void analisFloatoper(CommonNode root, int z_buffer)
         {
             CommonNode leftNode = take(root, 0);
             CommonNode rightNode = take(root, 1);
@@ -96,7 +95,7 @@ namespace Qscript
             int leftSize = getFormulaNodeSize(leftNode);
             int rightSize = getFormulaNodeSize(rightNode);
             if (leftSize != rightSize && root.token.value != "=") Syntax.SyntaxError($"Нельзя оперировать: {leftNode.token.value} с {rightNode.token.value}", root);
-        }
+        }*/
         private static void analisInline(CommonNode root, int z_buffer)
         {
             CommonNode signatureNode = take(root, 0);
@@ -265,147 +264,6 @@ namespace Qscript
             }
 
             return isNode;
-        }
-        private static int getFormulaNodeSize(CommonNode node)
-        {
-            int size = 0;
-            string type;
-            try
-            {
-                switch (node.type)
-                {
-                    case NT.LAMBDA:
-                        size = 4;
-                        break;
-                    case NT.VAR:
-                    case NT.POSTUNAROPER:
-                    case NT.PREUNAROPER:
-                        type = varSpace.GetType(node.token.value).token.value;
-                        if (varSpace.GetType(node.token.value).type == NT.INDICATOR) size = 4;
-                        else if (DataBase.aligns.ContainsKey(type)) size = DataBase.aligns[type];
-                        else size = getStructSize(type);
-                        break;
-                    case NT.SIZEOF:
-                    case NT.TYPEOF:
-                    case NT.NUMBER:
-                    case NT.ADDRESS:
-                        size = 4;
-                        break;
-                    case NT.BINOPER:
-                        size = 4;
-
-                        int _size1 = getFormulaNodeSize(node.childs[0]);
-                        int _size2 = getFormulaNodeSize(node.childs[1]);
-
-                        string _type1 = getFormulaType(node.childs[0]);
-                        string _type2 = getFormulaType(node.childs[1]);
-
-                        if (_size1 == _size2) size = _size1;
-
-                        if (ast.operatorFunctions.ContainsKey((node.token.value, _type1, _type2)))
-                        {
-                            string OperatorName = ast.operatorFunctions[(node.token.value, _type1, _type2)];
-
-                            type = ast.resualtFunc[OperatorName].token.value;
-                            if (DataBase.aligns.ContainsKey(type)) size = DataBase.aligns[type];
-                            else size = getStructSize(type);
-                        }
-                        break;
-                    case NT.FLOAT:
-                    case NT.FLOATOPER:
-                        size = 4;
-                        break;
-                    case NT.STRING:
-                        size = 2;
-                        break;
-                    case NT.CHAR:
-                        size = 2;
-                        break;
-                    case NT.BOOL:
-                        size = 1;
-                        break;
-                    case NT.TYPEOPER:
-                        type = node.token.value;
-                        if (DataBase.aligns.ContainsKey(type)) size = DataBase.aligns[type];
-                        else size = getStructSize(type);
-                        break;
-                    case NT.CALL:
-                        type = varSpace.GetType(node.token.value).token.value;
-                        if (DataBase.aligns.ContainsKey(type)) size = DataBase.aligns[type];
-                        else size = getStructSize(type);
-                        break;
-                    default:
-                        size = 4;
-                        break;
-                }
-            } catch { size = 4; }
-            return size;
-        }
-        private static string getFormulaType(CommonNode node)
-        {
-            string type;
-            try
-            {
-                switch (node.type)
-                {
-                    case NT.LAMBDA:
-                        type = "function";
-                        break;
-                    case NT.VAR:
-                    case NT.POSTUNAROPER:
-                    case NT.PREUNAROPER:
-                        type = varSpace.GetType(node.token.value).token.value;
-                        break;
-                    case NT.SIZEOF:
-                    case NT.TYPEOF:
-                    case NT.NUMBER:
-                    case NT.ADDRESS:
-                        type = "int";
-                        break;
-                    case NT.BINOPER:
-                        type = "BINOPER";
-
-                        string _type1 = getFormulaType(node.childs[0]);
-                        string _type2 = getFormulaType(node.childs[0]);
-
-                        if (_type1 == _type2) type = _type1;
-
-                        string leftType = (_type1 == "STRING") ? "string" : _type1;
-                        string rightType = (_type2 == "STRING") ? "string" : _type2;
-
-                        if (ast.operatorFunctions.ContainsKey((node.token.value, leftType, rightType)))
-                        {
-                            string OperatorName = ast.operatorFunctions[(node.token.value, leftType, rightType)];
-
-                            type = ast.resualtFunc[OperatorName].token.value;
-                        }
-                        break;
-                    case NT.FLOAT:
-                    case NT.FLOATOPER:
-                        type = "float";
-                        break;
-                    case NT.STRING:
-                        type = "string";
-                        break;
-                    case NT.CHAR:
-                        type = "char";
-                        break;
-                    case NT.BOOL:
-                        type = "bool";
-                        break;
-                    case NT.TYPEOPER:
-                        type = node.token.value;
-                        break;
-                    case NT.CALL:
-                        type = varSpace.GetType(node.token.value).token.value;
-                        break;
-                    default:
-                        type = "int";
-                        break;
-                }
-            }
-            catch { type = node.ToString(); }
-            return type;
         }
         public static int getStructSize(string type)
         {

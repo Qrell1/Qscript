@@ -961,14 +961,13 @@ namespace Qscript
                 return;
             }
 
-            string leftType;
-            string rightType;
+            CommonNode leftType = DataBase.getFormulaNodeType(root.childs[0], ref varSpace, ref ProgramAst);
+            CommonNode rightType = DataBase.getFormulaNodeType(root.childs[1], ref varSpace, ref ProgramAst);
 
-            leftType = getFormulaType(root.childs[0]);
-            rightType = getFormulaType(root.childs[1]);
-            if (ProgramAst.operatorFunctions.ContainsKey((root.token.value, leftType, rightType)))
+            int tempOperationIndex = DataBase.isRightOperator(root.token.value, leftType, rightType, ref ProgramAst);
+            if (tempOperationIndex != -1)
             {
-                string OperatorName = ProgramAst.operatorFunctions[(root.token.value, leftType, rightType)];
+                string OperatorName = ProgramAst.operatorFunctions.ElementAt(tempOperationIndex).Value;
 
                 regString = true;
                 Translation(root.childs[0], z_buffer + 1);
@@ -1728,74 +1727,6 @@ namespace Qscript
         private string getRegisterUse(string value)
         {
             return varRegisters[value];
-        }
-
-
-        private string getFormulaType(CommonNode node)
-        {
-            string type;
-            try
-            {
-                switch (node.type)
-                {
-                    case NT.LAMBDA:
-                        type = "function";
-                        break;
-                    case NT.VAR:
-                    case NT.POSTUNAROPER:
-                    case NT.PREUNAROPER:
-                        type = varSpace.GetType(node.token.value).token.value;
-                        break;
-                    case NT.SIZEOF:
-                    case NT.TYPEOF:
-                    case NT.NUMBER:
-                    case NT.ADDRESS:
-                        type = "int";
-                        break;
-                    case NT.BINOPER:
-                        type = "BINOPER";
-
-                        string _type1 = getFormulaType(node.childs[0]);
-                        string _type2 = getFormulaType(node.childs[1]);
-
-                        if (_type1 == _type2) type = _type1;
-
-                        string leftType = (_type1 == "STRING") ? "string" : _type1;
-                        string rightType = (_type2 == "STRING") ? "string" : _type2;
-
-                        if (ProgramAst.operatorFunctions.ContainsKey((node.token.value, leftType, rightType)))
-                        {
-                            string OperatorName = ProgramAst.operatorFunctions[(node.token.value, leftType, rightType)];
-
-                            type = ProgramAst.resualtFunc[OperatorName].token.value;
-                        }
-                        break;
-                    case NT.FLOAT:
-                    case NT.FLOATOPER:
-                        type = "float";
-                        break;
-                    case NT.STRING:
-                        type = "string";
-                        break;
-                    case NT.CHAR:
-                        type = "char";
-                        break;
-                    case NT.BOOL:
-                        type = "bool";
-                        break;
-                    case NT.TYPEOPER:
-                        type = node.token.value;
-                        break;
-                    case NT.CALL:
-                        type = varSpace.GetType(node.token.value).token.value;
-                        break;
-                    default:
-                        type = "int";
-                        break;
-                }
-            }
-            catch { type = node.ToString(); }
-            return type;
         }
 
         private static bool isNodeType(NT type, CommonNode root)

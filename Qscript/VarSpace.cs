@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace Qscript
 {
-    public class VarSpace
+    public class VarSpace : IDisposable
     {
         public Stack<Dictionary<string, CommonNode>> VarsSpaces = new Stack<Dictionary<string, CommonNode>>();
         public Dictionary<string, CommonNode> VarsData = new Dictionary<string, CommonNode>();
@@ -61,6 +62,7 @@ namespace Qscript
         {
             if (VarsData.ContainsKey(key)) return VarsData[key];
             if (VarsSpaces.Count != 0 && VarsSpaces.Peek().ContainsKey(key)) return VarsSpaces.Peek()[key];
+            Console.WriteLine("Null " + key);
             return null;
         }
         public string GetTypeValue(string key)
@@ -96,6 +98,12 @@ namespace Qscript
             if (VarsData.ContainsKey(key) && VarsData[key].token.value == typeValue) return true;
             if (VarsSpaces.Count != 0 && VarsSpaces.Peek().ContainsKey(key) && VarsSpaces.Peek()[key].token.value == typeValue) return true;
             return false;
+        }
+
+        public void Dispose()
+        {
+            VarsSpaces.Clear();
+            VarsData.Clear();
         }
     }
 }

@@ -194,7 +194,7 @@ namespace Qscript
                 parser = new Parser(list);
                 ast = parser.parseCode();
             }
-            catch { Console.WriteLine("При Парсинге что-то пошло не так...("); Console.ReadKey(); return; }
+            catch (Exception e) { Console.WriteLine($"При Парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
             //PrintAST(ast, 0);
 
             Console.WriteLine("Start PostParser...");

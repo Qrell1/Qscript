@@ -1684,7 +1684,7 @@ namespace Qscript
                 root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
 
             if (qsFlag) root.qsFunction.Add(varNode.token.value);
-            root.operatorFunctions.Add((operatorChar, args.childs[0].childs[0].token.value, args.childs[1].childs[0].token.value), varNode.token.value);
+            root.operatorFunctions.Add((operatorChar, args.childs[0].childs[0], args.childs[1].childs[0]), varNode.token.value);
             return varNode;
         }
 

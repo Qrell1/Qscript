@@ -190,30 +190,20 @@ namespace Qscript
             }
             else
             {
-                NT ReturnType = Returns[0].type;
-                string ReturnValue = getTypeFromNode(Returns[0], varsLocal);
+                //CommonNode ReturnType = Returns[0];
+                CommonNode ReturnValue = DataBase.getFormulaNodeType(Returns[0], ref varsLocal, ref ast);
                 foreach (CommonNode returnNode in Returns)
                 {
-                    string ReturnValueLast = getTypeFromNode(returnNode, varsLocal);
-                    if (ReturnValueLast != ReturnValue)
-                    {
-                        if (DataBase.types.ContainsKey(ReturnValue) && DataBase.types.ContainsKey(ReturnValueLast))
-                        {
-                            int aling_first = 0;
-                            int aling_second = -1;
-                            aling_first = DataBase.aligns[ReturnValue];
-                            aling_second = DataBase.aligns[ReturnValueLast];
-                            if (aling_first != aling_second) Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
-                        }
-                        else Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
-                    }
+                    CommonNode ReturnValueLast = DataBase.getFormulaNodeType(returnNode, ref varsLocal, ref ast);
+                    if (!(ReturnValueLast._equals(ReturnValue)))
+                        Syntax.SyntaxError($"Не все возвращаемые типы Функции: {root.token.value} равны!", returnNode);
                 }
                 //ReturnType = Returns[0].type;
-                string type = getTypeFromNode(Returns[0], varsLocal);
-                root.childs[0].token.value = type;
+                CommonNode type = DataBase.getFormulaNodeType(Returns[0], ref varsLocal, ref ast);
+                root.childs[0] = type;
                 if (!ast.resualtFunc.ContainsKey(root.token.value))
                     ast.resualtFunc.Add(root.token.value, root.childs[0]);
-                else ast.resualtFunc[root.token.value].token.value = type;
+                else ast.resualtFunc[root.token.value] = type;
             }
             // VAR
             // BINOPER
@@ -228,112 +218,6 @@ namespace Qscript
             // BOOL
             // FLOAT
             return root;
-        }
-        private string getTypeFromNode(CommonNode root, Dictionary<string, CommonNode> vars)
-        {
-            string type = string.Empty;
-            switch (root.type)
-            {
-                case NT.VAR:
-                case NT.POSTUNAROPER:
-                case NT.PREUNAROPER:
-                    type = vars[root.token.value].token.value;
-                    break;
-                case NT.SIZEOF:
-                case NT.TYPEOF:
-                case NT.NUMBER:
-                case NT.ADDRESS:
-                case NT.BINOPER:
-                    type = "long";
-                    break;
-                case NT.FLOAT:
-                case NT.FLOATOPER:
-                    type = "float";
-                    break;
-                case NT.STRING:
-                    type = "string";
-                    break;
-                case NT.CHAR:
-                    type = "char";
-                    break;
-                case NT.BOOL:
-                    type = "bool";
-                    break;
-                case NT.TYPEOPER:
-                    type = root.token.value;
-                    break;
-                case NT.CALL:
-                    type = ast.resualtFunc[root.token.value].token.value;
-                    break;
-                default:
-                    type = "long";
-                    break;
-            }
-            return type;
-        }
-        private string getFormulaType(CommonNode node)
-        {
-            string type;
-            try
-            {
-                switch (node.type)
-                {
-                    case NT.LAMBDA:
-                        type = "function";
-                        break;
-                    case NT.VAR:
-                    case NT.POSTUNAROPER:
-                    case NT.PREUNAROPER:
-                        type = varSpace.GetType(node.token.value).token.value;
-                        break;
-                    case NT.SIZEOF:
-                    case NT.TYPEOF:
-                    case NT.NUMBER:
-                    case NT.ADDRESS:
-                        type = "int";
-                        break;
-                    case NT.BINOPER:
-                        type = "BINOPER";
-
-                        string _type1 = getFormulaType(node.childs[0]);
-                        string _type2 = getFormulaType(node.childs[0]);
-
-                        if (_type1 == _type2) type = _type1;
-
-
-                        if (ast.operatorFunctions.ContainsKey((node.token.value, _type1, _type2)))
-                        {
-                            string OperatorName = ast.operatorFunctions[(node.token.value, _type1, _type2)];
-
-                            type = ast.resualtFunc[OperatorName].token.value;
-                        }
-                        break;
-                    case NT.FLOAT:
-                    case NT.FLOATOPER:
-                        type = "float";
-                        break;
-                    case NT.STRING:
-                        type = "string";
-                        break;
-                    case NT.CHAR:
-                        type = "char";
-                        break;
-                    case NT.BOOL:
-                        type = "bool";
-                        break;
-                    case NT.TYPEOPER:
-                        type = node.token.value;
-                        break;
-                    case NT.CALL:
-                        type = varSpace.GetType(node.token.value).token.value;
-                        break;
-                    default:
-                        type = "int";
-                        break;
-                }
-            }
-            catch { type = "BINOPER"; }
-            return type;
         }
 
         private CommonNode replaceConstantVarValue(CommonNode root, Dictionary<CommonNode, CommonNode> varsLocal = null)
@@ -940,7 +824,7 @@ namespace Qscript
                 CommonNode varNode = take(root, 0);
                 CommonNode exprNode = take(root, 1);
 
-                varNode.childs[0].token.value = getFormulaType(exprNode);
+                varNode.childs[0] = DataBase.getFormulaNodeType(exprNode, ref varSpace, ref ast);
                 root.childs[0] = varNode;
                 root.type = NT.BINOPER;
                 return root;
