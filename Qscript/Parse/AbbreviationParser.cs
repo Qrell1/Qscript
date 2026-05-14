@@ -827,6 +827,8 @@ namespace Qscript
                 varNode.childs[0] = DataBase.getFormulaNodeType(exprNode, ref varSpace, ref ast);
                 root.childs[0] = varNode;
                 root.type = NT.BINOPER;
+                if (!varSpace.ContainsKey(varNode.token.value)) varSpace.AddVar(varNode.token.value, varNode.childs[0]);
+                //Program.PrintAST(root, 0);
                 return root;
             }
             else if (root.type == NT.VAR && root.childs.Count > 0 && root.childs[0].type == NT.TYPE)

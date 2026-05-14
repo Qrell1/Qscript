@@ -82,8 +82,8 @@ namespace Qscript
             analis(rightNode, z_buffer + 1);
             (CommonNode leftType, int leftSize) = DataBase.getFormulaNodeInfo(leftNode, ref varSpace, ref ast);
             (CommonNode rightType, int rightSize) = DataBase.getFormulaNodeInfo(rightNode, ref varSpace, ref ast);
-            if (DataBase.types.ContainsKey(leftType.token.value) && DataBase.types.ContainsKey(rightType.token.value) &&
-                leftSize != rightSize && root.token.value != "=" && DataBase.isRightOperator(root.token.value, leftType, rightType, ref ast) == -1) Syntax.SyntaxError($"Нельзя оперировать: {leftNode.token.value} с {rightNode.token.value}", root);
+            if (!DataBase.types.ContainsKey(leftType.token.value) && !DataBase.types.ContainsKey(rightType.token.value) &&
+                leftSize != rightSize && root.token.value != "=" && DataBase.isRightOperator(root.token.value, leftType, rightType, ref varSpace, ref ast) == -1) Syntax.SyntaxError($"Нельзя оперировать: {leftNode.token.value} с {rightNode.token.value}", root);
         }
         /*private static void analisFloatoper(CommonNode root, int z_buffer)
         {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Qscript
 {
@@ -14,6 +15,7 @@ namespace Qscript
             {"int32", "dd"},
             {"int16", "dw"},
             {"int8", "db"},
+            {"number", "dd"},
             {"byte", "db"},
             {"string", "du"},
             {"char", "db"},
@@ -36,6 +38,7 @@ namespace Qscript
             {"int32", "DWORD"},
             {"int16", "WORD"},
             {"int8", "BYTE"},
+            {"number", "DWORD"},
             {"byte", "BYTE"},
             {"string", "DWORD"},
             {"char", "BYTE"},
@@ -58,6 +61,7 @@ namespace Qscript
             {"int32",   4},
             {"int16",   2},
             {"int8",    1},
+            {"number",  4},
             {"byte",    1},
             {"string",  2},
             {"char",    1},
@@ -80,6 +84,7 @@ namespace Qscript
             {"int32",   "eax"},
             {"int16",   "ax"},
             {"int8",    "al"},
+            {"number",   "eax"},
             {"byte",    "al"},
             {"string",  "ax"},
             {"char",    "al"},
@@ -113,19 +118,21 @@ namespace Qscript
             {"ecx", "c"}
         };
 
-        public static int isRightOperator (string operation, CommonNode leftType, CommonNode rightType, ref ProgramNode ast)
+        public static int isRightOperator (string operation, CommonNode leftType, CommonNode rightType, ref VarSpace varSpace, ref ProgramNode ast)
         {
             int index = 0;
             foreach (var oper in ast.operatorFunctions)
             {
-                if (oper.Key.Item1 == operation && 
+                if (oper.Key.Item1 == operation &&
                     (
                     (oper.Key.Item2._equals(leftType) && oper.Key.Item3._equals(rightType))
-                    || (getTypeSize(oper.Key.Item2, ref ast) == getTypeSize(leftType, ref ast)
-                        && getTypeSize(oper.Key.Item3, ref ast) == getTypeSize(rightType, ref ast)
+                    || (oper.Key.Item2.token.value.Contains(leftType.token.value) && types.ContainsKey(leftType.token.value) && getTypeSize(oper.Key.Item2, ref ast) == getFormulaNodeSize(leftType, ref varSpace, ref ast) && 
+                        oper.Key.Item3.token.value.Contains(rightType.token.value) && types.ContainsKey(rightType.token.value) && getTypeSize(oper.Key.Item3, ref ast) == getFormulaNodeSize(rightType, ref varSpace, ref ast)
                         )
                     ))
+                {
                     return index;
+                }
                 index++;
             }
             return -1;
@@ -160,13 +167,15 @@ namespace Qscript
                     case NT.VAR:
                     case NT.POSTUNAROPER:
                     case NT.PREUNAROPER:
-                        if (node.token.value.Contains('.')) type = new CommonNode(NT.TYPE, new Token(TT.NUMBER, "int", 0));
-                        else type = varSpace.GetType(node.token.value);
+                        type = externGetTypeVar(node, ref varSpace, ref ast);
                         size = getTypeSize(type, ref ast);
+                        break;
+                    case NT.NUMBER:
+                        type = new CommonNode(NT.TYPE, new Token(TT.NUMBER, "int", node.token.pos));
+                        size = 4;
                         break;
                     case NT.SIZEOF:
                     case NT.TYPEOF:
-                    case NT.NUMBER:
                     case NT.ADDRESS:
                         type = new CommonNode(NT.TYPE, new Token(TT.VAR, "int", node.token.pos));
                         size = 4;
@@ -178,14 +187,20 @@ namespace Qscript
                         (CommonNode _type1, int _size1) = getFormulaNodeInfo(node.childs[0], ref varSpace, ref ast);
                         (CommonNode _type2, int _size2) = getFormulaNodeInfo(node.childs[1], ref varSpace, ref ast);
 
-                        if (_size1 == _size2) size = _size1;
+                        if (_size1 == _size2 || _type1._equals(_type2)) {
+                            type = _type1;    
+                            size = _size1;
+                        }
 
-                        int temp = isRightOperator(node.token.value, _type1, _type2, ref ast);
-                        if (temp != -1) {
+                        //Console.WriteLine(_type1.token.value + $" {_type1.type} || {_type2.type} " + _type2.token.value);
+
+                        int temp = isRightOperator(node.token.value, _type1, _type2, ref varSpace, ref ast);
+                        if (temp > -1) {
                             string OperatorName = ast.operatorFunctions.ElementAt(temp).Value;
                             type = ast.resualtFunc[OperatorName];
                             size = getTypeSize(ast.resualtFunc[OperatorName], ref ast);
                         }
+
                         break;
                     case NT.FLOAT:
                     case NT.FLOATOPER:
@@ -193,8 +208,8 @@ namespace Qscript
                         size = 4;
                         break;
                     case NT.STRING:
-                        type = new CommonNode(NT.TYPE, new Token(TT.STRING, "string", node.token.pos));
-                        size = 2;
+                        type = new CommonNode(NT.INDICATOR, new Token(TT.STRING, "string", node.token.pos));
+                        size = 4;
                         break;
                     case NT.CHAR:
                         type = new CommonNode(NT.TYPE, new Token(TT.CHAR, "char", node.token.pos));
@@ -240,78 +255,9 @@ namespace Qscript
             varSpace.VarsSpaces.Push(vars);
             return getFormulaNodeInfo(node, ref varSpace, ref ast).Item1;
         }
-
-        /*public static string getFormulaType(CommonNode node, VarSpace varSpace, ProgramNode ast)
-        {
-            string type;
-            try
-            {
-                switch (node.type)
-                {
-                    case NT.LAMBDA:
-                        type = "function";
-                        break;
-                    case NT.VAR:
-                    case NT.POSTUNAROPER:
-                    case NT.PREUNAROPER:
-                        type = varSpace.GetType(node.token.value).token.value;
-                        break;
-                    case NT.SIZEOF:
-                    case NT.TYPEOF:
-                    case NT.NUMBER:
-                    case NT.ADDRESS:
-                        type = "int";
-                        break;
-                    case NT.BINOPER:
-                        type = "BINOPER";
-
-                        string _type1 = getFormulaType(node.childs[0]);
-                        string _type2 = getFormulaType(node.childs[0]);
-
-                        if (_type1 == _type2) type = _type1;
-
-                        string leftType = (_type1 == "STRING") ? "string" : _type1;
-                        string rightType = (_type2 == "STRING") ? "string" : _type2;
-
-                        if (ast.operatorFunctions.ContainsKey((node.token.value, leftType, rightType)))
-                        {
-                            string OperatorName = ast.operatorFunctions[(node.token.value, leftType, rightType)];
-
-                            type = ast.resualtFunc[OperatorName].token.value;
-                        }
-                        break;
-                    case NT.FLOAT:
-                    case NT.FLOATOPER:
-                        type = "float";
-                        break;
-                    case NT.STRING:
-                        type = "string";
-                        break;
-                    case NT.CHAR:
-                        type = "char";
-                        break;
-                    case NT.BOOL:
-                        type = "bool";
-                        break;
-                    case NT.TYPEOPER:
-                        type = node.token.value;
-                        break;
-                    case NT.CALL:
-                        type = varSpace.GetType(node.token.value).token.value;
-                        break;
-                    default:
-                        type = "int";
-                        break;
-                }
-            }
-            catch { type = node.ToString(); }
-            return type;
-        }*/
         public static int getStructSize(string type, ref ProgramNode ast)
         {
             int size = 0;
-            
-            //if (types.ContainsKey())
 
             foreach (var _var in ast.structs[type].Values)
             {
@@ -335,11 +281,38 @@ namespace Qscript
         }
         public static int getTypeSize(CommonNode type, ref ProgramNode ast)
         {
-            if (type.type == null) return 4;
+            if (type.type == NT.NULL) return 4;
             if (type.type == NT.INDICATOR) return 4;
-            //Console.WriteLine($"{type.token.value} | {type.type}");
             if (aligns.ContainsKey(type.token.value)) return aligns[type.token.value];
             else return getStructSize(type.token.value, ref ast);
+        }
+        public static CommonNode externGetTypeVar(CommonNode var, ref VarSpace varSpace, ref ProgramNode ast)
+        {
+            CommonNode type;
+
+            string name = var.token.value;
+
+            if (name.Contains(".") || name.Contains(","))
+            {
+                int n = 0;
+                string[] strs = name.Split('.', ',');
+                string strct = varSpace.GetType(strs[0]).token.value;
+            start:
+                if (
+                    !ast.structs.ContainsKey(strct) ||
+                    !ast.structs[strct].ContainsKey(strs[n + 1])
+                    )
+                {
+                    Syntax.SyntaxError($"Ошибка Поле:{strs[n + 1]} не существует в {strct}", var);
+                }
+                type = ast.structs[strct][strs[n + 1]];
+                strct = type.token.value;
+
+                if (!DataBase.types.ContainsKey(type.token.value)) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
+            }
+            else type = varSpace.GetType(name);
+
+            return type;
         }
     }
 }

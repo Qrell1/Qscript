@@ -61,7 +61,15 @@ namespace Qscript
         public CommonNode GetType(string key)
         {
             if (VarsData.ContainsKey(key)) return VarsData[key];
-            if (VarsSpaces.Count != 0 && VarsSpaces.Peek().ContainsKey(key)) return VarsSpaces.Peek()[key];
+            //if (VarsSpaces.Count != 0 && VarsSpaces.Peek().ContainsKey(key)) return VarsSpaces.Peek()[key];
+            foreach (var space in VarsSpaces)
+            {
+                if (space.ContainsKey(key))
+                {
+                    return space[key];
+                }
+            }
+
             Console.WriteLine("Null " + key);
             return null;
         }

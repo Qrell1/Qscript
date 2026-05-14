@@ -525,7 +525,8 @@ namespace Qscript
                 expect(TT.VAR); CommonNode typeNode = new CommonNode(NT.TYPE, take());
                 CommonNode declarator = parseDeclarator();
                 if (declarator != null) typeNode.childs.Add(declarator);
-                if (peek(TT.OPER) && tokens[pos].value == "*")
+                //if (typeNode.token.value == "string") typeNode.type = NT.INDICATOR; // TODO: Временная фигня совместимости!!!!!!
+                if (tokens[pos].value == "*")
                 {
                     skip();
                     typeNode.type = NT.INDICATOR;

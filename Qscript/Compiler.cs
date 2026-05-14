@@ -551,9 +551,10 @@ namespace Qscript
                 //_objProg.code.Append($"mov esi, eax\n");
             } else
             {
-                regPrefer = "eax";
+                //regPrefer = "eax";
                 Translation(returnValue, z_buffer + 1);
                 regPrefer = "";
+                _objProg.code.Append($"mov eax, {regReturn}\n");
                 //_objProg.code.Append($"mov esi, eax\n");
             }
             _objProg.code.Append($"jmp {funcName}.return\n");
@@ -964,7 +965,7 @@ namespace Qscript
             CommonNode leftType = DataBase.getFormulaNodeType(root.childs[0], ref varSpace, ref ProgramAst);
             CommonNode rightType = DataBase.getFormulaNodeType(root.childs[1], ref varSpace, ref ProgramAst);
 
-            int tempOperationIndex = DataBase.isRightOperator(root.token.value, leftType, rightType, ref ProgramAst);
+            int tempOperationIndex = DataBase.isRightOperator(root.token.value, leftType, rightType, ref varSpace, ref ProgramAst);
             if (tempOperationIndex != -1)
             {
                 string OperatorName = ProgramAst.operatorFunctions.ElementAt(tempOperationIndex).Value;
@@ -1422,7 +1423,15 @@ namespace Qscript
                 index++;
             }
             _objProg.code.Append("{\n");
+            varSpace.OpenSpace();
+            int _index = 0;
+            foreach (CommonNode child in signatureInline.childs)
+            {
+                varSpace.AddVar(root.token.value + _index, child.childs[0]);
+                _index++;
+            }
             Translation(repcaleNode(take(root, 1), ref table), z_buffer + 1);
+            varSpace.CloseSpace();
             _objProg.code.Append("}\n");
             setWriteData(CodeData.codeData);
         } // IDEA: Улучшить для аргументов
@@ -1487,6 +1496,7 @@ namespace Qscript
             }
             varSpace.OpenSpace();
             foreach (CommonNode child in signature.childs) varSpace.AddVar(child.token.value, child.childs[0]);
+            regPrefer = "";
             Translation(take(root, 2), z_buffer + 1);
             varSpace.CloseSpace();
             func = false;
