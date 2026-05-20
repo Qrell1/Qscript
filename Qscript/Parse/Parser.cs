@@ -628,8 +628,15 @@ namespace Qscript
 
         private CommonNode parseBody()
         {
-            if (!peek(TT.LFIG) && !peek(TT.SEM))
+            if ((!peek(TT.LFIG) && !peek(TT.SEM)))
             {
+                CommonNode node = new CommonNode(NT.BODY, new Token(TT.NULL, "{}", tokens[pos].pos));
+                node.childs.Add(parse());
+                return node;
+            }
+            if (peek(TT.OPER) && tokens[pos].value == "=>")
+            {
+                skip();
                 CommonNode node = new CommonNode(NT.BODY, new Token(TT.NULL, "{}", tokens[pos].pos));
                 node.childs.Add(parse());
                 return node;
@@ -777,7 +784,8 @@ namespace Qscript
             if (varNode.childs[0].childs.Count > 0 && varNode.childs[0].type == NT.TYPE) Syntax.SyntaxError("После возвращаемого типа функции не может идти Декларотивный Кортеж!", varNode.childs[0].childs[0]);
             bool qsFlag = false;
             CommonNode child;
-            CommonNode args = parseVarWTypeSignature(); expect(new TT[] { TT.LFIG, TT.SEM, TT.OPER, TT.VAR }); if (tokens[pos].value == "qs") { skip(); qsFlag = true; }
+            CommonNode args = parseVarWTypeSignature(); //expect(new TT[] { TT.LFIG, TT.SEM, TT.OPER, TT.VAR });
+            if (tokens[pos].value == "qs") { skip(); qsFlag = true; }
             CommonNode declarator = parseDeclarator();
             CommonNode body = parseBody();
             varNode.token.value = NamespaceString + varNode.token.value;

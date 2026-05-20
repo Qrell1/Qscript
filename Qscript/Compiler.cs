@@ -551,7 +551,7 @@ namespace Qscript
                 //_objProg.code.Append($"mov esi, eax\n");
             } else
             {
-                //regPrefer = "eax";
+                regPrefer = "eax";
                 Translation(returnValue, z_buffer + 1);
                 regPrefer = "";
                 _objProg.code.Append($"mov eax, {regReturn}\n");
@@ -831,9 +831,13 @@ namespace Qscript
             else
             {
                 Translation(leftChild, z_buffer + 1);
-                regReturn1 = regReturn;
+                //_objProg.code.Append($"mov .reg{regIndex++}, {regReturn}\n");
+                _objProg.code.Append($"push {regReturn}\n");
+                regReturn1 = $".reg{regIndex++}";
+
                 Translation(rightChild, z_buffer + 1);
                 regReturn2 = regReturn;
+                _objProg.code.Append($"pop {regReturn1}\n");
                 return (regReturn1, regReturn2);
             }
         }

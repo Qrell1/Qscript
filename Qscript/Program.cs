@@ -219,8 +219,7 @@ namespace Qscript
             compiler.WriteCode(data, filename, pathCompile, "qsr");
 
             Console.WriteLine("End...");
-            Console.ReadKey();
-
+            //Console.ReadKey();
         }
     }
 }

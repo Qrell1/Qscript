@@ -17,18 +17,25 @@ namespace Qscript.Lex
         Dictionary<string, Token> defines = new Dictionary<string, Token>();
 
         public Preproccessor() { }
-        public List<Token> lexIncludes(List<Token> code)
+
+        private string getIncludePath (string path)
+        {
+            string file = path.Split('\\').Last();
+            return path.Replace(file, "");
+        }
+
+        public List<Token> lexIncludes(List<Token> code, string prefix = "")
         {
             code = lexDefine(code);
             code = lexTypedef(code);
             List<Token> nonIncludeCode = new List<Token>();
-            List<string> includes = new List<string>();
+            Dictionary<string, string> includes = new Dictionary<string, string>();
 
             for (int i = 0; i < code.Count; i++)
             {
                 if (code[i].type == TT.INCLUDE)
                 {
-                    i++; if (code[i].type == TT.STRING) { includes.Add(code[i].value); i++; }
+                    i++; if (code[i].type == TT.STRING) { includes.Add(code[i].value.Split('\\').Last(), prefix + "\\" + getIncludePath(code[i].value)); i++; }
                     if (code[i].type != TT.SEM) Syntax.SyntaxError("Неправильное подключение файла", code[i]); 
                     continue;
                 }
@@ -36,7 +43,7 @@ namespace Qscript.Lex
             }
             if (includes.Count == 0) return nonIncludeCode;
 
-            List<Token> tokens = fileCodeIncludes(includes.ToArray());
+            List<Token> tokens = fileCodeIncludes(includes);
             tokens.AddRange(nonIncludeCode);
             return tokens;
         }
@@ -92,16 +99,16 @@ namespace Qscript.Lex
             return tokens;
         }
 
-        public List<Token> fileCodeIncludes(string[] includes)
+        public List<Token> fileCodeIncludes(Dictionary<string, string> includes)
         {
             List<Token> list = new List<Token>();
-            foreach (string include in includes)
+            foreach (var include in includes)
             {
-                if (fileIncludes.Contains(include)) return lexTypedef(lexDefine(list));
-                Console.WriteLine($"Загружаем Файл : {include}");
-                fileIncludes.Add(include);
+                if (fileIncludes.Contains(include.Key)) return lexTypedef(lexDefine(list));
+                Console.WriteLine($"Загружаем Файл : {include.Key}");
+                fileIncludes.Add(include.Key);
 
-                string[] codes = File.ReadAllLines(include);
+                string[] codes = File.ReadAllLines(Environment.CurrentDirectory + "\\scr" + "\\" + include.Value + "\\" + include.Key);
 
                 CommentLexer commentLexer = new CommentLexer();
                 (string temp, CodeStruct codeStruct) = commentLexer.lexCodes(codes);
@@ -110,7 +117,7 @@ namespace Qscript.Lex
                 List<Token> fileTokens = lexer.lexAnalysis();
                 //Preproccessor includeLexer = new Preproccessor();
          
-                List<Token> ts = lexIncludes(fileTokens);
+                List<Token> ts = lexIncludes(fileTokens, include.Value);
                 ts.AddRange(list);
                 list = lexDefine(ts);
                 list = lexTypedef(list);
