@@ -160,6 +160,9 @@ namespace Qscript
             {
                 switch (node.type)
                 {
+                    case NT.OFFSET:
+                        (type, size) = getFormulaNodeInfo(node.childs[1], ref varSpace, ref ast);
+                        break;
                     case NT.LAMBDA:
                         type = new CommonNode(NT.TYPE, new Token(TT.VAR, "function", node.token.pos));
                         size = 4;
@@ -220,6 +223,7 @@ namespace Qscript
                         size = 1;
                         break;
                     case NT.TYPEOPER:
+                        node.type = NT.TYPE;
                         type = node;
                         size = getTypeSize(type, ref ast);
                         break;

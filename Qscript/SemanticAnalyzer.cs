@@ -167,7 +167,10 @@ namespace Qscript
                 if (externLibrary.Value.Contains(root.token.value)) return;
             }
             if (!ast.resualtFunc.ContainsKey(root.token.value) && !ast.inlineNames.Contains(root.token.value))
+            {
+                Program.PrintAST(ast, 0);
                 Syntax.SyntaxError($"Функции: {root.token.value} не сущестует чтобы её вызывать!", root);
+            }
             else
             {
                 foreach (CommonNode child in root.childs[0].childs) analis(child, z_buffer + 2);

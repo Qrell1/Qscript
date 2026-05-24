@@ -137,11 +137,11 @@ namespace Qscript
         }
         private CommonNode tryParseVarPath(CommonNode varNode)
         {
-            while (peek(TT.TS) || (tokens[pos].value == ":" && tokens[pos+1].value == ":" && ++pos != pos))
+            while (peek(TT.TS) || (tokens[pos].value == ":" && tokens[pos+1].value == ":" && ++pos == pos))
             {
-                skip(); 
-                varNode.token.value += "." + take().value;
-                if (tokens[pos].type != TT.TS) break;
+                //skip(); 
+                varNode.token.value += take().value.Replace(":", ".") + take().value;
+                //if (tokens[pos].type != TT.TS && (tokens[pos].value != ":" || tokens[pos + 1].value != ":")) break;
                 //if (tokens[pos].value != ":" && tokens[pos+1].value != ":") break;
             }
             return varNode;
@@ -306,6 +306,14 @@ namespace Qscript
             {
                 CommonNode node = new CommonNode(NT.VAR, token);
                 node = tryParseVarPath(node);
+
+                if (tokens[pos].type == TT.LPAR)
+                {
+                    node.type = NT.CALL;
+                    node = parseCall(node);
+                    return node;
+                }
+
                 if (tokens[pos].value == "@")
                 {
                     node = new CommonNode(NT.CALL, node.token);
@@ -323,18 +331,19 @@ namespace Qscript
                         return node;
                     }
                 }
-                if (tokens[pos].type == TT.LPAR)
-                {
-                    node.type = NT.CALL;
-                    node = parseCall(node);
-                    return node;
-                }
+                
 
                 if (peek(TT.LK))
                 {
-                    CommonNode offsetNode = new CommonNode(NT.OFFSET, take());
-                    offsetNode.childs.Add(parseFormula()); expect(TT.RK); skip();
-                    node.childs.Add(offsetNode);
+                    CommonNode offsetNode;
+
+                    while (peek(TT.LK))
+                    {
+                        offsetNode = new CommonNode(NT.OFFSET, take());
+                        offsetNode.childs.Add(parseFormula()); expect(TT.RK); skip();
+                        offsetNode.childs.Add(node);
+                        node = offsetNode;
+                    }
                 }
 
                 if (peek(TT.PREFIX) && (tokens[pos].value == "++" || tokens[pos].value == "--"))
@@ -418,7 +427,7 @@ namespace Qscript
             Token operatpor = null;          // token 2
                                              //if (peek(NT.OPER) && (new string[] {"*", "/" }.Contains(tokens[pos].value)))
                                              //operatpor = take();
-            while (peek(TT.OPER) && (new string[] { "==", "!=", "<=", ">=", "<", ">" }.Contains(tokens[pos].value)))
+            while ((new string[] { "==", "!=", "<=", ">=", "<", ">" }.Contains(tokens[pos].value)))
             {
                 operatpor = take();
                 CommonNode right = parseTerm2();
@@ -591,7 +600,7 @@ namespace Qscript
         }
         private CommonNode parseIfSignature()
         {
-            if (peek(TT.LPAR)) { expect(TT.LPAR); skip(); }
+            if (peek(TT.LPAR)) { skip(); }
             if (peek(TT.RPAR))
             {
                 skip();
@@ -911,9 +920,15 @@ namespace Qscript
 
             if (peek(TT.LK))
             {
-                CommonNode offsetNode = new CommonNode(NT.OFFSET, take());
-                offsetNode.childs.Add(parseFormula()); expect(TT.RK); skip();
-                varNode.childs.Add(offsetNode);
+                CommonNode offsetNode;
+
+                while (peek(TT.LK))
+                {
+                    offsetNode = new CommonNode(NT.OFFSET, take());
+                    offsetNode.childs.Add(parseFormula()); expect(TT.RK); skip();
+                    offsetNode.childs.Add(varNode);
+                    varNode = offsetNode;
+                }
             }
             if (peek(TT.OPER) && (tokens[pos].value == "<" || tokens[pos].value == "@"))
             {
@@ -990,16 +1005,16 @@ namespace Qscript
         }
 
 
-        private CommonNode parseCall(CommonNode varNode)
+        private CommonNode parseCall(CommonNode varNode, bool flag = false)
         {
-            varNode = tryParseVarPath(varNode);
+            if (!flag) varNode = tryParseVarPath(varNode);
             CommonNode declarator = parseDeclarator();
             if (!peek(TT.LPAR)) return varNode;
             CommonNode args = parseFormulaSignature();
             varNode.type = NT.CALL;
             if (declarator != null) varNode.childs.Add(declarator);
             varNode.childs.Add(args);
-            if (peek(TT.TS))
+            /*if (peek(TT.TS))
             {
                 skip(); expect(TT.VAR);
                 CommonNode var = new CommonNode(NT.VAR, take());
@@ -1007,7 +1022,7 @@ namespace Qscript
                 var.type = NT.REFVAR;
                 var.childs.Add(varNode);
                 varNode = var;
-            }
+            }*/
 
             return varNode;
 

@@ -33,6 +33,8 @@ namespace Qscript
         {
             ast = root;
             CommonNode astNode = copyNodes(root);
+            // Ts Preparing
+            astNode = tsPreparing(astNode);
             // Var Register Cheak
             astNode = varRegisterCheakUses(astNode);
             // Const Remove
@@ -220,6 +222,20 @@ namespace Qscript
             return root;
         }
 
+        private CommonNode tsPreparing(CommonNode root)
+        {
+            for (int i = 0; i < root.childs.Count; i++)
+            {
+                root.childs[i] = tsPreparing(root.childs[i]);
+            }
+            if (root.type == NT.VAR
+                || root.type == NT.TYPE
+                || root.type == NT.INDICATOR
+                || root.type == NT.CALL
+                || root.type == NT.ADDRESS)
+                root.token.value = root.token.value.Replace(",", ".");
+            return root;
+        }
         private CommonNode replaceConstantVarValue(CommonNode root, Dictionary<CommonNode, CommonNode> varsLocal = null)
         {
             if (root.token.value == "=" && root.childs[0].type == NT.VAR
@@ -415,8 +431,8 @@ namespace Qscript
             decimal leftValue = decimal.Zero;
             decimal rightValue = decimal.Zero;
 
-            leftNode.token.value = leftNode.token.value.Replace(".", ",");
-            rightNode.token.value = rightNode.token.value.Replace(".", ",");
+            if (leftNode.type == NT.FLOAT) leftNode.token.value = leftNode.token.value.Replace(".", ",");
+            if (rightNode.type == NT.FLOAT) rightNode.token.value = rightNode.token.value.Replace(".", ",");
 
             if (leftNode.type == NT.FLOAT) leftNode.token.value = leftNode.token.value.Replace("f", "");
             if (rightNode.type == NT.FLOAT) rightNode.token.value = rightNode.token.value.Replace("f", "");

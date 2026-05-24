@@ -71,7 +71,14 @@ namespace QSicon
                 bool outFlag = false;
 
                 if (args[0] == "out") outFlag = true;
-                if (args[0] == "update")
+
+                if (args[0] == "info")
+                {
+                    Console.WriteLine("======================");
+                    Console.WriteLine("=<  Version : 0.1v  >=");
+                    Console.WriteLine("======================");
+                }
+                else if (args[0] == "update")
                 {
                     string libsListPath = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
                     Console.WriteLine("Start Task Download...");
@@ -249,8 +256,8 @@ namespace QSicon
                     proc.WaitForExit();
                     proc.Close();
 
-                    Console.Clear();
-                    //Console.WriteLine($"{projectPath}\\out>start main.exe");
+                    //Console.Clear();
+                    Console.WriteLine($"{projectPath}\\out>start main.exe");
                     var outExe = new Process();
                     outExe.StartInfo.FileName = $"{projectPath}\\out\\main.exe";
                     outExe.StartInfo.Domain = $"{projectPath}\\out\\";
