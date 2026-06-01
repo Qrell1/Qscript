@@ -241,6 +241,12 @@ namespace Qscript
                 case NT.TYPEOPER:
                     Translation(root.childs[0], z_buffer + 1);
                     break;
+                case NT.BREAK:
+                    translationBreak(root, z_buffer);
+                    break;
+                case NT.CONTINUE:
+                    translationContinue(root, z_buffer);
+                    break;
                 case NT.BODY:
                     for (int i = 0; i < root.childs.Count; i++)
                     {
@@ -254,6 +260,16 @@ namespace Qscript
                     _objProg.includes.Append($"include '{take(root,0).token.value}'\n");
                     break;
             }
+        }
+        private void translationBreak(CommonNode root, int z_buffer)
+        {
+            string pre = (funcName != "") ? funcName + "." : "";
+            _objProg.code.Append($"jmp break{pre}iter{iterTagIndex}");
+        }
+        private void translationContinue(CommonNode root, int z_buffer)
+        {
+            string pre = (funcName != "") ? funcName + "." : "";
+            _objProg.code.Append($"jmp continue{pre}iter{iterTagIndex}");
         }
         private string[] translationOffset(CommonNode root, int z_buffer, bool flag = true)
         {
@@ -330,11 +346,13 @@ namespace Qscript
             _objProg.code.Append($"{pre}iter{iterNumber}:\n");
 
             Translation(bodyNode, z_buffer + 1);
-
+            _objProg.code.Append($"continue{pre}iter{iterNumber}:");
             Translation(cmpNode, z_buffer + 1);
             _objProg.code.Append($"jmp {pre}iter{iterNumber}\n");
             _objProg.code.Append($"{funcName}.false{falseTagIndex}:\n");
             falseTagIndex++;
+
+            if (isNodeType(NT.BREAK, bodyNode)) _objProg.code.Append($"breaK{pre}iter{iterNumber}:");
         }
         private void translationFor (CommonNode root, int z_buffer)
         {
@@ -352,11 +370,13 @@ namespace Qscript
             Translation(bodyNode, z_buffer + 1);
 
             Translation(stepNode, z_buffer + 1);
+            _objProg.code.Append($"continue{pre}iter{iterNumber}:");
             Translation(cmpNode, z_buffer + 1);
             _objProg.code.Append($"jmp {pre}iter{iterNumber}\n");
             _objProg.code.Append($"false{falseTagIndex}:\n");
             falseTagIndex++;
 
+            if (isNodeType(NT.BREAK, bodyNode)) _objProg.code.Append($"break{pre}iter{iterNumber}:");
             //iterTagIndex++;
         }
         private void translationRept (CommonNode root, int z_buffer)
@@ -450,11 +470,19 @@ namespace Qscript
                 //_objProg.code.Append($"push ecx\n");
                 Translation(bodyNode, z_buffer + 1);
                 //_objProg.code.Append($"pop ecx\n");
+                _objProg.code.Append($"continue{pre}iter{iterNumber}:");
                 _objProg.code.Append($"pop {reg}\n");
                 _objProg.code.Append($"inc {reg}\n");
                 if (isVarUse) _objProg.code.Append($"mov [{varNode.token.value}], {reg}\n");
                 _objProg.code.Append($"cmp {reg}, {countString}\n");
                 _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+                if (isNodeType(NT.BREAK, bodyNode))
+                {
+                    _objProg.code.Append($"jmp nop{pre}iter{iterNumber}");
+                    _objProg.code.Append($"break{pre}iter{iterNumber}:");
+                    _objProg.code.Append($"pop {reg}\n");
+                    _objProg.code.Append($"nop{pre}iter{iterNumber}:");
+                }
             }
             else if (countNode.type == NT.VAR)
             {
@@ -470,13 +498,20 @@ namespace Qscript
                 //_objProg.code.Append($"push ecx\n");
                 Translation(bodyNode, z_buffer + 1);
                 //_objProg.code.Append($"pop ecx\n");
-
+                _objProg.code.Append($"continue{pre}iter{iterNumber}:\n");
                 _objProg.code.Append($"pop {reg}\n");
                 _objProg.code.Append($"inc {reg}\n");
                 _objProg.code.Append($"mov [{varNode.token.value}], {reg}\n");
 
                 _objProg.code.Append($"cmp {reg}, {countString}\n");
                 _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+                if (isNodeType(NT.BREAK, bodyNode))
+                {
+                    _objProg.code.Append($"jmp nop{pre}iter{iterNumber}");
+                    _objProg.code.Append($"break{pre}iter{iterNumber}:");
+                    _objProg.code.Append($"pop {reg}\n");
+                    _objProg.code.Append($"nop{pre}iter{iterNumber}:");
+                }
             }
             else
             {
@@ -493,7 +528,7 @@ namespace Qscript
                 //_objProg.code.Append($"push ecx\n");
                 Translation(bodyNode, z_buffer + 1);
                 //_objProg.code.Append($"pop ecx\n");
-
+                _objProg.code.Append($"continue{pre}iter{iterNumber}:\n");
                 _objProg.code.Append($"pop {reg}\n");
                 _objProg.code.Append($"inc {reg}\n");
                 Translation(countNode, z_buffer + 1);
@@ -501,8 +536,14 @@ namespace Qscript
                 _objProg.code.Append($"mov [{varNode.token.value}], {reg}\n");
                 _objProg.code.Append($"cmp {reg}, {regVar}\n");
                 _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+                if (isNodeType(NT.BREAK, bodyNode))
+                {
+                    _objProg.code.Append($"jmp nop{pre}iter{iterNumber}");
+                    _objProg.code.Append($"break{pre}iter{iterNumber}:");
+                    _objProg.code.Append($"pop {reg}\n");
+                    _objProg.code.Append($"nop{pre}iter{iterNumber}:");
+                }
             }
-            _objProg.code.Append($"{pre}passiter{iterNumber}:\n");
         }
         private void translationPreUnarOper (CommonNode root, int z_buffer)
         {
@@ -630,14 +671,14 @@ namespace Qscript
             string pre = (funcName != "") ? funcName + "." : "";
             if (countNode.type == NT.NUMBER && Convert.ToInt32(countNode.token.value) <= 0) return;
 
-            else if (countNode.type == NT.NUMBER
+            /*else if (countNode.type == NT.NUMBER
                 && Convert.ToInt32(countNode.token.value) >= 16
                 && Convert.ToInt32(countNode.token.value) % 4 == 0 && totalNodes(bodyNode) <= 32)
             {
                 int newIter = Convert.ToInt32(countNode.token.value) / 4;
                 string reg = $".reg{regIndex++}safe";
                 _objProg.code.Append($"xor {reg}, {reg}\n");
-                _objProg.code.Append($"iter{iterNumber}:\n");
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
                 _objProg.code.Append($"push {reg}\n");
 
                 Translation(bodyNode, z_buffer + 1);
@@ -645,10 +686,19 @@ namespace Qscript
                 Translation(bodyNode, z_buffer + 1);
                 Translation(bodyNode, z_buffer + 1);
 
+                _objProg.code.Append($"continue{pre}iter{iterNumber}:\n");
                 _objProg.code.Append($"pop {reg}\n");
                 _objProg.code.Append($"inc {reg}\n");
                 _objProg.code.Append($"cmp {reg}, {newIter}\n");
-                _objProg.code.Append($"jne iter{iterNumber}\n");
+                _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+
+                if (isNodeType(NT.BREAK, bodyNode))
+                {
+                    _objProg.code.Append($"jmp nop{pre}iter{iterNumber}");
+                    _objProg.code.Append($"break{pre}iter{iterNumber}:");
+                    _objProg.code.Append($"pop {reg}\n");
+                    _objProg.code.Append($"nop{pre}iter{iterNumber}:");
+                }
             }
             else if (countNode.type == NT.NUMBER
                 && Convert.ToInt32(countNode.token.value) >= 16
@@ -658,17 +708,25 @@ namespace Qscript
                 int newIter = Convert.ToInt32(countNode.token.value) / 2;
                 string reg = $".reg{regIndex++}safe";
                 _objProg.code.Append($"xor {reg}, {reg}\n");
-                _objProg.code.Append($"iter{iterNumber}:\n");
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
                 _objProg.code.Append($"push {reg}\n");
 
                 Translation(bodyNode, z_buffer + 1);
                 Translation(bodyNode, z_buffer + 1);
 
+                _objProg.code.Append($"continue{pre}iter{iterNumber}:\n");
                 _objProg.code.Append($"pop {reg}\n");
                 _objProg.code.Append($"inc {reg}\n");
                 _objProg.code.Append($"cmp {reg}, {newIter}\n");
-                _objProg.code.Append($"jne iter{iterNumber}\n");
-            }
+                _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+                if (isNodeType(NT.BREAK, bodyNode))
+                {
+                    _objProg.code.Append($"jmp nop{pre}iter{iterNumber}");
+                    _objProg.code.Append($"break{pre}iter{iterNumber}:");
+                    _objProg.code.Append($"pop {reg}\n");
+                    _objProg.code.Append($"nop{pre}iter{iterNumber}:");
+                }
+            }*/
             else
             { // {reg}
                 string reg = $".reg{regIndex++}safe";
@@ -681,21 +739,29 @@ namespace Qscript
                     reg2 = regReturn + "safe";
                 }
                 _objProg.code.Append($"xor {reg}, {reg}\n");
-                _objProg.code.Append($"iter{iterNumber}:\n");
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
 
                 _objProg.code.Append($"push {reg}\n");
                 if (countNode.type != NT.NUMBER) _objProg.code.Append($"push {reg2}\n");
 
                 Translation(bodyNode, z_buffer + 1);
 
+                _objProg.code.Append($"continue{pre}iter{iterNumber}:\n");
                 if (countNode.type != NT.NUMBER) _objProg.code.Append($"pop {reg2}\n");
                 _objProg.code.Append($"pop {reg}\n");
 
                 _objProg.code.Append($"inc {reg}\n");
                 _objProg.code.Append($"cmp {reg}, {reg2}\n");
-                _objProg.code.Append($"jne iter{iterNumber}\n");
+                _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+                if (isNodeType(NT.BREAK, bodyNode))
+                {
+                    _objProg.code.Append($"jmp nop{pre}iter{iterNumber}");
+                    _objProg.code.Append($"break{pre}iter{iterNumber}:");
+                    if (countNode.type != NT.NUMBER) _objProg.code.Append($"pop {reg2}\n");
+                    _objProg.code.Append($"pop {reg}\n");
+                    _objProg.code.Append($"nop{pre}iter{iterNumber}:");
+                }
             }
-            _objProg.code.Append($"{pre}passiter{iterNumber}:\n");
         }
         private void translationIf (CommonNode root, int z_buffer)
         {
