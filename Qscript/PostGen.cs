@@ -596,7 +596,7 @@ namespace Qscript
                             {
                                 //Console.WriteLine("var: " + strs[0]);
                                 type = vars[strs[0]];
-                                if (type.First() == '*') { resualtMemory += "ebx" + " + "; resualt.Append($"mov ebx, [{strs[0]}]\n"); }
+                                if (type.First() == '*') { resualtMemory += "eax" + " + "; resualt.Append($"mov eax, [{strs[0]}]\n"); }
                                 else resualtMemory += strs[0];
 
                                 for (int k = 1; k < strs.Length; k++)
@@ -608,8 +608,8 @@ namespace Qscript
                                         if (k + 1 < strs.Length)
                                         {
                                             resualtMemory += $"{type}.{strs[k]}";
-                                            resualt.Append($"mov ebx, [{resualtMemory}]\n");
-                                            resualtMemory = "ebx" + "+";
+                                            resualt.Append($"mov eax, [{resualtMemory}]\n");
+                                            resualtMemory = "eax" + "+";
                                         }
                                         else resualtMemory += $"{type}.{strs[k]}+";
                                     }
@@ -625,8 +625,8 @@ namespace Qscript
                                 resualtMemory = strs[0];
                             }
                             _inst.pattern[j].value = "[" + resualtMemory + "]";
-                            type = vars[strs[0]];
-                            if (type != string.Empty) 
+                            if (type == string.Empty) type = vars[strs[0]];
+                            //if (type != string.Empty) 
                                 for (int k = 0; k < _inst.pattern.Count; k++)
                                 {
 

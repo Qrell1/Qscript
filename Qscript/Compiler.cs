@@ -792,6 +792,25 @@ namespace Qscript
         }
         private void translationCmp (CommonNode root, int z_buffer, bool cmp=false)
         {
+            if (root.childs.Count == 1 && root.childs[0].token.value == "true")
+            {
+                if (cmp) _objProg.code.Append($"jmp {funcName}.true{trueTagIndex}\n");
+                return;
+            }
+            if (root.childs.Count == 1 && root.childs[0].token.value == "false")
+            {
+                _objProg.code.Append($"je {funcName}.false{falseTagIndex}");
+                return;
+            }
+            if (root.childs.Count == 1)
+            {
+                Translation(root.childs[0], z_buffer + 1);
+                _objProg.code.Append($"cmp {regReturn}, 0");
+                _objProg.code.Append($"je {funcName}.false{falseTagIndex}");
+                if (cmp) _objProg.code.Append($"jmp {funcName}.true{trueTagIndex}\n");
+                return;
+            }
+
             if ("true" == root.token.value)
             {
                 if (cmp) _objProg.code.Append($"jmp {funcName}.true{trueTagIndex}\n");
@@ -1134,7 +1153,9 @@ namespace Qscript
                 || root.token.value == "-"
                 || root.token.value == "*"
                 || root.token.value == "/"
-                || root.token.value == "%")
+                || root.token.value == "%"
+                || root.token.value == "&"
+                || root.token.value == "|")
             {
                 CommonNode leftChild = take(root, 0);
                 CommonNode rightChild = take(root, 1);
@@ -1216,6 +1237,12 @@ namespace Qscript
                         _objProg.code.Append($"idiv .reg{regIndex++}\n");
                         _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, .reg{regIndex-3}edx\n");
                         _objProg.code.Append($"mov {leftRegM}, .reg{regIndex++}edx\n");
+                        break;
+                    case "&":
+                        _objProg.code.Append($"and {leftRegM}, {rightRegM}\n");
+                        break;
+                    case "|":
+                        _objProg.code.Append($"or {leftRegM}, {rightRegM}\n");
                         break;
                 }
                 if (leftRegM.StartsWith(".reg")) regReturn = leftRegM;
@@ -1494,13 +1521,15 @@ namespace Qscript
         } // TODO: Возможно не будет работать с .reg
         private void translationStruct (CommonNode root, int z_buffer)
         {
+            if (ProgramAst.externStructs.Contains(root.token.value)) return;
             setWriteData(CodeData.macroData);
             _objProg.code.Append($"struct {root.token.value}\n");
 
             int offset = 0;
             foreach (CommonNode child in root.childs)
             {
-                if (offset % 4 != 0) _objProg.code.Append($"    align {offset % 4}\n");
+                if (offset % 4 == 3) _objProg.code.Append($"    align 2\n   align 1\n");
+                else if (offset % 4 != 0) _objProg.code.Append($"    align {offset % 4}\n");
                 if (child.type == NT.VAR && child.childs[0].type == NT.INDICATOR)
                 {
                     _objProg.code.Append($"    {child.token.value} dd 0\n");

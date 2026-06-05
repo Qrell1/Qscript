@@ -413,6 +413,11 @@ namespace Qscript
                 for (int i = 0; i < root.childs.Count; i++) root.childs[i] = cmpReFresh(root.childs[i]);
                 return root;
             }
+            if (root.childs.Count == 1)
+            {
+                if (root.childs[0].type == NT.BOOL) root.token.value = root.childs[0].token.value;
+                return root;
+            }
             root.childs[0] = cmpReFresh(root.childs[0]);
             root.childs[1] = cmpReFresh(root.childs[1]);
 
@@ -527,11 +532,11 @@ namespace Qscript
                 strt.childs.Add(node);
                 ast.declarotiveClassVars[root.token.value].Add(node);
             }
-            if (strt.childs.Count == 0)
-            {
-                strt.childs.Add(new CommonNode(NT.VAR, new Token(TT.VAR, "value", strt.token.pos)));
-                strt.childs[0].childs.Add(new CommonNode(NT.TYPE, new Token(TT.VAR, "int32", strt.token.pos)));
-            }
+            //if (strt.childs.Count == 0)
+            //{
+            //    strt.childs.Add(new CommonNode(NT.VAR, new Token(TT.VAR, "value", strt.token.pos)));
+            //    strt.childs[0].childs.Add(new CommonNode(NT.TYPE, new Token(TT.VAR, "int32", strt.token.pos)));
+            //}
             if (declarationNode != null) ast.declarotivePatternsStruct.Add(strt.token.value,  strt);
             if (declarationNode != null) ast.declarativeClassNames.Add(strt.token.value);
 
@@ -583,7 +588,7 @@ namespace Qscript
                     if (_is) continue;
                     
                     child.childs[1].childs.Last().childs[0].token.value = root.token.value;
-                    Console.WriteLine(child.token.value);
+                    //Console.WriteLine(child.token.value);
                     ast.resualtFunc.Add(child.token.value, child.childs[0]);
                     ast.classMethods[ast.ClassesInheritances[root.token.value]].Add(child);
                 }
@@ -672,7 +677,7 @@ namespace Qscript
         }
         private CommonNode callCheak(CommonNode root)
         {
-            if (root.type != NT.CALL)
+            if (root.type != NT.CALL && root.type != NT.CALLADDRESS)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -874,6 +879,8 @@ namespace Qscript
                     return parseFunc(root, z_buffer);
                 case NT.CALL:
                     return parseCall(root, z_buffer);
+                case NT.CALLADDRESS:
+                    return parseCallAddress(root, z_buffer);
                 case NT.STRUCT:
                     return parseStruct(root, z_buffer);
                 case NT.CLASS:
@@ -888,15 +895,15 @@ namespace Qscript
                     return parseFor(root, z_buffer);
                 case NT.ENUMERATOR:
                     return parseEnumerator(root, z_buffer);
-                case NT.ADDRESS:
-                    return root;
+                //case NT.ADDRESS:
+                //    return root;
                 default:
                     if (root.childs.Count == 0)
                         break;
                     for (int i = 0; i < root.childs.Count; i++)
                     {
-                        if (root.childs[i].type != NT.ADDRESS)
-                            root.childs[i] = parse(root.childs[i], z_buffer + 1);
+                        //if (root.childs[i].type != NT.ADDRESS)
+                        root.childs[i] = parse(root.childs[i], z_buffer + 1);
                     }
                     return root;
             }
@@ -1005,6 +1012,35 @@ namespace Qscript
                 foreach (CommonNode childName in name.childs) ast.inlineNames.Add(childName.token.value);
             }
             return new CommonNode(NT.AIR, root.token);
+        }
+        private CommonNode parseCallAddress(CommonNode root, int z_buffer)
+        {
+            try
+            {
+                string[] strs = root.token.value.Split('.');
+                string type = string.Empty;
+                type = varSpace.GetTypeValue(strs[0]);
+                for (int i = 1; i < strs.Length - 1; i++)
+                    type = ast.structs[type][strs[i]].token.value;
+                if (ast.classMethods.ContainsKey(type))
+                {
+                    string name = string.Empty;
+                    for (int i = 1; i < strs.Length - 1; i++) name += strs[i];
+                    name += "_" + type;
+                    name.Remove(0, 1);
+                    List<CommonNode> argsNew = new List<CommonNode>();
+                    foreach (CommonNode node in root.childs[0].childs) argsNew.Add(node);
+                    argsNew.Add(new CommonNode(NT.VAR, new Token(TT.VAR, strs[0], root.childs[0].token.pos)));
+                    root.childs[0].childs = argsNew;
+                    root.token.value = strs[strs.Length - 1] + "_" + type;
+                }
+            }
+            catch { }
+
+            if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) root = generationDeclarationFunc(root);
+            if (take(root, 0).type == NT.DECLARATOR) Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
+
+            return root;
         }
         private CommonNode parseCall(CommonNode root, int z_buffer)
         {

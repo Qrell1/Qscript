@@ -394,12 +394,12 @@ namespace Qscript
             return null;
         }
 
-        private CommonNode parseFormula(CommonNode leftOper = null)
+        private CommonNode parseFormula(CommonNode leftOper = null, bool cmp = false)
         {
             CommonNode buffer;
             CommonNode left;                 // token 1
             if (leftOper == null)
-                left = parseTerm();          // token 1
+                left = parseTerm(cmp);          // token 1
             else
                 left = leftOper;
             Token operatpor = null;          // token 2
@@ -407,7 +407,7 @@ namespace Qscript
                 operatpor = take();
             while (operatpor != null)
             {
-                CommonNode right = parseTerm();
+                CommonNode right = parseTerm(cmp);
                 buffer = left;
                 left = new CommonNode(NT.CMP, operatpor);
                 left.childs.Add(buffer);
@@ -420,7 +420,7 @@ namespace Qscript
 
             return left;
         }
-        private CommonNode parseTerm()
+        private CommonNode parseTerm(bool cmp = false)
         {
             CommonNode buffer;
             CommonNode left = parseTerm2(); // token 1
@@ -439,7 +439,12 @@ namespace Qscript
                 //if (right.type == "CMP")
                 //SyntaxError($"В условии на позиции Токена:{pos} Ошибка вызваная переплетением логики в арифметике!");
             }
-
+            if (operatpor == null && cmp)
+            {
+                buffer = left;
+                left = new CommonNode(NT.CMP, new Token(TT.NULL, "()", left.token.pos));
+                left.childs.Add(buffer);
+            }
             return left;
         }
         private CommonNode parseTerm2()
@@ -471,7 +476,7 @@ namespace Qscript
             Token operatpor = null;          // token 2
                                              //if (peek(NT.OPER) && (new string[] {"*", "/" }.Contains(tokens[pos].value)))
                                              //operatpor = take();
-            while (peek(TT.OPER) && (new string[] { "*", "/", "%" }.Contains(tokens[pos].value)))
+            while ((peek(TT.OPER) || peek(TT.PREFIX)) && (new string[] { "*", "/", "%", "|", "&" }.Contains(tokens[pos].value)))
             {
                 operatpor = take();
                 CommonNode right = parsePar();
@@ -606,7 +611,7 @@ namespace Qscript
                 skip();
                 return new CommonNode(NT.CMP, new Token(TT.NULL, "true", tokens[pos - 1].pos));
             }
-            CommonNode left = parseFormula();
+            CommonNode left = parseFormula(null, true);
             if (peek(TT.RPAR)) { expect(TT.RPAR); skip(); }
             left.type = NT.CMP;
             return left;
@@ -1546,6 +1551,12 @@ namespace Qscript
             expect(new TT[] { TT.EXTERN, TT.EXTERNLIBRARY, TT.EXTERNFUNC });
             CommonNode externNode = new CommonNode(getNodeType(tokens[pos].type), take());
 
+            if (externNode.type == NT.EXTERN && peek(TT.STRUCT))
+            {
+                CommonNode structNode = parseStrurct();
+                root.externStructs.Add(structNode.token.value);
+                return structNode;
+            }
             if (externNode.type == NT.EXTERN)
             {
                 List<string> listFuncNode = new List<string> ();
