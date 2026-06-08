@@ -63,6 +63,8 @@ namespace Qscript
                 default:
                     //if (root.childs.Count == 0 || root.type == "SIGNATURE" || root.type == "CMP" || root.type == NT.STRUCT || root.type == NT.FUNC)
                     //break;
+                    if (root.type == NT.TYPEOF)
+                        break;
                     if (root.type == NT.STRUCT) break;
                     for (int i = 0; i < root.childs.Count; i++)
                     {

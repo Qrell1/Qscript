@@ -10,23 +10,24 @@ namespace Qscript.Lex
     public class CommentLexer
     {
         public CommentLexer() { }
-        public (string, CodeStruct) lexCodes(string[] codes)
+        public string lexCodes(string[] codes, string file)
         {
             StringBuilder code = new StringBuilder();
-            CodeStruct codeData = new CodeStruct();
             string str = string.Empty;
             bool asm = false;
             string strasm = string.Empty;
             //char[] sep = "//".ToCharArray();
             bool multiComment = false;
+            Syntax.code.strings.Add(file, new List<string>());
+            Syntax.code.stringsSize.Add(file, new List<int>());
             for (int i = 0; i < codes.Length; i++)
             {
                 if (!multiComment && codes[i].IndexOf("/*") >= 0)
                 {
                     str = codes[i].Substring(0, codes[i].IndexOf("/*"));
                     code.Append(str);
-                    codeData.strings.Add(str);
-                    codeData.stringsSize.Add(str.Length);
+                    Syntax.code.strings[file].Add(str);
+                    Syntax.code.stringsSize[file].Add(str.Length);
                     multiComment = true;
                     continue;
                 }
@@ -34,8 +35,8 @@ namespace Qscript.Lex
                 {
                     str = codes[i].Substring(codes[i].IndexOf("*/"), codes[i].Length-2);
                     code.Append(str);
-                    codeData.strings.Add(str);
-                    codeData.stringsSize.Add(str.Length);
+                    Syntax.code.strings[file].Add(str);
+                    Syntax.code.stringsSize[file].Add(str.Length);
                     multiComment = false;
                     continue;
                 }
@@ -46,16 +47,16 @@ namespace Qscript.Lex
                 {
                     str = codes[i].Substring(0, index);
                     code.Append(str);
-                    codeData.strings.Add(str);
-                    codeData.stringsSize.Add(str.Length);
+                    Syntax.code.strings[file].Add(str);
+                    Syntax.code.stringsSize[file].Add(str.Length);
                 } else
                 {
                     code.Append(codes[i]);
-                    codeData.strings.Add(codes[i]);
-                    codeData.stringsSize.Add(codes[i].Length);
+                    Syntax.code.strings[file].Add(codes[i]);
+                    Syntax.code.stringsSize[file].Add(codes[i].Length);
                 }
             }
-            return (code.ToString(), codeData);
+            return code.ToString();
         }
     }
 }

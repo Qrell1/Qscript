@@ -125,7 +125,7 @@ namespace Qscript
         // TODO: Все изменения TT вносить и сюда!
         COMMENT,
         ELSEIF, IF, ELSE,
-        FLOAT, NUMBER,
+        FLOAT, NUMBER, HEX,
         PREFIX, REGDECL, OPER, VARDECL,
         ENDINCLUDE, ASMINCLUDE, INCLUDE, USING,
         NAMESPACE, EXTERNFUNC, EXTERNLIBRARY, EXTERN, FROM,

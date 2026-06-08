@@ -8,7 +8,7 @@ namespace Qscript
 {
     public class CodeStruct
     {
-        public List<string> strings = new List<string>();
-        public List<int> stringsSize = new List<int>();
+        public Dictionary<string, List<string>> strings = new Dictionary<string, List<string>>();
+        public Dictionary<string, List<int>> stringsSize = new Dictionary<string, List<int>>();
     }
 }

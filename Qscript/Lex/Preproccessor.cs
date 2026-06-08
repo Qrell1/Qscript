@@ -15,6 +15,7 @@ namespace Qscript.Lex
     {
         public List<string> fileIncludes = new List<string>();
         Dictionary<string, Token> defines = new Dictionary<string, Token>();
+        public int offset;
 
         public Preproccessor() { }
 
@@ -104,15 +105,16 @@ namespace Qscript.Lex
             List<Token> list = new List<Token>();
             foreach (var include in includes)
             {
-                if (fileIncludes.Contains(include.Key)) return lexTypedef(lexDefine(list));
+                if (fileIncludes.Contains(include.Key)) continue;//return lexTypedef(lexDefine(list, file), );
                 Console.WriteLine($"Загружаем Файл : {include.Key}");
                 fileIncludes.Add(include.Key);
 
                 string[] codes = File.ReadAllLines(Environment.CurrentDirectory + "\\scr" + "\\" + include.Value + "\\" + include.Key);
 
                 CommentLexer commentLexer = new CommentLexer();
-                (string temp, CodeStruct codeStruct) = commentLexer.lexCodes(codes);
-                Lexer lexer = new Lexer(codeStruct);
+                string temp = commentLexer.lexCodes(codes, include.Key);
+                offset += Syntax.code.strings.Last().Value.Count;
+                Lexer lexer = new Lexer(Syntax.code, include.Key, offset);
 
                 List<Token> fileTokens = lexer.lexAnalysis();
                 //Preproccessor includeLexer = new Preproccessor();

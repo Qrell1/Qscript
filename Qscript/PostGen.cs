@@ -608,12 +608,12 @@ namespace Qscript
                                         if (k + 1 < strs.Length)
                                         {
                                             resualtMemory += $"{type}.{strs[k]}";
-                                            resualt.Append($"mov eax, [{resualtMemory}]\n");
-                                            resualtMemory = "eax" + "+";
+                                            //resualt.Append($"mov eax, [{resualtMemory}]\n");
+                                            //resualtMemory = "eax";
                                         }
-                                        else resualtMemory += $"{type}.{strs[k]}+";
+                                        else resualtMemory += $"{type}.{strs[k]}";
                                     }
-                                    else resualtMemory += "." + strs[k];
+                                    else resualtMemory += $" + {type}." + strs[k] + "+";
                                     //Console.WriteLine("-- " + strs[k] + " | " + type);
                                     typeVar = ProgramAst.structs[type][strs[k]].type.ToString();
                                     type = ProgramAst.structs[type][strs[k]].token.value;

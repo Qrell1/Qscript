@@ -35,7 +35,7 @@ namespace Qscript
     {   
         COMMENT,
         ELSEIF, IF, ELSE,
-        FLOAT, NUMBER,
+        FLOAT, NUMBER, HEX,
         PREFIX, REGDECL, OPER, VARDECL,
         ENDINCLUDE, ASMINCLUDE, INCLUDE, USING, 
         NAMESPACE, EXTERNFUNC, EXTERNLIBRARY, EXTERN, FROM,
@@ -102,6 +102,7 @@ namespace Qscript
             //tokenTypes.Add("INC", new TokenType("INC", "[\\--]*"));
             //tokenTypes.Add("DEC", new TokenType("DEC", "[\\++]*"));
             tokenTypes.Add(TT.FLOAT,   @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)");
+            tokenTypes.Add(TT.HEX, "(0x[0-9A-F]+)");
             tokenTypes.Add(TT.NUMBER,  "[0-9]+");
             tokenTypes.Add(TT.PREFIX,  "(\\+\\+|--|\\<>|\\?|&)");
             tokenTypes.Add(TT.REGDECL, "\\$");

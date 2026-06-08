@@ -176,12 +176,12 @@ namespace Qscript
                 DataBase.typesregs["half"] = "eax";
             }
 
-            (string code, CodeStruct codeStruct) = commentLexer.lexCodes(codes);
-            Syntax.code = codeStruct;
+            string code = commentLexer.lexCodes(codes, filename);
 
             Console.WriteLine("Start Lexer...");
-            lexer = new Lexer();
+            lexer = new Lexer(Syntax.code, filename, 0);
             List<Token> list = lexer.lexAnalysis();
+            preproccessor.offset += Syntax.code.strings.Last().Value.Count;
             Console.WriteLine("Start PreproccessorIncludes...");
             list = preproccessor.lexIncludes(list);
 

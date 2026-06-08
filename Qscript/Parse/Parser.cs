@@ -358,6 +358,7 @@ namespace Qscript
 
             if (token.type == TT.LAMBDA) return parseLambda(token);
             if (token.type == TT.NUMBER) return new CommonNode(NT.NUMBER, token);
+            if (token.type == TT.HEX)    return new CommonNode(NT.HEX, token);
             if (token.type == TT.STRING) return new CommonNode(NT.STRING, token);
             if (token.type == TT.CHAR)   return new CommonNode(NT.CHAR,   token);
             if (token.type == TT.CONST)  return new CommonNode(NT.CONST , token);
@@ -1609,7 +1610,7 @@ namespace Qscript
                 if (!root.externFuncs.ContainsKey(libraryString)) root.externFuncs.Add(libraryString, new List<string>() { varNode.token.value });
                 else root.externFuncs[libraryString].Add(varNode.token.value);
 
-                return varNode;
+                return null;
             }
             return null;
         }
@@ -1802,8 +1803,7 @@ namespace Qscript
             }
             if (peek(TT.EXTERN) || peek(TT.EXTERNLIBRARY) || peek(TT.EXTERNFUNC))
             {
-                parseExtern();
-                return null;
+                return parseExtern();
             }
             if (peek(TT.ASM))
             {

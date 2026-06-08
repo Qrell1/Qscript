@@ -33,12 +33,14 @@ namespace Qscript
         {
             ast = root;
             CommonNode astNode = copyNodes(root);
+            // Const Remove
+            astNode = constRemove(astNode);
+            // Hex to number
+            astNode = hexToNumber(astNode);
             // Ts Preparing
             astNode = tsPreparing(astNode);
             // Var Register Cheak
             astNode = varRegisterCheakUses(astNode);
-            // Const Remove
-            astNode = constRemove(astNode);
             // Lambda Preparing
             astNode = lambdaPreparing(astNode);
             // Lambda Queue
@@ -222,6 +224,36 @@ namespace Qscript
             return root;
         }
 
+        private CommonNode hexToNumber(CommonNode root)
+        {
+            if (root.type != NT.HEX)
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = hexToNumber(root.childs[i]);
+                }
+                return root;
+            }
+            root.token.value = root.token.value.Remove(0, 2).Replace("x", "");
+            // A   B   C   D   E   F
+            //10, 11, 12, 13, 14, 15
+            Dictionary<char, int> chars = new Dictionary<char, int>{ {'A', 10}, {'B', 11}, {'C', 12}, {'D', 13}, {'E', 14}, {'F', 15} };
+
+            // hex0F == 15
+            int resualt = 0;
+            int pow = root.token.value.Length - 1;
+            for (int i = 0; i < root.token.value.Length; i++)
+            {
+                if (chars.ContainsKey(root.token.value[i]))
+                    resualt += chars[root.token.value[i]] * (int)Math.Pow(16, pow);
+                else resualt += Convert.ToInt32(root.token.value[i].ToString()) * (int)Math.Pow(16, pow);
+                pow--;
+            }
+            root.token.value = Convert.ToString(resualt);
+            root.type = NT.NUMBER;
+
+            return root;
+        }
         private CommonNode tsPreparing(CommonNode root)
         {
             for (int i = 0; i < root.childs.Count; i++)

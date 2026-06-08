@@ -10,20 +10,20 @@ namespace Qscript.Lex
     public class Lexer
     {
         public CodeStruct code;
+        public string file;
         public int pos = 0;
         public List<Token> tokenList = new List<Token>();
 
         private int stringIndex = 0;
+        private int offset;
         //private int tokenValue;
         //private int len;
 
-        public Lexer()
-        {
-            code = Syntax.code;
-        }
-        public Lexer(CodeStruct codeStruct)
+        public Lexer(CodeStruct codeStruct, string file, int offset)
         {
             code = codeStruct;
+            this.file = file;
+            this.offset = offset;
         }
 
         public List<Token> lexAnalysis()
@@ -60,7 +60,7 @@ namespace Qscript.Lex
                     {
                         spaces += " ";
                     }
-                    //Console.WriteLine($"[LEXER] Index:{i} Token pos:{tokenList[i].pos} type:{tokenList[i].type.type}{spaces}value:{tokenList[i].value}");
+                    //Console.WriteLine($"[LEXER] Index:{i} Token pos:{tokenList[i].pos} type:{tokenList[i].type}{spaces}value:{tokenList[i].value}");
                 }
             }
 
@@ -73,11 +73,11 @@ namespace Qscript.Lex
             {
                 return false;
             }*/
-            if (code.stringsSize.Count <= stringIndex)
+            if (code.stringsSize[file].Count <= stringIndex)
                 return false;
-            if (pos >= code.stringsSize[stringIndex])
+            if (pos >= code.stringsSize[file][stringIndex])
             {
-                if (code.stringsSize.Count-1 == stringIndex)
+                if (code.stringsSize[file].Count-1 == stringIndex)
                     return false;
                 pos = 0;
                 stringIndex++;
@@ -100,14 +100,14 @@ namespace Qscript.Lex
                 {
                     continue;
                 }*/
-                Match regx = Regex.Match(code.strings[stringIndex].Substring(pos), "^" + tokenType.Value);
+                Match regx = Regex.Match(code.strings[file][stringIndex].Substring(pos), "^" + tokenType.Value);
                 if (regx.Success && !string.IsNullOrEmpty(regx.Value))
                 {
                     //tokenValue = regx.Value.Length;
                     //Console.WriteLine($"[LEXER] Найден токен: {tokenType.type} значение: {regx.Value}");
-                    if (regx.Value == "&" && code.strings[stringIndex][pos+1] == '&')
+                    if (regx.Value == "&" && code.strings[file][stringIndex][pos+1] == '&')
                     {
-                        Token tokenCmp = new Token(TT.OPER, "&&", pos);
+                        Token tokenCmp = new Token(TT.OPER, "&&", pos + offset);
                         tokenList.Add(tokenCmp);
                         pos+=2;
                         return true;
@@ -119,12 +119,12 @@ namespace Qscript.Lex
                         string value = regx.Value;
                         value = value.Substring(1, value.Length - 2);
                         value = value.Replace("\\\"", "\"").Replace("\\\\", "\\");
-                        token = new Token(tokenType.Key, value, stringIndex);
+                        token = new Token(tokenType.Key, value, stringIndex + offset);
                     }
                     else if (tokenType.Key == TT.ASM)
                     {
-                        (string value, int len) = lexAsmInsert(pos, code.strings[stringIndex]);
-                        token = new Token(tokenType.Key, value, stringIndex);
+                        (string value, int len) = lexAsmInsert(pos, code.strings[file][stringIndex]);
+                        token = new Token(tokenType.Key, value, stringIndex + offset);
                         //length = len;
                         length = 3;
                         tokenList.Add(token);
@@ -132,7 +132,7 @@ namespace Qscript.Lex
                     }
                     else
                     {
-                        token = new Token(tokenType.Key, regx.Value, stringIndex);
+                        token = new Token(tokenType.Key, regx.Value, stringIndex + offset);
                         length = regx.Value.Length;
                     }
 
@@ -143,12 +143,12 @@ namespace Qscript.Lex
                 }
             }
 
-            throw new Exception($"На позиции {pos} синтаксическая ошибка. Символ: '{code.strings[stringIndex]}'");
+            throw new Exception($"На позиции {pos} синтаксическая ошибка. Символ: '{code.strings[file][stringIndex]}'");
         }
 
         private bool skipSpace()
         {
-            Match whitespace = Regex.Match(code.strings[stringIndex].Substring(pos), @"^\s+");
+            Match whitespace = Regex.Match(code.strings[file][stringIndex].Substring(pos), @"^\s+");
             if (whitespace.Success)
             {
                 pos += whitespace.Value.Length;
@@ -190,11 +190,11 @@ namespace Qscript.Lex
             int length = endPos - startPos + 3; // 2
             pos += length;*/
             startPos += 3;
-            string str = code.strings[stringIndex].Substring(startPos);
+            string str = code.strings[file][stringIndex].Substring(startPos);
             stringIndex++;
             while (true)
             {
-                if (code.strings[stringIndex].Contains("asm"))
+                if (code.strings[file][stringIndex].Contains("asm"))
                 {
                     //str += code.strings[stringIndex];
                     pos = 0;
@@ -203,7 +203,7 @@ namespace Qscript.Lex
                 }
                 else
                 {
-                    str += code.strings[stringIndex] + ";";
+                    str += code.strings[file][stringIndex] + ";";
                     stringIndex++;
                 }
             }

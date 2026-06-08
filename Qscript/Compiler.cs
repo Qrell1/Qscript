@@ -1521,7 +1521,11 @@ namespace Qscript
         } // TODO: Возможно не будет работать с .reg
         private void translationStruct (CommonNode root, int z_buffer)
         {
-            if (ProgramAst.externStructs.Contains(root.token.value)) return;
+            if (ProgramAst.externStructs.Contains(root.token.value))
+            {
+                _objProg.data.Append($"SIZE_{root.token.value.ToUpper()} = sizeof.{root.token.value}\n");
+                return;
+            }
             setWriteData(CodeData.macroData);
             _objProg.code.Append($"struct {root.token.value}\n");
 
