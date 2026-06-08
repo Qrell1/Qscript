@@ -21,3 +21,5 @@ QscriptNt - Это компилируемый язык программиров�
 
 ## Полная документация
 👉 [Отдельный репозиторий с документацией](https://github.com/Qrell1/QscriptDocumentation)
+[Видео 1](https://www.youtube.com/watch?v=m0WL8Ui5-h0&t=2s)
+[Видео 2](https://www.youtube.com/watch?v=uvScirzFHV0&t=2s)
