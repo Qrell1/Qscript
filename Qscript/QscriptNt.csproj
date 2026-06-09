@@ -67,6 +67,7 @@
     <Compile Include="Parse\AbbreviationParser.cs" />
     <Compile Include="Compiler.cs" />
     <Compile Include="PostGen.cs" />
+    <Compile Include="RunSettings.cs" />
     <Compile Include="StringData.cs" />
     <Compile Include="Syntax.cs" />
     <Compile Include="Lex\CommentLexer.cs" />

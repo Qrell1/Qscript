@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.SqlServer.Server;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -13,10 +14,8 @@ namespace Qscript
     { 
         codeData, procData, macroData, tempData
     }
-    public enum TypeApp
-    {
-        dll, program32, program64, asmmodule, h, gui, bin
-    }
+    
+
     public class objProgram
     {
         public StringData data = new StringData();
@@ -2023,7 +2022,7 @@ namespace Qscript
                 _objProg.code.Append(strings[i] + "\n");
         }
 
-        public string ConcatData(TypeApp typeApp)
+        public string ConcatData(TypeApp typeApp, ModeApp modeApp, ArchApp archApp, FormatApp formatApp)
         {
             /*try
             {
@@ -2032,7 +2031,9 @@ namespace Qscript
                     Console.WriteLine($"<< {types.ElementAt(i)} | {typesarg.ElementAt(i)} | {aligns.ElementAt(i)}");
                 }
             } catch { }*/
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start PostGen...");
+            Console.ResetColor();
             _objProg = PostGen.PostTranslation(_objProg, ProgramAst);
             //_objProg = CrossCompiler.Compile(_objProg);
             string file = string.Empty;
@@ -2092,6 +2093,9 @@ namespace Qscript
             //return file;
             ///}
             ///
+            string format = (formatApp == FormatApp.windows) ? "PE" : "ELF";
+            format += (archApp == ArchApp.x86_32) ? "" : "64";
+
             if (typeApp == TypeApp.bin)
             {
                 file = "format binary as \"bin\"\n" + file;
@@ -2099,7 +2103,7 @@ namespace Qscript
             }
             else if (typeApp == TypeApp.gui)
             {
-                file = "format PE GUI 4.0\n\nentry start\n" + file;
+                file = $"format {format} GUI 4.0\n\nentry start\n" + file;
                 file += "start: ;START MAIN\n";
                 file += _objProg.codeData.ToString();
             }
@@ -2109,18 +2113,11 @@ namespace Qscript
             else if (typeApp == TypeApp.dll)
             {
                 //file += "\nsection '.code' code readable executable\n";
-                file = "format PE DLL\n\n" + file;
+                file = $"format {format} DLL\n\n" + file;
             }
-            else if (typeApp == TypeApp.program32)
+            else if (typeApp == TypeApp.program)
             {
-                file = "format PE console\n\nentry start\n" + file;
-                //file += "\nsection '.code' code readable executable\n";
-                file += "start: ;START MAIN\n";
-                file += _objProg.codeData.ToString();
-            }
-            else if (typeApp == TypeApp.program64)
-            {
-                file = "format PE console\n\nentry start\n" + file;
+                file = $"format {format} console\n\nentry start\n" + file;
                 //file += "\nsection '.code' code readable executable\n";
                 file += "start: ;START MAIN\n";
                 file += _objProg.codeData.ToString();

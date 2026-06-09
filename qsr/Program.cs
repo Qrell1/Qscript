@@ -75,7 +75,7 @@ namespace QSicon
                 if (args[0] == "info")
                 {
                     Console.WriteLine("======================");
-                    Console.WriteLine("=<  Version : 0.1v  >=");
+                    Console.WriteLine("=<  Version : 0.2v  >=");
                     Console.WriteLine("======================");
                 }
                 else if (args[0] == "update")
@@ -222,6 +222,13 @@ namespace QSicon
                 }
                 else if (args[0] == "build" || outFlag)
                 { // C:\Users\1\OneDrive\Рабочий стол\некоторые ярлыки\Документы\assembly\exampleruntimetesting\qs\bin\ex5
+                    string _args = "-mode=release -arch=x86_32 -type=program";
+                    if (args.Length > 1)
+                    {
+                        _args = string.Empty;
+                        for (int i = 1; i < args.Length; i++)
+                            _args += args[i] + " ";
+                    }
                     string projectPath = Environment.CurrentDirectory;
                     string configStrings = File.ReadAllText(projectPath + "\\config.json");
                     QscriptProject qscriptConfig = JsonConvert.DeserializeObject<QscriptProject>(configStrings);
@@ -229,7 +236,7 @@ namespace QSicon
                     var proc = new Process();
                     proc.StartInfo.FileName = qscriptConfig.compile_path;
                     proc.StartInfo.Domain = $"{projectPath}\\scr\\";
-                    proc.StartInfo.Arguments = $"\"{projectPath}\\scr\\main.qs\" -program32";
+                    proc.StartInfo.Arguments = $"\"{projectPath}\\scr\\main.qs\" {_args}";
                     proc.Start();
 
                     proc.WaitForExit();

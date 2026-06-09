@@ -33,14 +33,20 @@ namespace Qscript.Lex
                 }
                 if (multiComment && codes[i].IndexOf("*/") >= 0)
                 {
-                    str = codes[i].Substring(codes[i].IndexOf("*/"), codes[i].Length-2);
+                    int len = codes[i].IndexOf("*/");
+                    str = codes[i].Substring(len + 2, codes[i].Length - len - 2);
                     code.Append(str);
                     Syntax.code.strings[file].Add(str);
                     Syntax.code.stringsSize[file].Add(str.Length);
                     multiComment = false;
                     continue;
                 }
-                if (multiComment) continue;
+                if (multiComment) 
+                {
+                    Syntax.code.strings[file].Add(string.Empty);
+                    Syntax.code.stringsSize[file].Add(0);
+                    continue;
+                }
 
                 int index = codes[i].IndexOf("//");
                 if (index >= 0)

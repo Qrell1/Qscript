@@ -56,7 +56,7 @@ namespace Qscript
             {
                 return true;
             }
-            Syntax.SyntaxError($"На позиции:{pos} Ожидался Токен:{type}", tokens[pos].pos);
+            Syntax.SyntaxError($"Ожидался Токен:{type}", tokens[pos]); // На позиции:{pos} 
             return false;
             //throw new Exception($"На позиции:{pos} Ожидался Токен:{type}");
         }
@@ -72,7 +72,7 @@ namespace Qscript
             {
                 return true;
             }
-            Syntax.SyntaxError($"На позиции:{pos} Ожидался Токен:{type} с значением: {value}", tokens[pos].pos);
+            Syntax.SyntaxError($"Ожидался Токен:{type} с значением: {value}", tokens[pos]); // На позиции:{pos} 
             return false;
             //throw new Exception($"На позиции:{pos} Ожидался Токен:{type}");
         }
@@ -89,7 +89,7 @@ namespace Qscript
                 return true;
             }
             //throw new Exception($"На позиции:{pos} Ожидался Токен:{types}");
-            Syntax.SyntaxError($"На позиции:{pos} Ожидался Токен:{types}", tokens[pos]);
+            Syntax.SyntaxError($"Ожидался Токен:{types}", tokens[pos]); // На позиции:{pos} 
             return false;
         }
         private void skip()
@@ -1754,15 +1754,18 @@ namespace Qscript
 
         public ProgramNode parseCode()
         {
+            int oldPos = 0;
             root = new ProgramNode(NT.ROOT, new Token(TT.NULL, "ROOT", -999));
             while (pos < tokens.Count)
             {
                 if (pos >= tokens.Count) break;
 
                 CommonNode node = parse();
-                if (node == null) continue;
+                if (oldPos == pos) Syntax.SyntaxError($"Неверный Токен: {tokens[pos]}", tokens[pos]);
+                else if (node == null) continue;
                 if (sem || peek(TT.SEM)) { expect(TT.SEM); skip(); }
                 root.childs.Add(node);
+                oldPos = pos;
             }
             return root;
         }
@@ -1853,7 +1856,7 @@ namespace Qscript
         public void SyntaxError(string text = "Хз какая синтаксическая ошибка! Или мне лень её описывать)))")
         {
             Syntax.SyntaxError(text, tokens[pos]);
-            Console.WriteLine("Ну ладно попытаюсь скомпилировать...(");
+            //Console.WriteLine("Ну ладно попытаюсь скомпилировать...(");
         }
     }
 }

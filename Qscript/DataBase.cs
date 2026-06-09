@@ -312,7 +312,7 @@ namespace Qscript
                 type = ast.structs[strct][strs[n + 1]];
                 strct = type.token.value;
 
-                if (!DataBase.types.ContainsKey(type.token.value)) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
+                if (n + 2 != strs.Length) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
             }
             else type = varSpace.GetType(name);
 

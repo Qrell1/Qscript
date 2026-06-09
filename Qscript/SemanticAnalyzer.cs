@@ -11,6 +11,7 @@ namespace Qscript
 
         static public VarSpace varSpace = new VarSpace();
 
+
         public static CommonNode take(CommonNode node, int i = 0)
         {
             if (node.childs.Count >= i + 1)
@@ -170,7 +171,6 @@ namespace Qscript
             }
             if (!ast.resualtFunc.ContainsKey(root.token.value) && !ast.inlineNames.Contains(root.token.value))
             {
-                Program.PrintAST(ast, 0);
                 Syntax.SyntaxError($"Функции: {root.token.value} не сущестует чтобы её вызывать!", root);
             }
             else

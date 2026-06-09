@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
+using System.Threading;
 using Microsoft.SqlServer.Server;
 using Qscript.Lex;
 
@@ -130,7 +132,12 @@ namespace Qscript
             string filename;
             string[] codes;
             string pathCompile;
-            TypeApp typeApp = TypeApp.program32;
+            
+
+            TypeApp typeApp = TypeApp.program;
+            ModeApp modeApp = ModeApp.release;
+            ArchApp archApp = ArchApp.x86_32;
+            FormatApp formatApp = FormatApp.windows;
 
             if (args.Length >= 2)
             {
@@ -141,21 +148,54 @@ namespace Qscript
                 pathCompile = args[0].Replace(refs[refs.Length-1], "");
                 Console.WriteLine(pathCompile);
                 Console.WriteLine(filename);
-                Console.WriteLine("args[1] = " + args[1]);
+                //Console.WriteLine("args[1] = " + args[1]);
                 //Console.Read();
                 fileStream.Close();
-                if (args[1] == "-asm")
-                    typeApp = TypeApp.asmmodule;
-                if (args[1] == "-gui")
-                    typeApp = TypeApp.gui;
-                else if (args[1] == "-dll")
-                    typeApp = TypeApp.dll;
-                else if (args[1] == "-program32")
-                    typeApp = TypeApp.program32;
-                else if (args[1] == "-program64")
-                    typeApp = TypeApp.program64;
-                else if (args[1] == "-bin")
-                    typeApp = TypeApp.bin;
+
+                for (int i = 1; i < args.Length; i++)
+                {
+                    if (args[i].StartsWith("-type"))
+                    {
+                        string _typeApp = args[i].Split('=').Last().ToLower();
+                        switch (_typeApp)
+                        {
+                            case "dll": typeApp = TypeApp.dll; break;
+                            case "program": typeApp = TypeApp.program; break;
+                            case "asmmodule": typeApp = TypeApp.asmmodule; break;
+                            case "h": typeApp = TypeApp.h; break;
+                            case "gui": typeApp = TypeApp.gui; break;
+                            case "bin": typeApp = TypeApp.bin; break;
+                        }
+                    }
+                    else if (args[i].StartsWith("-arch"))
+                    {
+                        string _archApp = args[i].Split('=').Last().ToLower();
+                        switch (_archApp)
+                        {
+                            case "x86_32": archApp = ArchApp.x86_32; break;
+                            case "x86_64": archApp = ArchApp.x86_64; break;
+                            case "arm_32": archApp = ArchApp.arm_32; break;
+                            case "arm_64": archApp = ArchApp.arm_64; break;
+                            case "riscv_32": archApp = ArchApp.riscv_32; break;
+                            case "riscv_64": archApp = ArchApp.riscv_64; break;
+                        }
+                    }
+                    else if (args[i].StartsWith("-mode"))
+                    {
+                        string _modeApp = args[i].Split('=').Last().ToLower();
+                        if (_modeApp == "debug") modeApp = ModeApp.debug;
+                        else modeApp = ModeApp.release;
+                    }
+                    else if (args[i].StartsWith("-format"))
+                    {
+                        string _formatApp = args[i].Split('=').Last().ToLower();
+                        switch (_formatApp)
+                        {
+                            case "windows": formatApp = FormatApp.windows; break;
+                            case "linux": formatApp = FormatApp.linux; break;
+                        }
+                    }
+                }
             }
             else
             {
@@ -163,7 +203,9 @@ namespace Qscript
                 filename = "cm";
                 codes = File.ReadAllLines("codes\\" + filename + ".qs");
             }
-            if (typeApp == TypeApp.program64)
+            if (archApp == ArchApp.x86_64
+                || archApp == ArchApp.arm_64
+                || archApp == ArchApp.riscv_64)
             {
                 DataBase.types["long"] = "dq";
                 DataBase.typesarg["long"] = "QWORD";
@@ -178,17 +220,25 @@ namespace Qscript
 
             string code = commentLexer.lexCodes(codes, filename);
 
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start Lexer...");
             lexer = new Lexer(Syntax.code, filename, 0);
             List<Token> list = lexer.lexAnalysis();
+            Console.ResetColor();
             preproccessor.offset += Syntax.code.strings.Last().Value.Count;
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start PreproccessorIncludes...");
+            Console.ResetColor();
+            Console.ForegroundColor = ConsoleColor.Yellow;
             list = preproccessor.lexIncludes(list);
+            Console.ResetColor();
 
 
             //int index = 0
             ProgramNode ast;
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start Parser...");
+            Console.ResetColor();
             try
             {
                 parser = new Parser(list);
@@ -197,25 +247,38 @@ namespace Qscript
             catch (Exception e) { Console.WriteLine($"При Парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
             //PrintAST(ast, 0);
 
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start PostParser...");
+            Console.ResetColor();
             addParser = new AbbreviationParser();
             try { ast = addParser.abbParse(ast); }
             catch (Exception e) { Console.WriteLine($"При пост-парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start SemanticAnalyser...");
+            Console.ResetColor();
             try { SemanticAnalyzer.startAnalis(ast); }
             catch (Exception e) { Console.WriteLine($"При Симантическом Анализе что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
 
-
+            if (Syntax.errors > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine($"Было найдено: {Syntax.errors} ошибок!");
+                Console.ResetColor(); Console.Write("Продолжить компиляцию? (y/n || д/н): ");
+                string read = Console.ReadLine();
+                read = read.Trim().ToLower();
+                if (read[0] == 'n' || read[0] == 'н') return;
+            }
             //Console.WriteLine("NEW AST AbbreviationParser!!!");
             //if (args.Length == 0)
-                //PrintAST(ast, 0);
+            //PrintAST(ast, 0);
 
-
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start Compiler...");
+            Console.ResetColor();
             compiler = new Compiler("dsd", ast);
             try { compiler.Translation(ast, 0); }
             catch (Exception e) { PrintAST(ast, 0); Console.WriteLine($"При Компиляции что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
-            string data = compiler.ConcatData(typeApp);
+            string data = compiler.ConcatData(typeApp, modeApp, archApp, formatApp);
             compiler.WriteCode(data, filename, pathCompile, "qsr");
 
             Console.WriteLine("End...");

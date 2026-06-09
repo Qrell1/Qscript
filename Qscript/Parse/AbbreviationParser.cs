@@ -1161,7 +1161,7 @@ namespace Qscript
                 }
             } catch { }
             if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) root = generationDeclarationFunc(root);
-            if (take(root, 0).type == NT.DECLARATOR) Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
+            if (ast.resualtFunc.ContainsKey(root.token.value) && take(root, 0).type == NT.DECLARATOR) Syntax.SyntaxError("Ошибка использывание не декларотивную функцию как декларотивную!", root);
 
             CommonNode signatureCall = take(root, 0);
            

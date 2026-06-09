@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.IO;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -269,14 +270,17 @@ namespace Qscript
         }
         public static StringData RegisterMachine(List<inst> instructs, bool line, Dictionary<string, string> functionRegisterData=null)
         {
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start RegisterMachine...");
+            Console.ResetColor();
             StringData resualt = new StringData();
             Dictionary<string, string> tableRegisters = new Dictionary<string, string>();
             Dictionary<string, string> tableSafeRegisters = new Dictionary<string, string>();
             Dictionary<string, int> timelineRegisters = new Dictionary<string, int>();
             List<string> tasks = new List<string>();
-            string[] asmRegisters = { "ecx", "edx", "edi", "esi", "ebx", "eax" };
-            if (line) asmRegisters = new string[] { "ebx", "esi", "edi", "edx", "ecx", "eax" };
+            // ну ладно esi будет спец регистром пока что только для корректировки указателей
+            string[] asmRegisters = { "ecx", "edx", "edi", /*"esi",*/ "ebx", "eax" };
+            if (line) asmRegisters = new string[] { "ebx", /*"esi",*/ "edi", "edx", "ecx", "eax" };
 
             Random rand = new Random();
             void removeRegTask (string task)
@@ -500,7 +504,9 @@ namespace Qscript
              * Пробежаться по всем патерннам 
              * И найти работу над памятью
              */
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start IndicatorsCorrection...");
+            Console.ResetColor();
             StringData resualt = new StringData();
             List <string> args = new List<string>();
             for (int i = 0; i < instructs.Count; i++)
@@ -596,10 +602,58 @@ namespace Qscript
                             {
                                 //Console.WriteLine("var: " + strs[0]);
                                 type = vars[strs[0]];
-                                if (type.First() == '*') { resualtMemory += "eax" + " + "; resualt.Append($"mov eax, [{strs[0]}]\n"); }
-                                else resualtMemory += strs[0];
+                                //if (type.First() == '*') { resualtMemory += "eax" + " + "; resualt.Append($"mov eax, [{strs[0]}]\n"); }
+                                //else resualtMemory += strs[0];
 
+                                string ParentType = type;
+                                NT ParentTypeIndicator;
+
+                                if (type[0] == '*')
+                                {
+                                    ParentType = ParentType.Remove(0, 1);
+                                    ParentTypeIndicator = NT.INDICATOR;
+                                } else ParentTypeIndicator = NT.TYPE;
+
+                                string temp = strs[0];
                                 for (int k = 1; k < strs.Length; k++)
+                                {
+                                    if (ParentTypeIndicator == NT.TYPE)
+                                    {
+                                        temp += $".{strs[k]}";
+                                    } else
+                                    {
+                                        resualt.Append($"mov esi, [{temp}]\n");
+                                        temp = $"esi + {ParentType}.{strs[k]}";
+                                    }
+                                    ParentTypeIndicator = ProgramAst.structs[ParentType][strs[k]].type;
+                                    ParentType = ProgramAst.structs[ParentType][strs[k]].token.value;
+                                }
+                                resualtMemory = temp;
+                                /*
+                                 temp = [ ]"point.{str[1]}"
+                                 eaxFlag = true // первый * в eax
+                                 ebxUse = false // Использовали? сохранили!
+                                 || [ ] |non last| temp += ".{str[n]}"
+                                 || [*] |non last| mov (eaxFlag)?<eax|ebx>, [temp]; temp = "eax + ParentType.value" && eaxFlag = !eaxFlag  
+
+                                   Point[ ].X[ ]
+                                   [Point.X]
+
+                                   -
+                                   push ebx??
+                                   push eax
+                                   1step: temp = "Point"
+                                   2step: mov eax, [Point]; temp = "eax + Point2D.X"
+                                   finalStepResualt => resualt = temp
+                                   
+                                   pop if eaxFlag = false "eax" if eaxFlag = true && ebxUse = true "ebx"
+                                   use, [m]
+                                   
+
+                                 || [ ] last
+                                 || [*] last 
+                                 */
+                                /*for (int k = 1; k < strs.Length; k++)
                                 {
                                     //Console.WriteLine(strs[k] + " | " + type);
                                     if (type.First() == '*' || typeVar == "INDICATOR")
@@ -618,7 +672,7 @@ namespace Qscript
                                     typeVar = ProgramAst.structs[type][strs[k]].type.ToString();
                                     type = ProgramAst.structs[type][strs[k]].token.value;
                                 }
-                                if (resualtMemory.EndsWith("+")) resualtMemory = resualtMemory.Remove(resualtMemory.Length - 1, 1);
+                                if (resualtMemory.EndsWith("+")) resualtMemory = resualtMemory.Remove(resualtMemory.Length - 1, 1);*/
                             }
                             else
                             {
