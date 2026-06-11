@@ -61,6 +61,7 @@ namespace Qscript
 
         public Dictionary<string, string> externLibrarys = new Dictionary<string, string>();
         public Dictionary<string, List<string>> externFuncs = new Dictionary<string, List<string>>();
+        public List<string> functionFromPtr = new List<string>();
         public ProgramNode(NT type, Token token) : base(type, token)
         {}
     }
@@ -136,12 +137,12 @@ namespace Qscript
         DEFINE, TYPEDEF, TYPEIF,
         CONST, SECTION, NATIVE, INLINE, ASMINLINE, OPERATOR,
         SIZEOF, TYPEOF, IN, MODIFIER,
-        BOOL, VAR, CHAR, STRING,
+        BOOL, VAR, CHAR, ASTRING, STRING,
         LPAR, RPAR, PARS, LFIG, RFIG, LK, RK, LKN, RKN,
         SPACE, TAB, N, PS, TS,
         NULL,
         // NT чисто NT без перевода обратно в TT
-        ROOT,
+        ROOT, 
         ALLOCMEMSTATICOBJECT, REFVAR, BODY,
         BINOPER, FLOATBINOPER,
         FUNC,  CALL,
@@ -150,7 +151,7 @@ namespace Qscript
         PREUNAROPER, POSTUNAROPER,
         REGUSE, TYPEOPER, SIGNATURE, OFFSET,
         TAG, FUNCTEMPLETE, CONSTRUCTOR, DESTRUCTOR, DECLARATOR, ELSES, NAME, AIR,
-        TYPE, INDICATOR,
+        TYPE, INDICATOR, PTR,
         STACK, USEADDRESSVAR,
         STEP,
         FLOATOPER, CALLADDRESS

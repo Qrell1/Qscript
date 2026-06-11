@@ -19,11 +19,12 @@ namespace Qscript.Lex
         //private int tokenValue;
         //private int len;
 
-        public Lexer(CodeStruct codeStruct, string file, int offset)
+        public Lexer(CodeStruct codeStruct, string _file, int _offset)
         {
             code = codeStruct;
-            this.file = file;
-            this.offset = offset;
+            file = _file;
+            offset = _offset;
+            //Console.WriteLine($"[Lexer] {file} | offset: {offset}");
         }
 
         public List<Token> lexAnalysis()
@@ -60,7 +61,10 @@ namespace Qscript.Lex
                     {
                         spaces += " ";
                     }
-                    //Console.WriteLine($"[LEXER] Index:{i} Token pos:{tokenList[i].pos} type:{tokenList[i].type}{spaces}value:{tokenList[i].value}");
+                    //if (tokenList[i].type == TT.RETURN)
+                    //{
+                        //Console.WriteLine($"[LEXER] Index:{i} Token pos:{tokenList[i].pos} type:{tokenList[i].type}{spaces}value:{tokenList[i].value}");
+                    //}
                 }
             }
 
@@ -107,7 +111,7 @@ namespace Qscript.Lex
                     //Console.WriteLine($"[LEXER] Найден токен: {tokenType.type} значение: {regx.Value}");
                     if (regx.Value == "&" && code.strings[file][stringIndex][pos+1] == '&')
                     {
-                        Token tokenCmp = new Token(TT.OPER, "&&", pos + offset);
+                        Token tokenCmp = new Token(TT.OPER, "&&", stringIndex + offset);
                         tokenList.Add(tokenCmp);
                         pos+=2;
                         return true;

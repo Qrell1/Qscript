@@ -181,7 +181,7 @@ namespace Qscript
                 CommonNode funcSignatureNode = ast.typesArgsFunc[root.token.value];
                 CommonNode callSignatureNode = root.childs[0];
 
-                if (funcSignatureNode.childs.Count != callSignatureNode.childs.Count)
+                if (((funcSignatureNode.childs.Count != 0 && funcSignatureNode.childs.First().type == NT.PTR) ? funcSignatureNode.childs.Count - 1 : funcSignatureNode.childs.Count) != callSignatureNode.childs.Count)
                     Syntax.SyntaxError($"Ошибка вызова Функции: {root.token.value} ты пердаёшь {callSignatureNode.childs.Count} аргументов,\nНо функция принемает {funcSignatureNode.childs.Count} аргументов", root);
                 else
                 {

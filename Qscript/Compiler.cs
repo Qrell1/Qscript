@@ -77,6 +77,8 @@ namespace Qscript
         private StringData tempData = new StringData();
         private CodeData codeData = CodeData.codeData;
 
+        private string cmpFalse;
+
         public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; varSpace.VarsData = ast.varTypes; }
 
 
@@ -145,6 +147,10 @@ namespace Qscript
                     _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {root.token.value}\n");
                     regReturn = $".reg{regIndex-1}{regPrefer}";
                     break;
+                case NT.FLOAT:
+                    _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {root.token.value}\n");
+                    regReturn = $".reg{regIndex - 1}{regPrefer}";
+                    break;
                 case NT.BOOL:
                     char boolChar = (root.token.value == "true") ? '1' : '0'; _objProg.code.Append($"mov .reg{regIndex++}, {boolChar}\n");
                     regReturn = $".reg{regIndex-1}";
@@ -154,6 +160,9 @@ namespace Qscript
                     break;
                 case NT.STRING:
                     translationString(root, z_buffer);
+                    break;
+                case NT.ASTRING:
+                    translationAString(root, z_buffer);
                     break;
                 case NT.CHAR:
                     translationChar(root, z_buffer);
@@ -346,10 +355,11 @@ namespace Qscript
 
             Translation(bodyNode, z_buffer + 1);
             _objProg.code.Append($"continue{pre}iter{iterNumber}:");
+            string falseName = $"{funcName}.false{++falseTagIndex}";
+            cmpFalse = falseName;
             Translation(cmpNode, z_buffer + 1);
             _objProg.code.Append($"jmp {pre}iter{iterNumber}\n");
-            _objProg.code.Append($"{funcName}.false{falseTagIndex}:\n");
-            falseTagIndex++;
+            _objProg.code.Append($"{falseName}:\n");
 
             if (isNodeType(NT.BREAK, bodyNode)) _objProg.code.Append($"breaK{pre}iter{iterNumber}:");
         }
@@ -370,10 +380,11 @@ namespace Qscript
 
             Translation(stepNode, z_buffer + 1);
             _objProg.code.Append($"continue{pre}iter{iterNumber}:");
+            string falseName = $"{funcName}.false{++falseTagIndex}";
+            cmpFalse = falseName;
             Translation(cmpNode, z_buffer + 1);
             _objProg.code.Append($"jmp {pre}iter{iterNumber}\n");
-            _objProg.code.Append($"false{falseTagIndex}:\n");
-            falseTagIndex++;
+            _objProg.code.Append($"{falseName}:\n");
 
             if (isNodeType(NT.BREAK, bodyNode)) _objProg.code.Append($"break{pre}iter{iterNumber}:");
             //iterTagIndex++;
@@ -767,21 +778,24 @@ namespace Qscript
             CommonNode cmp = take(root, 0);
             CommonNode body = take(root, 1);
             CommonNode elses = take(root, 2);
+
+            string falseName = $"{funcName}.false{++falseTagIndex}";
+            cmpFalse = falseName;
             translationCmp(cmp, z_buffer + 1);
             Translation(body, z_buffer + 1);
             if (elses != null)
             {
                 _objProg.code.Append($"jmp {funcName}.elses{elsesTagIndex}\n");
-                _objProg.code.Append($"{funcName}.false{falseTagIndex}:\n");
-                falseTagIndex++;
+                _objProg.code.Append($"{falseName}:\n");
+                //falseTagIndex++;
                 Translation(elses.childs[0], z_buffer + 2);
                 _objProg.code.Append($"{funcName}.elses{elsesTagIndex}:\n");
                 elsesTagIndex++;
             }
             else
             {
-                _objProg.code.Append($"{funcName}.false{falseTagIndex}:\n");
-                falseTagIndex++;
+                _objProg.code.Append($"{falseName}:\n");
+                //falseTagIndex++;
             }
         }
         private void translationElse (CommonNode root, int z_buffer)
@@ -791,6 +805,7 @@ namespace Qscript
         }
         private void translationCmp (CommonNode root, int z_buffer, bool cmp=false)
         {
+            string falseTag = cmpFalse;
             if (root.childs.Count == 1 && root.childs[0].token.value == "true")
             {
                 if (cmp) _objProg.code.Append($"jmp {funcName}.true{trueTagIndex}\n");
@@ -798,14 +813,14 @@ namespace Qscript
             }
             if (root.childs.Count == 1 && root.childs[0].token.value == "false")
             {
-                _objProg.code.Append($"je {funcName}.false{falseTagIndex}");
+                _objProg.code.Append($"je {falseTag}");
                 return;
             }
             if (root.childs.Count == 1)
             {
                 Translation(root.childs[0], z_buffer + 1);
                 _objProg.code.Append($"cmp {regReturn}, 0");
-                _objProg.code.Append($"je {funcName}.false{falseTagIndex}");
+                _objProg.code.Append($"je {falseTag}");
                 if (cmp) _objProg.code.Append($"jmp {funcName}.true{trueTagIndex}\n");
                 return;
             }
@@ -817,7 +832,7 @@ namespace Qscript
             }
             if ("false" == root.token.value)
             {
-                _objProg.code.Append($"jmp {funcName}.false{falseTagIndex}\n");
+                _objProg.code.Append($"jmp {falseTag}\n");
             }
             if ("&&" == root.token.value)
             {
@@ -838,7 +853,7 @@ namespace Qscript
                 translationCmp(leftChild, z_buffer + 1, true);
                 translationCmp(rightChild, z_buffer + 1, true);
 
-                _objProg.code.Append($"jmp {funcName}.false{falseTagIndex}\n");
+                _objProg.code.Append($"jmp {falseTag}\n");
                 _objProg.code.Append($"{funcName}.true{trueTagIndex}:\n");
                 trueTagIndex++;
             }
@@ -909,22 +924,22 @@ namespace Qscript
                     switch (root.token.value)
                     {
                         case "==":
-                            _objProg.code.Append($"jne {funcName}.false{falseTagIndex}\n");
+                            _objProg.code.Append($"jne {falseTag}\n");
                             break;
                         case "!=":
-                            _objProg.code.Append($"je {funcName}.false{falseTagIndex}\n");
+                            _objProg.code.Append($"je {falseTag}");
                             break;
                         case ">=":
-                            _objProg.code.Append($"jl {funcName}.false{falseTagIndex}\n");
+                            _objProg.code.Append($"jl {falseTag}\n");
                             break;
                         case "<=":
-                            _objProg.code.Append($"jg {funcName}.false{falseTagIndex}\n");
+                            _objProg.code.Append($"jg {falseTag}\n");
                             break;
                         case ">":
-                            _objProg.code.Append($"jle {funcName}.false{falseTagIndex}\n");
+                            _objProg.code.Append($"jle {falseTag}\n");
                             break;
                         case "<":
-                            _objProg.code.Append($"jge {funcName}.false{falseTagIndex}\n");
+                            _objProg.code.Append($"jge {falseTag}\n");
                             break;
                     }
                 } else
@@ -1085,8 +1100,16 @@ namespace Qscript
 
                 if (varChild.childs.Count > 0 && varChild.type == NT.VAR)
                     translationVar(varChild, z_buffer + 1);
-                
 
+
+                if (rightChild.type == NT.ASTRING)
+                {
+                    translationAString(rightChild, z_buffer + 1);
+
+                    _objProg.code.Append($"lea .reg{regIndex++}{regPrefer}, [{stringConsts["A" + rightChild.token.value]}]\n");
+                    _objProg.code.Append($"mov {varString}, .reg{regIndex - 1}{regPrefer}\n");
+                    return;
+                }
                 if (rightChild.type == NT.STRING)
                 {
                     translationString(rightChild, z_buffer + 1);
@@ -1513,6 +1536,27 @@ namespace Qscript
                 regReturn = $".reg{regIndex - 1}";
             }
         }
+        private void translationAString(CommonNode root, int z_buffer)
+        {
+            root.token.value = root.token.value.Remove(root.token.value.Length-1, 1).Remove(0, 2);
+            
+            root.token.value = root.token.value.Replace("\\n", "', 13, 10, '");
+            root.token.value = root.token.value.Replace("\\t", "', 9, '");
+            if (!stringConsts.Keys.Contains("A" + root.token.value))
+            {
+                stringConsts.Add("A" + root.token.value, $"str_const_{stringConstsIndex}");
+
+                _objProg.stringsConsts.Append($"str_const_{stringConstsIndex++} db '{root.token.value}', 0\n");
+                _objProg.code.Append($"lea .reg{regIndex++}, [{stringConsts["A" + root.token.value]}]");
+                regReturn = $".reg{regIndex - 1}";
+                return;
+            }
+            if (regString)
+            {
+                _objProg.code.Append($"lea .reg{regIndex++}, [{stringConsts[root.token.value]}]");
+                regReturn = $".reg{regIndex - 1}";
+            }
+        }
         private void translationChar(CommonNode root, int z_buffer) 
         {
             _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {root.token.value}");
@@ -1844,7 +1888,9 @@ namespace Qscript
             bool flag = false;
             foreach (var library in ProgramAst.externLibrarys.Keys)
                 if (ProgramAst.externFuncs[library].Contains(root.token.value)) flag = true;
-            if (flag || (!ProgramAst.resualtFunc.ContainsKey(root.token.value) && varSpace.ContainsKey(root.token.value)))
+            if (flag
+                || (!ProgramAst.resualtFunc.ContainsKey(root.token.value) && varSpace.ContainsKey(root.token.value))
+                || ProgramAst.functionFromPtr.Contains(root.token.value))
             {
                 _objProg.code.Append($"call [{root.token.value}]\n");
             }

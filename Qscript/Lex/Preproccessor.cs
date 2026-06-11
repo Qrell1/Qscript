@@ -113,9 +113,9 @@ namespace Qscript.Lex
 
                 CommentLexer commentLexer = new CommentLexer();
                 string temp = commentLexer.lexCodes(codes, include.Key);
-                offset += Syntax.code.strings.Last().Value.Count;
+                
                 Lexer lexer = new Lexer(Syntax.code, include.Key, offset);
-
+                offset += Syntax.code.strings.Last().Value.Count;
                 List<Token> fileTokens = lexer.lexAnalysis();
                 //Preproccessor includeLexer = new Preproccessor();
          

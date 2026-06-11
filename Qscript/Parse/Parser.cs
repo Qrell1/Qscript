@@ -88,8 +88,11 @@ namespace Qscript
             {
                 return true;
             }
+            string _types = string.Empty;
+            for (int i = 0; i < types.Length; i++)
+                _types += (i + 1 < types.Length) ? $"{types[i]}, " : types[i].ToString();
             //throw new Exception($"На позиции:{pos} Ожидался Токен:{types}");
-            Syntax.SyntaxError($"Ожидался Токен:{types}", tokens[pos]); // На позиции:{pos} 
+            Syntax.SyntaxError($"Ожидался Токен:{_types}", tokens[pos]); // На позиции:{pos} 
             return false;
         }
         private void skip()
@@ -359,6 +362,7 @@ namespace Qscript
             if (token.type == TT.LAMBDA) return parseLambda(token);
             if (token.type == TT.NUMBER) return new CommonNode(NT.NUMBER, token);
             if (token.type == TT.HEX)    return new CommonNode(NT.HEX, token);
+            if (token.type == TT.ASTRING) return new CommonNode(NT.ASTRING, token);
             if (token.type == TT.STRING) return new CommonNode(NT.STRING, token);
             if (token.type == TT.CHAR)   return new CommonNode(NT.CHAR,   token);
             if (token.type == TT.CONST)  return new CommonNode(NT.CONST , token);
@@ -730,9 +734,10 @@ namespace Qscript
                 stackNode.childs.Add(new CommonNode(getNodeType(type), varToken));
                 if (tokens[pos].value == "=")
                 {
-                    skip(); expect(TT.NUMBER);
-                    CommonNode typeNode = new CommonNode(NT.NUMBER, take());
-                    stackNode.childs[stackNode.childs.Count - 1].childs.Add(typeNode);
+                    skip(); //expect(TT.NUMBER);
+                    //CommonNode typeNode = //new CommonNode(NT.NUMBER, take());
+                    CommonNode exprNode = parseFormula();
+                    stackNode.childs[stackNode.childs.Count - 1].childs.Add(exprNode);
                 }
                 if (peek(TT.PS)) skip();
             }
@@ -1558,7 +1563,28 @@ namespace Qscript
                 root.externStructs.Add(structNode.token.value);
                 return structNode;
             }
-            if (externNode.type == NT.EXTERN)
+            else if (externNode.type == NT.EXTERN && tokens[pos].value == "function")
+            {
+                skip();
+                expect(TT.VAR);
+                CommonNode typeNode = new CommonNode(NT.TYPE, take());
+                expect(TT.VAR);
+                CommonNode varNode = new CommonNode(NT.FUNC, take());
+                varNode = tryParseVarPath(varNode);
+                varNode.childs.Add(typeNode);
+
+
+                CommonNode args = parseVarWTypeSignature();
+
+                if (varNode.childs[0].token.value == "void")
+                    root.resualtFunc.Add(varNode.token.value, null);
+                else
+                    root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
+                root.typesArgsFunc.Add(varNode.token.value, args);
+                root.functionFromPtr.Add(varNode.token.value);
+                return null;
+            }
+            else if (externNode.type == NT.EXTERN)
             {
                 List<string> listFuncNode = new List<string> ();
                 string libraryString = string.Empty;
@@ -1577,7 +1603,7 @@ namespace Qscript
                 else root.externFuncs[libraryString].AddRange(listFuncNode);
                 return null;
             }
-            if (externNode.type == NT.EXTERNLIBRARY)
+            else if (externNode.type == NT.EXTERNLIBRARY)
             {
                 expect(TT.VAR);
                 CommonNode libraryNode = new CommonNode(NT.VAR, take()); expect(TT.STRING);
@@ -1585,7 +1611,7 @@ namespace Qscript
                 if (!root.externFuncs.ContainsKey(libraryNode.token.value)) root.externFuncs.Add(libraryNode.token.value, new List<string>());
                 return null;
             }
-            if (externNode.type == NT.EXTERNFUNC)
+            else if (externNode.type == NT.EXTERNFUNC)
             {
                 expect(TT.VAR);
                 CommonNode typeNode = new CommonNode(NT.TYPE, take());

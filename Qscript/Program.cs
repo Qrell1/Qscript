@@ -124,7 +124,7 @@ namespace Qscript
 
         static void Main(string[] args)
         {
-
+            Console.OutputEncoding = System.Text.Encoding.UTF8;
             //string code = "asm format mov eax, ebx cmp eax, ebx je true asm
             Console.WriteLine("Write File: ");
             Console.WriteLine("Auto Run!");

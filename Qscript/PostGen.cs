@@ -527,6 +527,7 @@ namespace Qscript
                             patterns[j].value = patterns[j].value.Remove(patterns[j].value.Length - 1, 1);
                             if (!DataBase.typesarg.ContainsValue(patterns[j + 1].value))
                             {
+                                //Console.WriteLine(patterns[j + 1].value + " : " + patterns[j].value);
                                 resualtProcString += $" {patterns[j].value}:DWORD ,";
                                 if (vars.ContainsKey(patterns[j].value))
                                 { vars[patterns[j].value] = "*" + patterns[j + 1].value; }
@@ -598,6 +599,8 @@ namespace Qscript
                             string[] strs = memory.Split('.', ',');
                             string type = string.Empty;
                             string typeVar = string.Empty;
+                            string ParentType;
+                            NT ParentTypeIndicator = NT.TYPE;
                             if (strs.Length >= 2)
                             {
                                 //Console.WriteLine("var: " + strs[0]);
@@ -605,8 +608,7 @@ namespace Qscript
                                 //if (type.First() == '*') { resualtMemory += "eax" + " + "; resualt.Append($"mov eax, [{strs[0]}]\n"); }
                                 //else resualtMemory += strs[0];
 
-                                string ParentType = type;
-                                NT ParentTypeIndicator;
+                                ParentType = type;
 
                                 if (type[0] == '*')
                                 {
@@ -677,11 +679,25 @@ namespace Qscript
                             else
                             {
                                 resualtMemory = strs[0];
+                                type = vars[strs[0]];
+                                ParentType = type;
+                                if (ParentType[0] == '*')
+                                {
+                                    ParentType = ParentType.Remove(0, 1);
+                                    ParentTypeIndicator = NT.INDICATOR;
+                                }
+                                //ParentTypeIndicator = ProgramAst.structs[ParentType][strs[1]].type;
+                                //ParentType = ProgramAst.structs[ParentType][strs[1]].token.value;
                             }
-                            _inst.pattern[j].value = "[" + resualtMemory + "]";
-                            if (type == string.Empty) type = vars[strs[0]];
+                            string _size = string.Empty;
+                            if (ParentTypeIndicator == NT.INDICATOR) _size = "dword";
+                            else if (DataBase.typesarg.ContainsKey(ParentType)) _size = DataBase.typesarg[ParentType].ToLower();
+                            else _size = "dword";
+
+                            _inst.pattern[j].value = $" [" + resualtMemory + "]";
+                            //if (type == string.Empty) type = vars[strs[0]];
                             //if (type != string.Empty) 
-                                for (int k = 0; k < _inst.pattern.Count; k++)
+                            for (int k = 0; k < _inst.pattern.Count; k++)
                                 {
 
                                     if (_inst.pattern[k].key == "r")
@@ -689,17 +705,17 @@ namespace Qscript
                                         string size = string.Empty;
                                         int sizeIndex = 0;
 
-                                        if (typeVar == "INDICATOR") size = "dword";
-                                        else if (DataBase.typesarg.ContainsKey(type)) size = DataBase.typesarg[type].ToLower();
-                                        else size = "dword";
-
+                                        if (ParentTypeIndicator == NT.INDICATOR) size = "dword";
+                                        else if (DataBase.typesarg.ContainsKey(ParentType)) size = DataBase.typesarg[ParentType].ToLower();
+                                        else size = "";
+                                        
                                         switch (size)
                                         {
                                             case "qword": sizeIndex = 0; break;
                                             case "dword": sizeIndex = 1; break;
                                             case "word": sizeIndex = 2; break;
                                             case "byte": sizeIndex = 3; break;
-                                            default: sizeIndex = 0; break;
+                                            default: sizeIndex = 1; break;
                                         }
 
                                         _inst.pattern[k].value = DataBase.regs[_inst.pattern[k].value][sizeIndex];

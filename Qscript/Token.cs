@@ -46,7 +46,7 @@ namespace Qscript
         DEFINE, TYPEDEF, TYPEIF,
         CONST, SECTION, NATIVE, INLINE, ASMINLINE, OPERATOR, 
         SIZEOF, TYPEOF, IN, MODIFIER,
-        BOOL, VAR, CHAR, STRING, 
+        BOOL, VAR, CHAR, ASTRING, STRING, 
         LPAR, RPAR, PARS, LFIG, RFIG, LK, RK, LKN, RKN,
         SPACE, TAB, N, PS, TS,
         NULL
@@ -101,6 +101,7 @@ namespace Qscript
             //tokenTypes.Add("OPER", new TokenType("OPER", @"(==|!=|<<|>>|<=|>=|=<|=>|=?)"));
             //tokenTypes.Add("INC", new TokenType("INC", "[\\--]*"));
             //tokenTypes.Add("DEC", new TokenType("DEC", "[\\++]*"));
+            tokenTypes.Add(TT.ASTRING, @"A""[^""]*""");
             tokenTypes.Add(TT.FLOAT,   @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)");
             tokenTypes.Add(TT.HEX, "(0x[0-9A-F]+)");
             tokenTypes.Add(TT.NUMBER,  "[0-9]+");

@@ -667,14 +667,17 @@ namespace Qscript
 
             if (ast.ClassesInheritances.ContainsKey(root.token.value))
             {
+                List<CommonNode> vars = new List<CommonNode>();
                 foreach (var child in ast.structs[ast.ClassesInheritances[root.token.value]])
                 {
                     if (ast.structs[root.token.value].ContainsKey(child.Key)) continue;
                     ast.structs[root.token.value].Add(child.Key, child.Value);
                     CommonNode varNode = new CommonNode(NT.VAR, new Token(TT.NULL, child.Key, child.Value.token.pos));
                     varNode.childs.Add(child.Value);
-                    root.childs.Add(varNode);
+                    vars.Add(varNode);
                 }
+                vars.AddRange(root.childs);
+                root.childs = vars;
             }
 
             return root;
@@ -984,7 +987,7 @@ namespace Qscript
             }
             if (ast.resualtFunc[root.token.value] != null && ast.resualtFunc[root.token.value].token.value != "void" && !DataBase.types.ContainsKey(ast.resualtFunc[root.token.value].token.value) && ast.resualtFunc[root.token.value].type != NT.INDICATOR)
             {
-                CommonNode resualtVar = new CommonNode(NT.VAR, new Token(TT.NULL, "resualtPtr", signature.token.pos));
+                CommonNode resualtVar = new CommonNode(NT.PTR, new Token(TT.NULL, "resualtPtr", signature.token.pos));
                 resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
                 childs.Add(resualtVar);
             }
