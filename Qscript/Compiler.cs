@@ -296,8 +296,14 @@ namespace Qscript
                 Translation(varNode, z_buffer+1);
                 varString = regReturn;
             }
+            CommonNode _type = DataBase.getFormulaNodeType(varNode, ref varSpace, ref ProgramAst);
+
             if (offsetTemp != "")
                 type = offsetTemp;
+            else if (DataBase.typesarg.ContainsKey(_type.token.value)) //&& _type.type == NT.INDICATOR)
+            {
+                size = DataBase.typesarg[_type.token.value].ToLower();
+            }
             else switch (DataBase.getFormulaNodeSize(varNode, ref varSpace, ref ProgramAst))
             {
                 case 8: size = "qword"; break;
@@ -311,14 +317,15 @@ namespace Qscript
             string reg = regReturn;
 
             type = (type != "") ? type : getSize(varNode.token.value, varNode);
+            Console.WriteLine(varNode.token.value + " : " + getSize(varNode.token.value, varNode));
             _objProg.code.Append($"imul {reg}, {type}\n");
             _objProg.code.Append($"mov .reg{regIndex++}, {varString}\n");
 
 
             if (flag)
             {
-                _objProg.code.Append($"mov .reg{regIndex++}, {size} [.reg{regIndex-2}+{reg}]\n");
-                regReturn = $".reg{regIndex-1}";
+                _objProg.code.Append($"mov .reg{regIndex++}{size}, {size} [.reg{regIndex-2}+{reg}]\n");
+                regReturn = $".reg{regIndex-1}{size}";
                 offsetTemp = size;
             }
             else
@@ -1704,6 +1711,10 @@ namespace Qscript
                 if (i != 0 && i != ((qsFunc)?1:0)) args += " , ";
                 if (signature.childs[i].token.value == "resualtPtr")
                     args += $"{signature.childs[i].token.value}:DWORD";
+                else if (signature.childs[i].childs[0].token.value == "string")
+                    args += $"{signature.childs[i].token.value}:DWORD";
+                else if (DataBase.typesarg.ContainsKey(signature.childs[i].childs[0].token.value) && signature.childs[i].childs[0].type == NT.INDICATOR)
+                    args += $"{signature.childs[i].token.value}:*{signature.childs[i].childs[0].token.value}";
                 else if (DataBase.typesarg.ContainsKey(signature.childs[i].childs[0].token.value))
                     args += $"{signature.childs[i].token.value}:{DataBase.typesarg[signature.childs[i].childs[0].token.value]}";
                 else
@@ -1956,6 +1967,7 @@ namespace Qscript
                 switch (classes)
                 {
                     case "db": sizeConst = "1"; break;
+                    case "du": 
                     case "dw": sizeConst = "2"; break;
                     case "dd": sizeConst = "4"; break;
                 }

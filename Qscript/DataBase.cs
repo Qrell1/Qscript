@@ -40,7 +40,7 @@ namespace Qscript
             {"int8", "BYTE"},
             {"number", "DWORD"},
             {"byte", "BYTE"},
-            {"string", "DWORD"},
+            {"string", "WORD"},
             {"char", "BYTE"},
             {"wchar", "WORD"},
             {"float", "DWORD"},

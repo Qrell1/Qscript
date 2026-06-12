@@ -307,9 +307,38 @@ namespace Qscript
                         if (!tableSafeRegisters.ContainsValue(asmRegisters[i])) return asmRegisters[i];
                     }
 
-                    return asmRegisters[rand.Next(0, 5)];
+                    return asmRegisters[rand.Next(0, 4)];
                 }
-                if (reg.EndsWith("x") || reg.EndsWith("l") || reg.EndsWith("h"))
+                else if (reg.EndsWith("qword") || reg.EndsWith("dword"))
+                {
+                    string regType = reg.Substring(reg.Length-5);
+                    int regSize = (regType == "qword") ? 0 : 1;
+
+                    string regReturn = string.Empty;
+                    for (int i = 0; i < asmRegisters.Length; i++)
+                    {
+                        if (!tableSafeRegisters.ContainsValue(asmRegisters[i])) regReturn = asmRegisters[i];
+                    } if (regReturn == string.Empty) regReturn = asmRegisters[rand.Next(0, 5)];
+
+                    regReturn = DataBase.regs[regReturn][regSize];
+                    return regReturn;
+                }
+                else if (reg.EndsWith("word") || reg.EndsWith("byte"))
+                {
+                    string regType = reg.Substring(reg.Length - 4);
+                    int regSize = (regType == "word") ? 2 : 3;
+
+                    string regReturn = string.Empty;
+                    for (int i = 0; i < asmRegisters.Length; i++)
+                    {
+                        if (!tableSafeRegisters.ContainsValue(asmRegisters[i])) regReturn = asmRegisters[i];
+                    }
+                    if (regReturn == string.Empty) regReturn = asmRegisters[rand.Next(0, 5)];
+
+                    regReturn = DataBase.regs[regReturn][regSize];
+                    return regReturn;
+                }
+                else if (reg.EndsWith("x") || reg.EndsWith("l") || reg.EndsWith("h"))
                 {
                     string regPrefer = reg.Remove(0, 4);
                     string number = string.Empty;
@@ -332,7 +361,7 @@ namespace Qscript
                     if (!tableRegisters.ContainsValue(asmRegisters[i])) return asmRegisters[i];
                 }
                
-                return "push" + asmRegisters[rand.Next(0,5)];
+                return "push" + asmRegisters[rand.Next(0,4)];
             }
             for (int i = 0; i < instructs.Count; i++)
             {
@@ -524,8 +553,19 @@ namespace Qscript
                         string resualtProcString = $"proc {patterns[0].value} ";
                         for (int j = 1; j < patterns.Count; j++)
                         {
+                            Console.WriteLine(patterns[j].value);
+                            Console.WriteLine(patterns[j+1].value);
                             patterns[j].value = patterns[j].value.Remove(patterns[j].value.Length - 1, 1);
-                            if (!DataBase.typesarg.ContainsValue(patterns[j + 1].value))
+                            
+                            if (patterns[j  + 1].value[0] == '*')
+                            {
+                                if (vars.ContainsKey(patterns[j].value))
+                                { vars[patterns[j].value] = "*" + patterns[j + 2].value; }
+                                else { vars.Add(patterns[j].value, "*" + patterns[j + 2].value); }
+                                resualtProcString += $" {patterns[j].value}:DWORD ,";
+                                j++;
+                            }
+                            else if (!DataBase.typesarg.ContainsValue(patterns[j + 1].value))
                             {
                                 //Console.WriteLine(patterns[j + 1].value + " : " + patterns[j].value);
                                 resualtProcString += $" {patterns[j].value}:DWORD ,";
@@ -690,7 +730,9 @@ namespace Qscript
                                 //ParentType = ProgramAst.structs[ParentType][strs[1]].token.value;
                             }
                             string _size = string.Empty;
-                            if (ParentTypeIndicator == NT.INDICATOR) _size = "dword";
+                            if (DataBase.typesarg.ContainsKey(ParentType) && ParentTypeIndicator == NT.INDICATOR)
+                                _size = DataBase.typesarg[ParentType].ToLower();
+                            else if (ParentTypeIndicator == NT.INDICATOR) _size = "dword";
                             else if (DataBase.typesarg.ContainsKey(ParentType)) _size = DataBase.typesarg[ParentType].ToLower();
                             else _size = "dword";
 
@@ -719,7 +761,7 @@ namespace Qscript
                                         }
 
                                         _inst.pattern[k].value = DataBase.regs[_inst.pattern[k].value][sizeIndex];
-                                    }
+                                }
                                     /*if (patterns[0].key == "r"
                                         && _inst.pattern[k].key == "r"
                                         && _inst.pattern[k].value != "esi"
