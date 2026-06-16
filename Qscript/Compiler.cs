@@ -79,6 +79,8 @@ namespace Qscript
 
         private string cmpFalse;
 
+        private CommonNode var;
+
         public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; varSpace.VarsData = ast.varTypes; }
 
 
@@ -255,6 +257,9 @@ namespace Qscript
                 case NT.CONTINUE:
                     translationContinue(root, z_buffer);
                     break;
+                case NT.OFFSETBODY:
+                    //translationOffsetBody(root, z_buffer);
+                    break;
                 case NT.BODY:
                     for (int i = 0; i < root.childs.Count; i++)
                     {
@@ -317,7 +322,7 @@ namespace Qscript
             string reg = regReturn;
 
             type = (type != "") ? type : getSize(varNode.token.value, varNode);
-            Console.WriteLine(varNode.token.value + " : " + getSize(varNode.token.value, varNode));
+            //Console.WriteLine(varNode.token.value + " : " + getSize(varNode.token.value, varNode));
             _objProg.code.Append($"imul {reg}, {type}\n");
             _objProg.code.Append($"mov .reg{regIndex++}, {varString}\n");
 
@@ -335,6 +340,24 @@ namespace Qscript
             }
             offsetTemp = type;
             return null;
+        }
+        private void translationOffsetBody (CommonNode root, int z_buffer)
+        {
+            CommonNode offset = new CommonNode(NT.OFFSET, root.token);
+            offset.childs.Add(null);
+            offset.childs.Add(var);
+
+            int count = root.childs.Count;
+            for (int k = 0; k < count; k++)
+            {
+                offset.childs[0] = new CommonNode(NT.NUMBER, new Token(Convert.ToString(k), root.childs[k].token.pos));
+                translationOffset(offset, z_buffer + 1, false);
+                string data = regReturn;
+
+                Translation(root.childs[k], z_buffer + 1);
+
+                _objProg.code.Append($"mov {data}, {regReturn}");
+            }
         }
         private void translationUseAddressVar (CommonNode root, int z_buffer)
         {
@@ -660,8 +683,12 @@ namespace Qscript
             }
             CommonNode returnValue = take(root, 0);
 
-
-            if (!DataBase.typesarg.Keys.Contains(returnType.token.value))
+            if (!DataBase.typesarg.Keys.Contains(returnType.token.value) && returnType.type == NT.INDICATOR)
+            {
+                Translation(returnValue, z_buffer + 1);
+                _objProg.code.Append($"mov eax, {regReturn}\n");
+            }
+            else if (!DataBase.typesarg.Keys.Contains(returnType.token.value))
             {
                 Translation(returnValue, z_buffer + 1);
                 _objProg.code.Append($"mov esi, {regReturn}\n");
@@ -1026,22 +1053,28 @@ namespace Qscript
             }
 
             string varType = varSpace.GetTypeValue(root.token.value);
+
+            
             if (varType != null && root.childs.Count == 0 && varSpace.GetType(root.token.value).type == NT.INDICATOR)
             {
-                _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, [{root.token.value}]\n");
-                regReturn = $".reg{regIndex-1}{regPrefer}";
+                //string size = (DataBase.typesarg.ContainsKey(varType) ? DataBase.typesarg[varType].ToLower() : "");
+                
+                _objProg.code.Append($"mov .reg{regIndex++}, [{root.token.value}]\n");
+                regReturn = $".reg{regIndex-1}";
                 return;
             }
             if (varType != null && root.childs.Count == 0 && !DataBase.types.ContainsKey(varType))
             {
-                _objProg.code.Append($"lea .reg{regIndex++}{regPrefer}, [{root.token.value}]\n");
-                regReturn = $".reg{regIndex-1}{regPrefer}";
+                _objProg.code.Append($"lea .reg{regIndex++}, [{root.token.value}]\n");
+                regReturn = $".reg{regIndex-1}";
                 return;
             }
             if (root.childs.Count == 0)
             {
-                _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, [{root.token.value}]\n");
-                regReturn = $".reg{regIndex-1}{regPrefer}";
+                string size = (varType != null && varSpace.GetType(root.token.value).type != NT.INDICATOR && (DataBase.typesarg.ContainsKey(varType)) ? DataBase.typesarg[varType].ToLower() : "");
+
+                _objProg.code.Append($"mov .reg{regIndex++}{size}, [{root.token.value}]\n");
+                regReturn = $".reg{regIndex-1}{size}";
                 return;
             }
 
@@ -1071,9 +1104,16 @@ namespace Qscript
                 CommonNode varChild = take(root, 0); // eax
                 CommonNode rightChild = take(root, 1);
 
+                var = varChild;
                 string varString = string.Empty;
+                if (rightChild.type == NT.OFFSETBODY)
+                {
+                    translationOffsetBody(rightChild, z_buffer);
+                    return;
+                }
                 if (varChild.type == NT.OFFSET)
                 {
+                    var = varChild.childs[1];
                     string[] strs = translationOffset(varChild, z_buffer, false);
                     string reg = regReturn;
                     varString = regReturn;
@@ -1712,7 +1752,10 @@ namespace Qscript
                 if (signature.childs[i].token.value == "resualtPtr")
                     args += $"{signature.childs[i].token.value}:DWORD";
                 else if (signature.childs[i].childs[0].token.value == "string")
+                {
                     args += $"{signature.childs[i].token.value}:DWORD";
+                    ProgramAst.typesArgsFunc[root.token.value].childs[i].childs[0].type = NT.INDICATOR;
+                }
                 else if (DataBase.typesarg.ContainsKey(signature.childs[i].childs[0].token.value) && signature.childs[i].childs[0].type == NT.INDICATOR)
                     args += $"{signature.childs[i].token.value}:*{signature.childs[i].childs[0].token.value}";
                 else if (DataBase.typesarg.ContainsKey(signature.childs[i].childs[0].token.value))

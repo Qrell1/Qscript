@@ -125,7 +125,7 @@ namespace Qscript
         // TT чтобы удобно переводить из TT -> NT (по порядковому номеру)
         // TODO: Все изменения TT вносить и сюда!
         COMMENT,
-        ELSEIF, IF, ELSE,
+        ELSEIF, IF, ELSE, DEFIF,
         FLOAT, NUMBER, HEX,
         PREFIX, REGDECL, OPER, VARDECL,
         ENDINCLUDE, ASMINCLUDE, INCLUDE, USING,
@@ -143,7 +143,7 @@ namespace Qscript
         NULL,
         // NT чисто NT без перевода обратно в TT
         ROOT, 
-        ALLOCMEMSTATICOBJECT, REFVAR, BODY,
+        ALLOCMEMSTATICOBJECT, REFVAR, BODY, OFFSETBODY,
         BINOPER, FLOATBINOPER,
         FUNC,  CALL,
         CMP,

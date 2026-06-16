@@ -168,9 +168,12 @@ namespace Qscript
                         size = 4;
                         break;
                     case NT.VAR:
+                        type = externGetTypeVar(node, ref varSpace, ref ast);
+                        size = getTypeSize(type, ref ast);
+                        break;
                     case NT.POSTUNAROPER:
                     case NT.PREUNAROPER:
-                        type = externGetTypeVar(node, ref varSpace, ref ast);
+                        type = externGetTypeVar(node.childs[0], ref varSpace, ref ast);
                         size = getTypeSize(type, ref ast);
                         break;
                     case NT.NUMBER:
@@ -262,7 +265,7 @@ namespace Qscript
         public static int getStructSize(string type, ref ProgramNode ast)
         {
             int size = 0;
-
+            //Console.WriteLine(type);
             foreach (var _var in ast.structs[type].Values)
             {
                 if (_var.type == NT.INDICATOR) size += 4;

@@ -202,6 +202,10 @@ namespace Qscript
             Token token = take();
             if (token.type == TT.SEM) Syntax.SyntaxError("Мдамс получается ты тут накосячил. Честно я не знаю как.\n Но совет если при вызове функции не передаёшь аргументы всегда пиши ()!", new CommonNode(getNodeType(token.type), token));
 
+            if (token.value == "{")
+            {
+                return parseOffsetBody(token);
+            }
             if (token.value == "-" && peek(TT.NUMBER))
             {
                 Token number = take();
@@ -650,7 +654,11 @@ namespace Qscript
             if ((!peek(TT.LFIG) && !peek(TT.SEM)))
             {
                 CommonNode node = new CommonNode(NT.BODY, new Token(TT.NULL, "{}", tokens[pos].pos));
-                node.childs.Add(parse());
+                while (true)
+                {
+                    node.childs.Add(parse());
+                    if (!peek(TT.PS)) break;
+                }
                 return node;
             }
             if (peek(TT.OPER) && tokens[pos].value == "=>")
@@ -1137,6 +1145,13 @@ namespace Qscript
         }
         */
 
+        private CommonNode parseDefif()
+        {
+            CommonNode defifNode = new CommonNode(NT.DEFIF, take());
+            defifNode.childs.Add(parseIfSignature());
+            defifNode.childs.Add(parseBody());
+            return defifNode;
+        }
         private CommonNode parseIfStrurct()
         {
             expect(new TT[] { TT.IF, TT.ELSEIF, TT.ELSE });
@@ -1586,7 +1601,7 @@ namespace Qscript
             }
             else if (externNode.type == NT.EXTERN)
             {
-                List<string> listFuncNode = new List<string> ();
+                List<string> listFuncNode = new List<string>();
                 string libraryString = string.Empty;
                 while (true)
                 {
@@ -1615,6 +1630,7 @@ namespace Qscript
             {
                 expect(TT.VAR);
                 CommonNode typeNode = new CommonNode(NT.TYPE, take());
+                if (tokens[pos].value[0] == '*') { skip(); typeNode.type = NT.INDICATOR; }
                 expect(TT.VAR);
                 CommonNode varNode = new CommonNode(NT.FUNC, take());
                 varNode = tryParseVarPath(varNode);
@@ -1778,6 +1794,20 @@ namespace Qscript
             return asmNode;
         }
 
+        private CommonNode parseOffsetBody(Token token = null)
+        {
+            CommonNode offsetBody = new CommonNode(NT.OFFSETBODY, (token != null) ? token : take());
+
+            
+            while (!peek(TT.RFIG))
+            {
+                offsetBody.childs.Add(parseFormula());
+                if (peek(TT.PS)) skip();
+            }
+            skip();
+            return offsetBody;
+        }
+
         public ProgramNode parseCode()
         {
             int oldPos = 0;
@@ -1796,7 +1826,7 @@ namespace Qscript
             return root;
         }
 
-        public CommonNode parse() // 30 keywords
+        public CommonNode parse() // 32 keywords
         {
             if (peek(TT.VARDECL))
             {
@@ -1805,6 +1835,10 @@ namespace Qscript
             if (peek(TT.VAR))
             {
                 return parseVarOperation();
+            }
+            if (peek(TT.DEFIF))
+            {
+                return parseDefif();
             }
             if (peek(TT.IF) || peek(TT.ELSEIF) || peek(TT.ELSE))
             {

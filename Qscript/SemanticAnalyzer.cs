@@ -62,8 +62,6 @@ namespace Qscript
                     analisVar(root, z_buffer);
                     break;
                 default:
-                    //if (root.childs.Count == 0 || root.type == "SIGNATURE" || root.type == "CMP" || root.type == NT.STRUCT || root.type == NT.FUNC)
-                    //break;
                     if (root.type == NT.TYPEOF)
                         break;
                     if (root.type == NT.STRUCT) break;
@@ -150,7 +148,6 @@ namespace Qscript
         {
             if (root.childs.Count > 0 && root.childs[0].type != NT.OFFSET)
             {
-
                 if (varSpace.PeekContainsKey(root.token.value))
                     Syntax.SyntaxError($"Нельзя объявлять две переменных с одним именем! {root.childs[0].type}", root);
                 CommonNode type = root.childs[0];
@@ -158,7 +155,23 @@ namespace Qscript
             }
             else
             {
-                if (!root.token.value.Contains('.') && !root.token.value.Contains(',') && !varSpace.ContainsKey(root.token.value)) Syntax.SyntaxError($"[S]В текущей области видимости не существует Переменной: ", root);
+                if (root.token.value.Contains('.'))
+                {
+                    string[] strs = root.token.value.Split('.');
+                    if (strs[0] == "qsr") return;
+                    if (!varSpace.ContainsKey(strs[0])) Syntax.SyntaxError($"В текущей области видимости не существует Переменной: ", root);
+                    
+                    CommonNode type = varSpace.GetType(strs[0]);
+
+                    for (int i = 1; i < strs.Length; i++)
+                    {
+                        if (!ast.structs[type.token.value].ContainsKey(strs[i]))
+                            Syntax.SyntaxError($"В текущей области видимости не существует Переменной: {strs[i]} в {type.token.value} ", root);
+                        type = ast.structs[type.token.value][strs[i]];
+                    }
+                }
+                else if (!varSpace.ContainsKey(root.token.value))
+                    Syntax.SyntaxError($"В текущей области видимости не существует Переменной: ", root);
             }
         }
         private static void analisCall(CommonNode root, int z_buffer)

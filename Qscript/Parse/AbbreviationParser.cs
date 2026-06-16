@@ -340,8 +340,10 @@ namespace Qscript
             if (leftNode.type == NT.VAR && varSpace.VarIsType(leftNode.token.value, "float")) flagFloat = true;
             if (rightNode.type == NT.VAR && varSpace.VarIsType(rightNode.token.value, "float")) flagFloat = true;
 
-            if (leftNode.type == NT.VAR && ast.resualtFunc.ContainsKey(leftNode.token.value) && ast.resualtFunc[leftNode.token.value].token.value == "float") flagFloat = true;
-            if (rightNode.type == NT.VAR && ast.resualtFunc.ContainsKey(rightNode.token.value) && ast.resualtFunc[rightNode.token.value].token.value == "float") flagFloat = true;
+            //Console.WriteLine(leftNode.token.value + $" {((leftNode.token.type == null) ? "null" : leftNode.token.type.ToString())}: " + rightNode.token.value);
+            //Program.PrintAST(root,0);
+            if (leftNode.type == NT.VAR && ast.resualtFunc.ContainsKey(rightNode.token.value) && ast.resualtFunc[rightNode.token.value].token.value == "float") flagFloat = true;
+            if (rightNode.type == NT.VAR && ast.resualtFunc.ContainsKey(leftNode.token.value) && ast.resualtFunc[leftNode.token.value].token.value == "float") flagFloat = true;
 
             if (leftNode.type == NT.VAR && ast.typesArgsFunc.ContainsKey(leftNode.token.value) && ast.typesArgsFunc[leftNode.token.value].token.value == "float") flagFloat = true;
             if (rightNode.type == NT.VAR && ast.typesArgsFunc.ContainsKey(rightNode.token.value) && ast.typesArgsFunc[rightNode.token.value].token.value == "float") flagFloat = true;
@@ -465,37 +467,40 @@ namespace Qscript
 
             bool cmpB = false;
             bool cmp = false;
+            bool flag = false;
             decimal leftValue = decimal.Zero;
             decimal rightValue = decimal.Zero;
 
-            if (leftNode.type == NT.FLOAT) leftNode.token.value = leftNode.token.value.Replace(".", ",");
-            if (rightNode.type == NT.FLOAT) rightNode.token.value = rightNode.token.value.Replace(".", ",");
+            if (leftNode.type == NT.FLOAT) { flag = true; leftNode.token.value = leftNode.token.value.Replace(".", ","); }
+            if (rightNode.type == NT.FLOAT) { flag = true; rightNode.token.value = rightNode.token.value.Replace(".", ","); }
 
-            if (leftNode.type == NT.FLOAT) leftNode.token.value = leftNode.token.value.Replace("f", "");
-            if (rightNode.type == NT.FLOAT) rightNode.token.value = rightNode.token.value.Replace("f", "");
+            if (leftNode.type == NT.FLOAT) { flag = true; leftNode.token.value = leftNode.token.value.Replace("f", ""); }
+            if (rightNode.type == NT.FLOAT) { flag = true; rightNode.token.value = rightNode.token.value.Replace("f", ""); }
 
-            if (leftNode.type == NT.NUMBER || leftNode.type == NT.FLOAT) leftValue = Convert.ToDecimal(leftNode.token.value);
-            if (rightNode.type == NT.NUMBER || rightNode.type == NT.FLOAT) rightValue = Convert.ToDecimal(rightNode.token.value);
+            if ((leftNode.type == NT.NUMBER || leftNode.type == NT.FLOAT)
+            && (rightNode.type == NT.NUMBER || rightNode.type == NT.FLOAT)) 
+            { 
+                flag = true; rightValue = Convert.ToDecimal(rightNode.token.value);
+                leftValue = Convert.ToDecimal(leftNode.token.value);
+            }
 
-            if (leftValue != decimal.Zero && rightValue != decimal.Zero)
+
+            if (flag) switch (root.token.value)
             {
-                switch (root.token.value)
-                {
-                    case "==": cmp = (leftValue == rightValue) ? true : false; cmpB = true; break;
-                    case "!=": cmp = (leftValue != rightValue) ? true : false; cmpB = true; break;
-                    case "<=": cmp = (leftValue <= rightValue) ? true : false; cmpB = true; break;
-                    case ">=": cmp = (leftValue >= rightValue) ? true : false; cmpB = true; break;
-                    case "<": cmp = (leftValue < rightValue) ? true : false; cmpB = true; break;
-                    case ">": cmp = (leftValue > rightValue) ? true : false; cmpB = true; break;
-                }
+                case "==": cmp = (leftValue == rightValue) ? true : false; cmpB = true; break;
+                case "!=": cmp = (leftValue != rightValue) ? true : false; cmpB = true; break;
+                case "<=": cmp = (leftValue <= rightValue) ? true : false; cmpB = true; break;
+                case ">=": cmp = (leftValue >= rightValue) ? true : false; cmpB = true; break;
+                case "<": cmp = (leftValue < rightValue) ? true : false; cmpB = true; break;
+                case ">": cmp = (leftValue > rightValue) ? true : false; cmpB = true; break;
             }
             if (cmpB == true) return new CommonNode(root.type, new Token(root.token.type, (cmp) ? "true" : "false", root.token.pos));
-
+            
             return root;
         }
         private CommonNode cmpCheakDelete(CommonNode root)
         {
-            if (root.type != NT.IF)
+            if (root.type != NT.IF && root.type != NT.DEFIF)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
@@ -507,9 +512,17 @@ namespace Qscript
             CommonNode cmpNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
 
-            if (cmpNode.token.value == "false") return new CommonNode(NT.AIR, root.token);
-            if (cmpNode.token.value == "true") return bodyNode;
-
+            if (root.type == NT.IF && root.childs.Count == 3 && cmpNode.token.value == "false")
+            {
+                root.childs[2].childs[0].type = NT.IF;
+                return cmpCheakDelete(root.childs[2].childs[0]);
+            }
+            if (cmpNode.token.value == "false" 
+                || (cmpNode.childs.Count == 1 && cmpNode.childs[0].token.value == "false")) return new CommonNode(NT.AIR, root.token);
+            if (cmpNode.token.value == "true"
+                || (cmpNode.childs.Count == 1 && cmpNode.childs[0].token.value == "true")) return bodyNode;
+            
+            if (root.type == NT.DEFIF) Syntax.SyntaxError("Неопределёное define условие!", root);
             return root;
         }
         private CommonNode classReFresh(CommonNode root)

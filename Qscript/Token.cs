@@ -34,7 +34,7 @@ namespace Qscript
     public enum TT
     {   
         COMMENT,
-        ELSEIF, IF, ELSE,
+        ELSEIF, IF, ELSE, DEFIF,
         FLOAT, NUMBER, HEX,
         PREFIX, REGDECL, OPER, VARDECL,
         ENDINCLUDE, ASMINCLUDE, INCLUDE, USING, 
@@ -90,7 +90,7 @@ namespace Qscript
             tokenTypes.Add(TT.ELSEIF, @"\belse-if\b");
             tokenTypes.Add(TT.IF,     @"\bif\b");
             tokenTypes.Add(TT.ELSE,   @"\belse\b");
-
+            tokenTypes.Add(TT.DEFIF,  @"\bdefif\b");
             // Logic Values
             //tokenTypes.Add("SAMEOPER", new TokenType("SAME", "=="));
             //tokenTypes.Add("NOTSAMEOPER", new TokenType("NOTSAMEOPER", "!="));

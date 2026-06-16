@@ -553,8 +553,8 @@ namespace Qscript
                         string resualtProcString = $"proc {patterns[0].value} ";
                         for (int j = 1; j < patterns.Count; j++)
                         {
-                            Console.WriteLine(patterns[j].value);
-                            Console.WriteLine(patterns[j+1].value);
+                            //Console.WriteLine(patterns[j].value);
+                            //Console.WriteLine(patterns[j+1].value);
                             patterns[j].value = patterns[j].value.Remove(patterns[j].value.Length - 1, 1);
                             
                             if (patterns[j  + 1].value[0] == '*')
