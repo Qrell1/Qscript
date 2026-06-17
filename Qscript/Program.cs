@@ -270,7 +270,7 @@ namespace Qscript
             }
             //Console.WriteLine("NEW AST AbbreviationParser!!!");
             //if (args.Length == 0)
-            //PrintAST(ast, 0);
+            PrintAST(ast, 0);
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start Compiler...");

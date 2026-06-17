@@ -156,8 +156,8 @@ namespace Qscript
         {
             int size = 0;
             CommonNode type = node;
-            try
-            {
+            //try
+            //{
                 switch (node.type)
                 {
                     case NT.OFFSET:
@@ -168,7 +168,7 @@ namespace Qscript
                         size = 4;
                         break;
                     case NT.VAR:
-                        type = externGetTypeVar(node, ref varSpace, ref ast);
+                        type = externGetTypeVar(node, ref varSpace, ref ast); Console.WriteLine(node.token.value);
                         size = getTypeSize(type, ref ast);
                         break;
                     case NT.POSTUNAROPER:
@@ -210,6 +210,7 @@ namespace Qscript
                         break;
                     case NT.FLOAT:
                     case NT.FLOATOPER:
+                    case NT.FLOATBINOPER:
                         type = new CommonNode(NT.TYPE, new Token(TT.FLOAT, "float", node.token.pos));
                         size = 4;
                         break;
@@ -240,12 +241,12 @@ namespace Qscript
                         size = 4;
                         break;
                 }
-            }
-            catch (Exception e) {
-                Console.WriteLine($"\n{e.Message}\n{e.Data}\n{e.StackTrace}"); Console.ReadKey();
-                type = new CommonNode(NT.TYPE, new Token(TT.VAR, "int", node.token.pos));
-                size = 4;
-            }
+            //}
+            //catch (Exception e) {
+            //    Console.WriteLine($"\n{e.Message}\n{e.Data}\n{e.StackTrace}"); Console.ReadKey();
+            //    type = new CommonNode(NT.TYPE, new Token(TT.VAR, "int", node.token.pos));
+            //    size = 4;
+            //}
             return (type, size);
         }
         public static int getFormulaNodeSize(CommonNode node, ref VarSpace varSpace, ref ProgramNode ast)

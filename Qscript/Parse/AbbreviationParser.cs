@@ -98,6 +98,8 @@ namespace Qscript
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = includeParentsStructs(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
+            newAst = binOperCheak(ast);
+            ast.childs = new List<CommonNode>(newAst.childs);
             ast.varTypes = varSpace.VarsData;
             return ast;
         }
@@ -1166,12 +1168,12 @@ namespace Qscript
                 if (ast.classMethods.ContainsKey(type))
                 {
                     string name = string.Empty;
-                    for (int i = 1; i < strs.Length-1; i++) name += strs[i];
-                    name += "_" + type;
-                    name.Remove(0, 1);
+                    for (int i = 0; i < strs.Length-1; i++) name += strs[i] + ".";
+                    //name += "_" + type;
+                    name = name.Remove(name.Length - 1, 1);
                     List<CommonNode> argsNew = new List<CommonNode>();
                     foreach (CommonNode node in root.childs[0].childs) argsNew.Add(node);
-                    argsNew.Add(new CommonNode(NT.VAR, new Token(TT.VAR, strs[0], root.childs[0].token.pos)));
+                    argsNew.Add(new CommonNode(NT.VAR, new Token(TT.VAR, name, root.childs[0].token.pos)));
                     root.childs[0].childs = argsNew;
                     root.token.value = strs[strs.Length-1] + "_" + type;
                 }

@@ -150,8 +150,8 @@ namespace Qscript
                     regReturn = $".reg{regIndex-1}{regPrefer}";
                     break;
                 case NT.FLOAT:
-                    _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {root.token.value}\n");
-                    regReturn = $".reg{regIndex - 1}{regPrefer}";
+                    _objProg.code.Append($"mov .reg{regIndex++}, [{getFloatConst(root)}]\n");
+                    regReturn = $".reg{regIndex - 1}";
                     break;
                 case NT.BOOL:
                     char boolChar = (root.token.value == "true") ? '1' : '0'; _objProg.code.Append($"mov .reg{regIndex++}, {boolChar}\n");
@@ -1052,49 +1052,247 @@ namespace Qscript
                 return;
             }
 
-            string varType = varSpace.GetTypeValue(root.token.value);
+          
 
-            
-            if (varType != null && root.childs.Count == 0 && varSpace.GetType(root.token.value).type == NT.INDICATOR)
+            CommonNode type = take(root, 0);
+            if (type != null)
+            {
+                string classes = "";
+                if (DataBase.types.Keys.Contains(type.token.value))
+                    classes = DataBase.types[type.token.value];
+                else
+                    classes = type.token.value;
+                if (root.childs.Count > 0 && root.childs[0].type == NT.INDICATOR)
+                { classes = "*" + $"{root.childs[0].token.value}"; }
+                if (!varSpace.PeekContainsKey(root.token.value) && type != null && _objProg.local == false)
+                {
+                    _objProg.data.Append($"{root.token.value} {classes} 0\n");
+                }
+                if (!varSpace.PeekContainsKey(root.token.value) && type != null && _objProg.local == true)
+                {
+                    _objProg.code.Append($"local {root.token.value} {classes} 0\n");
+                }
+                if (!varSpace.ContainsKey(root.token.value) && type != null) varSpace.AddVar(root.token.value, type);
+            }
+            CommonNode varType = DataBase.getFormulaNodeType(root, ref varSpace, ref ProgramAst);//varSpace.GetTypeValue(root.token.value);
+
+
+            if (varType != null && root.childs.Count == 0 && varType.type == NT.INDICATOR)
             {
                 //string size = (DataBase.typesarg.ContainsKey(varType) ? DataBase.typesarg[varType].ToLower() : "");
-                
+
                 _objProg.code.Append($"mov .reg{regIndex++}, [{root.token.value}]\n");
-                regReturn = $".reg{regIndex-1}";
+                regReturn = $".reg{regIndex - 1}";
                 return;
             }
-            if (varType != null && root.childs.Count == 0 && !DataBase.types.ContainsKey(varType))
+
+            if (varType != null && root.childs.Count == 0 && !DataBase.types.ContainsKey(varType.token.value))
             {
                 _objProg.code.Append($"lea .reg{regIndex++}, [{root.token.value}]\n");
-                regReturn = $".reg{regIndex-1}";
+                regReturn = $".reg{regIndex - 1}";
                 return;
             }
             if (root.childs.Count == 0)
             {
-                string size = (varType != null && varSpace.GetType(root.token.value).type != NT.INDICATOR && (DataBase.typesarg.ContainsKey(varType)) ? DataBase.typesarg[varType].ToLower() : "");
+                string size = (varType != null && varType.type != NT.INDICATOR && (DataBase.typesarg.ContainsKey(varType.token.value)) ? DataBase.typesarg[varType.token.value].ToLower() : "");
 
                 _objProg.code.Append($"mov .reg{regIndex++}{size}, [{root.token.value}]\n");
-                regReturn = $".reg{regIndex-1}{size}";
+                regReturn = $".reg{regIndex - 1}{size}";
+                return;
+            }
+        }
+
+        private void translationFloatBinOper(CommonNode root, int z_buffer)
+        {
+            if (root.token.value == "=")
+            {
+                // child
+                CommonNode varChild = take(root, 0); // eax
+                CommonNode rightChild = take(root, 1);
+
+                var = varChild;
+                string varString = string.Empty;
+                if (rightChild.type == NT.OFFSETBODY)
+                {
+                    translationOffsetBody(rightChild, z_buffer);
+                    return;
+                }
+                if (varChild.type == NT.OFFSET)
+                {
+                    var = varChild.childs[1];
+                    string[] strs = translationOffset(varChild, z_buffer, false);
+                    string reg = regReturn;
+                    varString = regReturn;
+                    _objProg.code.Append($"push {strs[0]}\n");
+                    _objProg.code.Append($"push {strs[1]}\n");
+                    Translation(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"pop {strs[1]}\n");
+                    _objProg.code.Append($"pop {strs[0]}\n");
+                    _objProg.code.Append($"mov {reg}, {regReturn}\n");
+                    return;
+                }
+                else if (varChild.type == NT.USEADDRESSVAR)
+                {
+                    translationUseAddressVar(varChild, z_buffer + 1);
+                    varString = $"[{regReturn}]";
+                }
+                else if (varChild.type == NT.REGDECL)
+                {
+                    translationRegDeclaration(varChild, z_buffer + 1);
+                    varString = getRegisterUse(varChild.token.value);
+                }
+                else if (varChild.type == NT.REGUSE) varString = getRegisterUse(varChild.token.value);
+                else varString = $"[{varChild.token.value}]";
+
+
+                if (rightChild.type == NT.FLOAT)
+                {
+                    _objProg.data.Append($"{varString} dd {rightChild.token.value.Replace("f", "")}\n");
+                    return;
+                }
+
+                if (varChild.childs.Count > 0 && varChild.type == NT.VAR)
+                    translationVar(varChild, z_buffer + 1);
+
+
+                if (rightChild.type == NT.ASTRING)
+                {
+                    translationAString(rightChild, z_buffer + 1);
+
+                    _objProg.code.Append($"lea .reg{regIndex++}{regPrefer}, [{stringConsts["A" + rightChild.token.value]}]\n");
+                    _objProg.code.Append($"mov {varString}, .reg{regIndex - 1}{regPrefer}\n");
+                    return;
+                }
+                if (rightChild.type == NT.STRING)
+                {
+                    translationString(rightChild, z_buffer + 1);
+
+                    _objProg.code.Append($"lea .reg{regIndex++}{regPrefer}, [{stringConsts[rightChild.token.value]}]\n");
+                    _objProg.code.Append($"mov {varString}, .reg{regIndex - 1}{regPrefer}\n");
+                    return;
+                }
+                else if (rightChild.type == NT.CHAR)
+                {
+                    _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {rightChild.token.value}\n");
+                    _objProg.code.Append($"mov {varString}, .reg{regIndex - 1}{regPrefer}\n");
+                }
+                else if (rightChild.type == NT.CALL)
+                {
+                    //regPrefer = "eax";
+                    if (DataBase.types.ContainsKey(ProgramAst.resualtFunc[rightChild.token.value].token.value) || ProgramAst.resualtFunc[rightChild.token.value].type == NT.INDICATOR)
+                    { translationCall(rightChild, z_buffer + 1); _objProg.code.Append($"mov {varString}, .reg{regIndex++}eax\n"); }
+                    else translationCall(rightChild, z_buffer + 1, $"lea .reg{regIndex++}eax, {varString}\n");
+                }
+                else if (rightChild.type == NT.NUMBER)
+                {
+                    _objProg.code.Append($"mov {varString}, {rightChild.token.value}\n");
+                }
+                else
+                {
+                    Translation(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"mov {varString}, {regReturn}\n");
+                }
+
                 return;
             }
 
-            CommonNode type = take(root, 0);
-            string classes = "";
-            if (DataBase.types.Keys.Contains(type.token.value))
-                classes = DataBase.types[type.token.value];
-            else
-                classes = type.token.value;
-            if (root.childs.Count > 0 && root.childs[0].type == NT.INDICATOR)
-            { classes = "*" + $"{root.childs[0].token.value}"; }
-            if (!varSpace.PeekContainsKey(root.token.value) && type != null && _objProg.local == false)
+            CommonNode leftType = DataBase.getFormulaNodeType(root.childs[0], ref varSpace, ref ProgramAst);
+            CommonNode rightType = DataBase.getFormulaNodeType(root.childs[1], ref varSpace, ref ProgramAst);
+
+            int tempOperationIndex = DataBase.isRightOperator(root.token.value, leftType, rightType, ref varSpace, ref ProgramAst);
+            if (tempOperationIndex != -1)
             {
-                _objProg.data.Append($"{root.token.value} {classes} 0\n");
+                string OperatorName = ProgramAst.operatorFunctions.ElementAt(tempOperationIndex).Value;
+
+                regString = true;
+                Translation(root.childs[0], z_buffer + 1);
+                string reg1 = regReturn;
+                Translation(root.childs[1], z_buffer + 1);
+                string reg2 = regReturn;
+                regString = false;
+
+                varRegisters.Add(reg1, reg1);
+                varRegisters.Add(reg2, reg2);
+
+                CommonNode callNode = new CommonNode(NT.CALL, new Token(TT.NULL, OperatorName, root.token.pos));
+                callNode.childs.Add(new CommonNode(NT.SIGNATURE, new Token(TT.NULL, "()", root.token.pos)));
+                callNode.childs[0].childs.Add(new CommonNode(NT.REGUSE, new Token(TT.NULL, reg1, root.childs[0].token.pos)));
+                callNode.childs[0].childs.Add(new CommonNode(NT.REGUSE, new Token(TT.NULL, reg2, root.childs[1].token.pos)));
+                //regPrefer = "eax";
+                translationCall(callNode, z_buffer + 1);
+                if (root.token.value.Contains("=")) _objProg.code.Append($"mov [{root.childs[0].token.value}], {regReturn}\n");
+                return;
             }
-            if (!varSpace.PeekContainsKey(root.token.value) && type != null && _objProg.local == true)
+
+            if (root.token.value == "+"
+                || root.token.value == "-"
+                || root.token.value == "*"
+                || root.token.value == "/"
+                || root.token.value == "%"
+                || root.token.value == "&"
+                || root.token.value == "|")
             {
-                _objProg.code.Append($"local {root.token.value} {classes} 0\n");
+                CommonNode leftChild = take(root, 0);
+                CommonNode rightChild = take(root, 1);
+
+                string leftInstruct = (DataBase.getFormulaNodeType(leftChild, ref varSpace, ref ProgramAst).type == NT.FLOAT) ? "movss" : "cvtsi2ss";
+                string rightInstruct = (DataBase.getFormulaNodeType(rightChild, ref varSpace, ref ProgramAst).type == NT.FLOAT) ? "movss" : "cvtsi2ss";
+
+                Translation(leftChild, z_buffer + 1);
+                _objProg.code.Append($"{leftInstruct} xmm0, {regReturn}");
+
+                Translation(rightChild, z_buffer + 1);
+                _objProg.code.Append($"{rightInstruct} xmm1, {regReturn}");
+
+                switch (root.token.value)
+                {
+                    case "+": _objProg.code.Append($"addss xmm0, xmm1\n"); break;
+                    case "-": _objProg.code.Append($"subss xmm0, xmm1\n"); break;
+                    case "*": _objProg.code.Append($"mulss xmm0, xmm1\n"); break;
+                    case "/": _objProg.code.Append($"divss xmm0, xmm1\n"); break;
+                    case "%": Syntax.SyntaxError("Нельзя делить с остатоком числа с плавоющей точкой!!", root); break;
+                    case "&": _objProg.code.Append($"andss xmm0, xmm1\n"); break;
+                    case "|": _objProg.code.Append($"orss xmm0, xmm1\n"); break;
+                }
+
+                _objProg.code.Append($"movd .reg{regIndex++}, xmm0\n");
+                regReturn = $".reg{regIndex-1}";
+                return;
             }
-            if (!varSpace.ContainsKey(root.token.value) && type != null) varSpace.AddVar(root.token.value, type);
+            if (root.token.value == "+="
+                || root.token.value == "-="
+                || root.token.value == "*="
+                || root.token.value == "/="
+                || root.token.value == "%=")
+            {
+                CommonNode leftChild = take(root, 0);
+                CommonNode rightChild = take(root, 1);
+
+                string leftInstruct = (DataBase.getFormulaNodeType(leftChild, ref varSpace, ref ProgramAst).type == NT.FLOAT) ? "movss" : "cvtsi2ss";
+                string rightInstruct = (DataBase.getFormulaNodeType(rightChild, ref varSpace, ref ProgramAst).type == NT.FLOAT) ? "movss" : "cvtsi2ss";
+
+                Translation(leftChild, z_buffer + 1);
+                _objProg.code.Append($"{leftInstruct} xmm0, {regReturn}");
+
+                Translation(rightChild, z_buffer + 1);
+                _objProg.code.Append($"{rightInstruct} xmm1, {regReturn}");
+
+                switch (root.token.value)
+                {
+                    case "+": _objProg.code.Append($"addss xmm0, xmm1\n"); break;
+                    case "-": _objProg.code.Append($"subss xmm0, xmm1\n"); break;
+                    case "*": _objProg.code.Append($"mulss xmm0, xmm1\n"); break;
+                    case "/": _objProg.code.Append($"divss xmm0, xmm1\n"); break;
+                    case "%": Syntax.SyntaxError("Нельзя делить с остатоком числа с плавоющей точкой!!", root); break;
+                    case "&": _objProg.code.Append($"andss xmm0, xmm1\n"); break;
+                    case "|": _objProg.code.Append($"orss xmm0, xmm1\n"); break;
+                }
+
+                _objProg.code.Append($"movd .reg{regIndex++}, xmm0\n");
+                _objProg.code.Append($"mov [{leftChild.token.value}], .reg{regIndex-1}");
+                regReturn = $".reg{regIndex - 1}";
+                return;
+            }
         }
         private void translationBinOper (CommonNode root, int z_buffer)
         {
@@ -1390,8 +1588,9 @@ namespace Qscript
                 return;
             }
         }
-        private void translationFloatBinOper(CommonNode root, int z_buffer)
+        private void translationFloatBinOper2(CommonNode root, int z_buffer)
         {
+            Program.PrintAST(root, 0);
             if (root.token.value == "=")
             {
                 // child
@@ -1968,6 +2167,7 @@ namespace Qscript
         }
         private string getFloatConst (CommonNode node)
         {
+            node.token.value = node.token.value.Replace("f", "");
             if (floatConsts.Keys.Contains(node.token.value))
             {
                 return floatConsts[node.token.value];

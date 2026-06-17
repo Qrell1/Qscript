@@ -658,6 +658,7 @@ namespace Qscript
                 {
                     node.childs.Add(parse());
                     if (!peek(TT.PS)) break;
+                    else skip();
                 }
                 return node;
             }
