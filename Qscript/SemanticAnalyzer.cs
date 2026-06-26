@@ -7,7 +7,7 @@ namespace Qscript
 {
     public static class SemanticAnalyzer
     {
-        static public ProgramNode ast;
+        static public ProgramNode ast = null;
 
         static public VarSpace varSpace = new VarSpace();
 
@@ -167,6 +167,7 @@ namespace Qscript
                     {
                         if (!ast.structs[type.token.value].ContainsKey(strs[i]))
                             Syntax.SyntaxError($"В текущей области видимости не существует Переменной: {strs[i]} в {type.token.value} ", root);
+                        //DataBase.PrintAllStructs(ref ast);
                         type = ast.structs[type.token.value][strs[i]];
                     }
                 }

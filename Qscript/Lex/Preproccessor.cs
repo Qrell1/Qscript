@@ -37,7 +37,7 @@ namespace Qscript.Lex
                 if (code[i].type == TT.INCLUDE)
                 {
                     i++; if (code[i].type == TT.STRING) { includes.Add(code[i].value.Split('\\').Last(), prefix + "\\" + getIncludePath(code[i].value)); i++; }
-                    if (code[i].type != TT.SEM) Syntax.SyntaxError("Неправильное подключение файла", code[i]); 
+                    if (code[i].type != TT.SEM) i--;//Syntax.SyntaxError("Неправильное подключение файла", code[i]); 
                     continue;
                 }
                 else nonIncludeCode.Add(code[i]);

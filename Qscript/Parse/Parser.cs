@@ -228,7 +228,7 @@ namespace Qscript
             else if (token.value == "-" && peek(TT.LPAR))
             {
                 CommonNode unarNode = new CommonNode(NT.PREUNAROPER, token);
-                CommonNode node = parseFormula();
+                CommonNode node = parsePar();
                 unarNode.childs.Add(node);
                 return unarNode;
             }
@@ -1829,6 +1829,7 @@ namespace Qscript
 
         public CommonNode parse() // 32 keywords
         {
+            //Console.WriteLine($"{tokens[pos].value} {tokens[pos].type}");
             if (peek(TT.VARDECL))
             {
                 return parseVarDeclaration();

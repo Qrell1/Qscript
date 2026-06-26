@@ -168,13 +168,15 @@ namespace Qscript
                         size = 4;
                         break;
                     case NT.VAR:
-                        type = externGetTypeVar(node, ref varSpace, ref ast); Console.WriteLine(node.token.value);
+                        type = externGetTypeVar(node, ref varSpace, ref ast);
                         size = getTypeSize(type, ref ast);
                         break;
                     case NT.POSTUNAROPER:
                     case NT.PREUNAROPER:
-                        type = externGetTypeVar(node.childs[0], ref varSpace, ref ast);
-                        size = getTypeSize(type, ref ast);
+
+                    (type, size) = getFormulaNodeInfo(node.childs[0], ref varSpace, ref ast);
+                        //type = externGetTypeVar(node.childs[0], ref varSpace, ref ast);
+                        //size = getTypeSize(type, ref ast);
                         break;
                     case NT.NUMBER:
                         type = new CommonNode(NT.TYPE, new Token(TT.NUMBER, "int", node.token.pos));
@@ -321,6 +323,18 @@ namespace Qscript
             else type = varSpace.GetType(name);
 
             return type;
+        }
+
+        public static void PrintAllStructs (ref ProgramNode ast)
+        {
+            for (int i = 0; i < ast.structs.Count; i++)
+            {
+                Console.WriteLine($"[{ast.structs.ElementAt(i).Key}] - ");
+                foreach (var child in ast.structs.ElementAt(i).Value)
+                {
+                    Console.WriteLine($"  [{child.Key}] = {child.Value.token.value}, {child.Value.type}");
+                }
+            }
         }
     }
 }

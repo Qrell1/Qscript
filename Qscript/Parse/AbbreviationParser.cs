@@ -48,9 +48,9 @@ namespace Qscript
             // Replace Constant Var Value
             astNode = replaceConstantVarValue(astNode);
             // BinOper Cheak Float
-            astNode = binOperCheak(astNode);
+            //astNode = binOperCheak(astNode);
             // Constant BinOper ReFresh
-            astNode = binOperReFresh(astNode);
+            //astNode = binOperReFresh(astNode);
             // Second Repcale Constant Var Value
             astNode = replaceConstantVarValue(astNode);
             // Cmp ReFresh
@@ -98,8 +98,8 @@ namespace Qscript
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = includeParentsStructs(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
-            newAst = binOperCheak(ast);
-            ast.childs = new List<CommonNode>(newAst.childs);
+            //newAst = binOperCheak(ast);
+            //ast.childs = new List<CommonNode>(newAst.childs);
             ast.varTypes = varSpace.VarsData;
             return ast;
         }
@@ -341,7 +341,10 @@ namespace Qscript
 
             if (leftNode.type == NT.VAR && varSpace.VarIsType(leftNode.token.value, "float")) flagFloat = true;
             if (rightNode.type == NT.VAR && varSpace.VarIsType(rightNode.token.value, "float")) flagFloat = true;
-
+            if (leftNode.childs.Count > 1 && leftNode.childs[0].type == NT.VAR && varSpace.VarIsType(leftNode.childs[0].token.value, "float")) 
+                flagFloat = true;
+            if (rightNode.childs.Count > 1 && rightNode.childs[0].type == NT.VAR && varSpace.VarIsType(rightNode.childs[0].token.value, "float"))
+                flagFloat = true;
             //Console.WriteLine(leftNode.token.value + $" {((leftNode.token.type == null) ? "null" : leftNode.token.type.ToString())}: " + rightNode.token.value);
             //Program.PrintAST(root,0);
             if (leftNode.type == NT.VAR && ast.resualtFunc.ContainsKey(rightNode.token.value) && ast.resualtFunc[rightNode.token.value].token.value == "float") flagFloat = true;
@@ -350,9 +353,14 @@ namespace Qscript
             if (leftNode.type == NT.VAR && ast.typesArgsFunc.ContainsKey(leftNode.token.value) && ast.typesArgsFunc[leftNode.token.value].token.value == "float") flagFloat = true;
             if (rightNode.type == NT.VAR && ast.typesArgsFunc.ContainsKey(rightNode.token.value) && ast.typesArgsFunc[rightNode.token.value].token.value == "float") flagFloat = true;
 
+            if (leftNode.type == NT.VAR && varSpace.ContainsKey(leftNode.token.value) && varSpace.GetTypeValue(leftNode.token.value) == "float") flagFloat = true;
+            if (rightNode.type == NT.VAR && varSpace.ContainsKey(rightNode.token.value) && varSpace.GetTypeValue(rightNode.token.value) == "float") flagFloat = true;
+
             if (leftNode.type == NT.FLOATBINOPER) flagFloat = true;
             if (rightNode.type == NT.FLOATBINOPER) flagFloat = true;
 
+            if (leftNode.type == NT.FLOAT) flagFloat = true;
+            if (rightNode.type == NT.FLOAT) flagFloat = true;
 
             if (leftNode.type == NT.TYPEOPER)
             {
@@ -393,9 +401,13 @@ namespace Qscript
             if (root.type == NT.FLOATBINOPER)
             {
                 if (leftNode.type == NT.FLOAT && rightNode.type == NT.FLOAT)
+                {
+                    leftNode.token.value = leftNode.token.value.Replace("f", "").Replace(".", ",");
+                    rightNode.token.value = rightNode.token.value.Replace("f", "").Replace(".", ",");
                     switch (root.token.value)
                     {
-                        case "+": reFreshNode = new CommonNode(NT.FLOAT, new Token(leftNode.token.type,
+                        case "+":
+                            reFreshNode = new CommonNode(NT.FLOAT, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToDouble(leftNode.token.value) + Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
                         case "-":
                             reFreshNode = new CommonNode(NT.FLOAT, new Token(leftNode.token.type,
@@ -410,6 +422,9 @@ namespace Qscript
                             reFreshNode = new CommonNode(NT.FLOAT, new Token(leftNode.token.type,
                     Convert.ToString(Convert.ToDouble(leftNode.token.value) % Convert.ToDouble(rightNode.token.value)), root.token.pos)); break;
                     }
+                    leftNode.token.value = leftNode.token.value.Replace(",", ".");
+                    rightNode.token.value = rightNode.token.value.Replace(",", ".");
+                }
             } else if (root.type == NT.BINOPER)
             {
                 if (leftNode.type == NT.NUMBER && rightNode.type == NT.NUMBER)
@@ -945,6 +960,13 @@ namespace Qscript
                     return parseFor(root, z_buffer);
                 case NT.ENUMERATOR:
                     return parseEnumerator(root, z_buffer);
+                case NT.BINOPER:
+                    root = binOperReFresh(binOperCheak(root));
+                    for (int i = 0; i < root.childs.Count; i++)
+                    {
+                        root.childs[i] = parse(root.childs[i], z_buffer + 1);
+                    }
+                    return root;
                 //case NT.ADDRESS:
                 //    return root;
                 default:

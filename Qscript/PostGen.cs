@@ -279,8 +279,8 @@ namespace Qscript
             Dictionary<string, int> timelineRegisters = new Dictionary<string, int>();
             List<string> tasks = new List<string>();
             // ну ладно esi будет спец регистром пока что только для корректировки указателей
-            string[] asmRegisters = { "ecx", "edx", "edi", /*"esi",*/ "ebx", "eax" };
-            if (line) asmRegisters = new string[] { "ebx", /*"esi",*/ "edi", "edx", "ecx", "eax" };
+            string[] asmRegisters = { "ecx", "edx", "ebx", /*"esi",*/ /*"edi",*/ "eax" };
+            if (line) asmRegisters = new string[] { "ebx", /*"esi",*/ "ecx", "edx", /*"edi",*/ "eax" };
 
             Random rand = new Random();
             void removeRegTask (string task)
@@ -317,7 +317,7 @@ namespace Qscript
                     string regReturn = string.Empty;
                     for (int i = 0; i < asmRegisters.Length; i++)
                     {
-                        if (!tableSafeRegisters.ContainsValue(asmRegisters[i])) regReturn = asmRegisters[i];
+                        if (!tableRegisters.ContainsValue(asmRegisters[i])) regReturn = asmRegisters[i];
                     } if (regReturn == string.Empty) regReturn = asmRegisters[rand.Next(0, 5)];
 
                     regReturn = DataBase.regs[regReturn][regSize];
@@ -331,7 +331,7 @@ namespace Qscript
                     string regReturn = string.Empty;
                     for (int i = 0; i < asmRegisters.Length; i++)
                     {
-                        if (!tableSafeRegisters.ContainsValue(asmRegisters[i])) regReturn = asmRegisters[i];
+                        if (!tableRegisters.ContainsValue(asmRegisters[i])) regReturn = asmRegisters[i];
                     }
                     if (regReturn == string.Empty) regReturn = asmRegisters[rand.Next(0, 5)];
 

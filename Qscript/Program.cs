@@ -270,14 +270,14 @@ namespace Qscript
             }
             //Console.WriteLine("NEW AST AbbreviationParser!!!");
             //if (args.Length == 0)
-            PrintAST(ast, 0);
+            //PrintAST(ast, 0);
 
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start Compiler...");
             Console.ResetColor();
             compiler = new Compiler("dsd", ast);
             try { compiler.Translation(ast, 0); }
-            catch (Exception e) { PrintAST(ast, 0); Console.WriteLine($"При Компиляции что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
+            catch (Exception e) { Console.WriteLine($"При Компиляции что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
             string data = compiler.ConcatData(typeApp, modeApp, archApp, formatApp);
             compiler.WriteCode(data, filename, pathCompile, "qsr");
 
