@@ -7,6 +7,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml;
 
 namespace Qscript
 {
@@ -199,6 +200,9 @@ namespace Qscript
                 case NT.ELSE:
                     translationElse(root, z_buffer);
                     break;
+                case NT.LOOP:
+                    translationLoop(root, z_buffer);
+                    return;
                 case NT.ITER:
                     translationIter(root, z_buffer);
                     break;
@@ -376,6 +380,139 @@ namespace Qscript
         {
             regReturn = varRegisters[root.token.value];
         }
+        private void translationLoop (CommonNode root, int z_buffer)
+        {
+            int iterNumber = ++iterTagIndex;
+            string pre = (funcName != "") ? funcName + "." : "";
+
+            //bodyNode = replaceNodeValueForIter(NT.BREAK, replaceNodeValueForIter(NT.CONTINUE, bodyNode, iterNumber.ToString()), iterNumber.ToString());
+
+            varSpace.OpenSpace();
+
+            //CommonNode var = root.childs.Last();
+            //if (var.type == NT.VAR)
+            //{
+            //   varSpace.AddVar(var.token.value, var.childs[0]);
+            //}
+
+            if (root.token.value == "loop1")
+            {
+                CommonNode bodyNode = root.childs.Last();
+                bodyNode = replaceNodeValueForIter(NT.BREAK, replaceNodeValueForIter(NT.CONTINUE, bodyNode, iterNumber.ToString()), iterNumber.ToString());
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
+                Translation(bodyNode, z_buffer + 1);
+                _objProg.code.Append($"continue{pre}iter{iterNumber}:");
+                _objProg.code.Append($"jmp {pre}iter{iterNumber}\n");
+                if (isNodeType(NT.BREAK, bodyNode)) _objProg.code.Append($"break{pre}iter{iterNumber}:");
+            }
+            else if (root.token.value == "loop2")
+            {
+                CommonNode varNode = null;
+                if (root.childs.Count == 3)
+                    varNode = root.childs[2];
+
+                CommonNode bodyNode = root.childs[1];
+                if (varNode != null)
+                {
+                    bodyNode = replaceNodeValue(varNode.token.value, bodyNode, $"var{iterNumber}{varNode.token.value}");
+                }
+                bodyNode = replaceNodeValueForIter(NT.BREAK, replaceNodeValueForIter(NT.CONTINUE, bodyNode, iterNumber.ToString()), iterNumber.ToString());
+                CommonNode counter = root.childs[0];
+                Translation(counter, z_buffer + 1);
+
+                _objProg.code.Append($"sub esp, 8\n");
+
+                if (varNode != null)
+                {
+                    //Translation(varNode, z_buffer + 1); // label <имя_метки> [размер] [at адрес]
+                    //_objProg.code.Append($"sub esp, 4\n");
+                    _objProg.code.Append($"label var{iterNumber}{varNode.token.value} dword at esp+4\n");
+                    _objProg.code.Append($"mov [var{iterNumber}{varNode.token.value}], 0\n");
+                    varSpace.AddVar($"var{iterNumber}{varNode.token.value}", varNode.childs[0]);
+                }
+
+                _objProg.code.Append($"mov dword [esp], {regReturn}\n");
+                _objProg.code.Append($"mov dword [esp+4], 0\n");
+                _objProg.code.Append($"mov ebx, esp\n");
+
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
+                _objProg.code.Append($"push ebx\n");
+                if (varNode != null)
+                {
+                    _objProg.code.Append($"mov edx, dword [ebx+4]\n");
+                    _objProg.code.Append($"mov [var{iterNumber}{varNode.token.value}], edx\n");
+                }
+
+                Translation(bodyNode, z_buffer + 1);
+                
+                _objProg.code.Append($"continue{pre}iter{iterNumber}:");
+
+                _objProg.code.Append($"pop ebx\n");
+                _objProg.code.Append($"mov edx, dword [ebx]\n");
+                _objProg.code.Append($"inc dword [ebx+4]\n");
+                _objProg.code.Append($"cmp dword [ebx+4], edx\n");
+
+                _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+                if (isNodeType(NT.BREAK, bodyNode)) _objProg.code.Append($"break{pre}iter{iterNumber}:");
+                _objProg.code.Append($"add esp, 8\n");
+            }
+            else if (root.token.value == "loop3")
+            {
+                CommonNode varNode = null;
+                if (root.childs.Count == 4)
+                    varNode = root.childs[3];
+                
+
+                CommonNode bodyNode = root.childs[2];
+                if (varNode != null)
+                {
+                    bodyNode = replaceNodeValue(varNode.token.value, bodyNode, $"var{iterNumber}{varNode.token.value}");
+                }
+                bodyNode = replaceNodeValueForIter(NT.BREAK, replaceNodeValueForIter(NT.CONTINUE, bodyNode, iterNumber.ToString()), iterNumber.ToString());
+                CommonNode starter = root.childs[0];
+                CommonNode counter = root.childs[1];
+                Translation(counter, z_buffer + 1);
+
+                _objProg.code.Append($"sub esp, 8\n");
+
+                if (varNode != null)
+                {
+                    //Translation(varNode, z_buffer + 1); // label <имя_метки> [размер] [at адрес]
+                    //_objProg.code.Append($"sub esp, 4\n");
+                    _objProg.code.Append($"label var{iterNumber}{varNode.token.value} dword at esp+4\n");
+                    _objProg.code.Append($"mov [var{iterNumber}{varNode.token.value}], 0\n");
+                    varSpace.AddVar($"var{iterNumber}{varNode.token.value}", varNode.childs[0]);
+                }
+
+                _objProg.code.Append($"mov dword [esp], {regReturn}\n");
+
+                Translation(starter, z_buffer + 1);
+                _objProg.code.Append($"mov dword [esp+4], {regReturn}\n");
+                _objProg.code.Append($"mov ebx, esp\n");
+
+                _objProg.code.Append($"{pre}iter{iterNumber}:\n");
+                _objProg.code.Append($"push ebx\n");
+                if (varNode != null)
+                {
+                    _objProg.code.Append($"mov edx, dword [ebx+4]\n");
+                    _objProg.code.Append($"mov [var{iterNumber}{varNode.token.value}], edx\n");
+                }
+
+                Translation(bodyNode, z_buffer + 1);
+
+                _objProg.code.Append($"continue{pre}iter{iterNumber}:");
+
+                _objProg.code.Append($"pop ebx\n");
+                _objProg.code.Append($"mov edx, dword [ebx]\n");
+                _objProg.code.Append($"inc dword [ebx+4]\n");
+                _objProg.code.Append($"cmp dword [ebx+4], edx\n");
+
+                _objProg.code.Append($"jne {pre}iter{iterNumber}\n");
+                if (isNodeType(NT.BREAK, bodyNode)) _objProg.code.Append($"break{pre}iter{iterNumber}:");
+                _objProg.code.Append($"add esp, 8\n");
+            }
+            varSpace.CloseSpace();
+        }
         private void translationWhile (CommonNode root, int z_buffer)
         {
             CommonNode cmpNode = take(root, 0);
@@ -396,7 +533,7 @@ namespace Qscript
             _objProg.code.Append($"jmp {pre}iter{iterNumber}\n");
             _objProg.code.Append($"{falseName}:\n");
 
-            if (isNodeType(NT.BREAK, bodyNode)) _objProg.code.Append($"breaK{pre}iter{iterNumber}:");
+            if (isNodeType(NT.BREAK, bodyNode)) _objProg.code.Append($"break{pre}iter{iterNumber}:");
         }
         private void translationFor (CommonNode root, int z_buffer)
         {
@@ -539,6 +676,7 @@ namespace Qscript
                 _objProg.code.Append($"mov {reg}, {countString}\n");
                 _objProg.code.Append($"mov [{varNode.token.value}], 0\n");
                 _objProg.code.Append($"cmp {reg}, 0\n");
+                _objProg.code.Append($"je nop{pre}iter{iterNumber}\n");
                 _objProg.code.Append($"xor {reg}, {reg}\n");
                 _objProg.code.Append($"{pre}iter{iterNumber}:\n");
                 _objProg.code.Append($"push {reg}\n");
@@ -558,8 +696,8 @@ namespace Qscript
                     _objProg.code.Append($"jmp nop{pre}iter{iterNumber}");
                     _objProg.code.Append($"break{pre}iter{iterNumber}:");
                     _objProg.code.Append($"pop {reg}\n");
-                    _objProg.code.Append($"nop{pre}iter{iterNumber}:");
                 }
+                _objProg.code.Append($"nop{pre}iter{iterNumber}:");
             }
             else
             {
@@ -569,6 +707,7 @@ namespace Qscript
                 Translation(countNode, z_buffer + 1);
                 _objProg.code.Append($"mov [{varNode.token.value}], 0\n");
                 _objProg.code.Append($"cmp {regVar}, 0\n");
+                _objProg.code.Append($"je nop{pre}iter{iterNumber}\n");
                 _objProg.code.Append($"xor {reg}, {reg}\n");
                 _objProg.code.Append($"{pre}iter{iterNumber}:\n");
                 _objProg.code.Append($"push {reg}\n");
@@ -591,6 +730,7 @@ namespace Qscript
                     _objProg.code.Append($"pop {reg}\n");
                     _objProg.code.Append($"nop{pre}iter{iterNumber}:");
                 }
+                _objProg.code.Append($"nop{pre}iter{iterNumber}:");
             }
         }
         private void translationPreUnarOper (CommonNode root, int z_buffer)
@@ -1037,14 +1177,15 @@ namespace Qscript
             }
             else
             {
+                regPrefer = "";
                 Translation(leftChild, z_buffer + 1);
                 //_objProg.code.Append($"mov .reg{regIndex++}, {regReturn}\n");
-                _objProg.code.Append($"push {regReturn}\n");
-                regReturn1 = $".reg{regIndex++}";
-
+                //_objProg.code.Append($"push {regReturn}\n");
+                regReturn1 = $"{regReturn}";
+                regPrefer = "";
                 Translation(rightChild, z_buffer + 1);
                 regReturn2 = regReturn;
-                _objProg.code.Append($"pop {regReturn1}\n");
+                //_objProg.code.Append($"pop {regReturn1}\n");
                 return (regReturn1, regReturn2);
             }
         }
@@ -1324,6 +1465,14 @@ namespace Qscript
                     _objProg.code.Append($"mov [{varChild.token.value}], .reg{regIndex-1}");
                     return;
                 }
+                if (varChild.type == NT.VAR && (rightChild.type == NT.TYPEOPER || rightChild.type == NT.TYPE) && !DataBase.types.ContainsKey(rightChild.token.value))
+                {
+                    Translation(varChild, z_buffer + 1);
+                    Translation(rightChild, z_buffer + 1);
+                    _objProg.code.Append($"lea .reg{regIndex++}, {regReturn}");
+                    _objProg.code.Append($"mov [{varChild.token.value}], .reg{regIndex - 1}");
+                    return;
+                }
                 if (rightChild.type == NT.OFFSETBODY)
                 {
                     translationOffsetBody(rightChild, z_buffer);
@@ -1427,6 +1576,17 @@ namespace Qscript
                 else if (rightChild.type == NT.CALL)
                 {
                     //regPrefer = "eax";
+                    if (varSpace.ContainsKey(rightChild.token.value) && !ProgramAst.resualtFunc.ContainsKey(rightChild.token.value))
+                    { 
+                        CommonNode type = varSpace.GetType(rightChild.token.value);
+
+                        if (DataBase.types.ContainsKey(type.token.value) || type.type == NT.INDICATOR)
+                        { translationCall(rightChild, z_buffer + 1); _objProg.code.Append($"mov {varString}, .reg{regIndex++}eax\n"); }
+                        else translationCall(rightChild, z_buffer + 1, $"lea .reg{regIndex++}eax, {varString}\n");
+
+                        return; 
+                    }
+
                     if (DataBase.types.ContainsKey(ProgramAst.resualtFunc[rightChild.token.value].token.value) || ProgramAst.resualtFunc[rightChild.token.value].type == NT.INDICATOR)
                     { translationCall(rightChild, z_buffer + 1); _objProg.code.Append($"mov {varString}, .reg{regIndex++}eax\n"); }
                     else translationCall(rightChild, z_buffer + 1, $"lea .reg{regIndex++}eax, {varString}\n");
@@ -1533,6 +1693,7 @@ namespace Qscript
                 else {
                     (leftRegM, rightRegM) = translationLeftRightNodes(leftChild, rightChild, z_buffer);
                 }
+                regPrefer = "";
                 switch (root.token.value)
                 {
                     case "+":
@@ -1545,12 +1706,14 @@ namespace Qscript
                         _objProg.code.Append($"imul {leftRegM}, {rightRegM}\n");
                         break;
                     case "/":
-                        _objProg.code.Append("cdq\n");
+                        //_objProg.code.Append("cdq\n");
+                        //_objProg.code.Append($"xor .reg{regIndex++}edx, .reg{regIndex - 1}edx\n");
                         //if (leftRegM != "eax")
-                            _objProg.code.Append($"mov .reg{regIndex++}eax, {leftRegM}\n");
-                        _objProg.code.Append($"mov .reg{regIndex++}, {rightRegM}\n");
-                        _objProg.code.Append($"idiv .reg{regIndex-1}\n");
-                        _objProg.code.Append($"mov {leftRegM}, .reg{regIndex-2}eax\n");
+                        _objProg.code.Append($"mov .reg{regIndex++}ebx, {rightRegM}\n");
+                        _objProg.code.Append($"mov eax, {leftRegM}\ncdq\n");
+                        _objProg.code.Append($"idiv .reg{regIndex-1}ebx\n");
+                        _objProg.code.Append($"mov .reg{regIndex++}, eax\n");
+                        _objProg.code.Append($"mov {leftRegM}, .reg{regIndex-1}\n");
                         break;
                     case "%":
                         _objProg.code.Append($"xor .reg{regIndex++}edx, .reg{regIndex-1}edx\n");
@@ -2287,13 +2450,16 @@ namespace Qscript
         }
         private string getSize(string name, CommonNode tagError)
         {
+            //Console.WriteLine(name);
             CommonNode type;
+
             if (name.First() == '*') name.Remove(0, 1);
             if (name.Contains(".") || name.Contains(","))
             {
                 int n = 0;
                 string[] strs = name.Split('.', ',');
                 string strct = varSpace.GetType(strs[0]).token.value;
+                
                 start:
                 if (
                     !ProgramAst.structs.ContainsKey(strct) ||
@@ -2305,7 +2471,7 @@ namespace Qscript
                 type = ProgramAst.structs[strct][strs[n+1]];
                 strct = type.token.value;
                 //if (n == strs.Length) { }
-                if (!DataBase.types.ContainsKey(type.token.value)) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
+                if (!DataBase.types.ContainsKey(type.token.value) && n + 2 != strs.Length) { n++; goto start; } // strct = ProgramAst.structs[strct][strs[n]].token.value; 
             } else type = varSpace.GetType(name);
             //CommonNode type = ProgramAst.varTypes[name];
             string classes = "";
@@ -2331,6 +2497,16 @@ namespace Qscript
             return varRegisters[value];
         }
 
+        private static CommonNode replaceNodeValue(string type, CommonNode root, string value)
+        {
+            for (int i = 0; i < root.childs.Count; i++)
+            {
+                if (root.childs[i].token.value == type) root.childs[i].token.value = value;
+                else root.childs[i] = replaceNodeValue(type, root.childs[i], value);
+            }
+
+            return root;
+        }
         private static CommonNode replaceNodeValueForIter(NT type, CommonNode root, string value)
         {
             for (int i = 0; i < root.childs.Count; i++)
@@ -2341,6 +2517,7 @@ namespace Qscript
                     && root.childs[i].type != NT.WHILE
                     && root.childs[i].type != NT.ITER
                     && root.childs[i].type != NT.ENUMERATOR
+                    && root.childs[i].type != NT.LOOP
                     ) root.childs[i] = replaceNodeValueForIter(type, root.childs[i], value);
             }
 

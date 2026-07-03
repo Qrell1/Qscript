@@ -257,7 +257,7 @@ namespace Qscript
             Console.WriteLine("Start SemanticAnalyser...");
             Console.ResetColor();
             try { SemanticAnalyzer.startAnalis(ast); }
-            catch (Exception e) { Console.WriteLine($"При Симантическом Анализе что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
+            catch (Exception e) { Console.WriteLine($"При Симантическом Анализе что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.WriteLine("Показать AST?"); Console.ReadKey(); PrintAST(ast, 0); return; }
 
             if (Syntax.errors > 0)
             {
@@ -267,11 +267,16 @@ namespace Qscript
                 string read = Console.ReadLine();
                 read = read.Trim().ToLower();
                 if (read[0] == 'n' || read[0] == 'н') return;
+
+                Console.WriteLine("Показать AST? (y/n || д/н): ");
+
+                read = Console.ReadLine();
+                if (read[0] != 'n' && read[0] != 'н') PrintAST(ast, 0);
             }
             //Console.WriteLine("NEW AST AbbreviationParser!!!");
             //if (args.Length == 0)
             //PrintAST(ast, 0);
-
+            
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start Compiler...");
             Console.ResetColor();

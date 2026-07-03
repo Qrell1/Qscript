@@ -98,8 +98,8 @@ namespace Qscript
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = includeParentsStructs(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
-            //newAst = binOperCheak(ast);
-            //ast.childs = new List<CommonNode>(newAst.childs);
+            newAst = structsSort(ast);
+            ast.childs = new List<CommonNode>(newAst.childs);
             ast.varTypes = varSpace.VarsData;
             return ast;
         }
@@ -841,7 +841,65 @@ namespace Qscript
             //else return root;
             return root;
         }
+        private CommonNode structsSort(CommonNode root)
+        {
+            List<string> islist = new List<string>();
+            List<CommonNode> list = new List<CommonNode>();
+            Dictionary<string, List<string>> sortStructs = new Dictionary<string, List<string>>();
+            Dictionary<string, CommonNode> structs = new Dictionary<string, CommonNode>();
+            foreach (var c in root.childs) 
+            if (c.type == NT.STRUCT)
+            {
+                sortStructs.Add(c.token.value, new List<string>());
+                bool flag = false;
+                foreach (var v in c.childs)
+                { 
+                    if (!DataBase.types.ContainsKey(v.childs[0].token.value) && v.childs[0].type != NT.INDICATOR)
+                    {
+                        sortStructs[c.token.value].Add(v.childs[0].token.value);
+                        flag = true;
+                    }
+                }
+                if (!flag) { list.Add(c); islist.Add(c.token.value); }
+                structs.Add(c.token.value, c);
+            } else list.Add(c);
 
+            /*foreach (var v in sortStructs)
+            {
+                if (v.Value.Count == 0)
+                { 
+                    list.Add(structs[v.Key]);
+                    islist.Add(v.Key);
+                }
+            }*/
+
+            List<string> isActive = new List<string>();
+
+            foreach (var v in sortStructs)
+            {
+                if (v.Value.Count != 0)
+                {
+                    bool isactive = true;
+                    foreach (var c in sortStructs[v.Key])
+                        if (!islist.Contains(c)) { isActive.Add(v.Key); isactive = false; break; }
+                    if (isactive) { list.Add(structs[v.Key]); islist.Add(v.Key); }
+
+                    List<string> _isActive = new List<string>(isActive);
+                    foreach (var v2 in _isActive)
+                    {
+                        if (sortStructs[v2].Count != 0)
+                        {
+                            bool _isactive = true;
+                            foreach (var c in sortStructs[v2])
+                                if (!islist.Contains(c)) { _isactive = false; break; }
+                            if (_isactive) { list.Add(structs[v2]); islist.Add(v2); isActive.Remove(v2); }
+                        }
+                    }
+                }
+            }
+            ast.childs = list;
+            return ast;
+        }
         private CommonNode varRegisterCheakUses(CommonNode root)
         {
             if (root.type == NT.VAR && varRegisters.Contains(root.token.value))
@@ -938,6 +996,8 @@ namespace Qscript
         {
             switch (root.type)
             {
+                case NT.TYPE:
+                    return parseType(root);
                 case NT.INLINE:
                     return parseInline(root, z_buffer);
                 case NT.FUNC:
@@ -947,7 +1007,7 @@ namespace Qscript
                 case NT.CALLADDRESS:
                     return parseCallAddress(root, z_buffer);
                 case NT.STRUCT:
-                    return parseStruct(root, z_buffer);
+                    return parseStruct2(parseStruct(root, z_buffer),z_buffer);
                 case NT.CLASS:
                     return parseClass(root, z_buffer);
                 case NT.USING:
@@ -960,6 +1020,8 @@ namespace Qscript
                     return parseFor(root, z_buffer);
                 case NT.ENUMERATOR:
                     return parseEnumerator(root, z_buffer);
+                case NT.LOOP:
+                    return parseLoop(root, z_buffer);
                 case NT.BINOPER:
                     root = binOperReFresh(binOperCheak(root));
                     for (int i = 0; i < root.childs.Count; i++)
@@ -1005,9 +1067,64 @@ namespace Qscript
             ast.inlineNames.Add(root.token.value);
             return root;
         }
+        private CommonNode parseType(CommonNode type)
+        {
+            if (type.childs.Count > 0)
+            {
+                CommonNode _ast = ast;
+                string oldType = type.token.value;
+                string oldType2 = type.token.value;
+                Dictionary<string, CommonNode> declaratorTypes = new Dictionary<string, CommonNode>();
+                //Console.ReadKey();
+
+                type.token.value = generationDeclarationStruct(type, type.childs[0], ref declaratorTypes);
+                oldType = type.token.value;
+
+                if (!ast.structs.ContainsKey(oldType) && ast.declarativeClassNames.Contains(oldType2))
+                {
+                    //Console.WriteLine("CLASS DECLARATION " + oldType2 + " | " + oldType);
+                    //foreach (var c in declaratorTypes)
+                    //{
+                    //    Console.WriteLine($"{c.Key} - {c.Value.token.value} - {c.Value.type}");
+                    //}
+                    //Console.ReadKey();
+
+                    ast.structs.Add(oldType, new Dictionary<string, CommonNode>());
+                    foreach (var child in ast.declarotiveClassVars[oldType2])
+                    {
+                        //Program.PrintAST(child, 0);
+                        CommonNode newType = replaceNodes(child.childs[0], ref declaratorTypes);
+                        ast.structs[oldType].Add(child.token.value, newType);
+                        //Console.WriteLine($"{newType.token.value} -- {oldType} -- {child.token.value} -- {newType.type}");
+                        //Console.ReadKey();
+                    }
+                    ast.classMethods.Add(oldType, new List<CommonNode>());
+                    foreach (CommonNode child in ast.declarotiveClassMethods[oldType2])
+                    {
+                        CommonNode newMethod = replaceNodes(child, ref declaratorTypes);
+                        newMethod.token.value += "_" + type.token.value;
+                        newMethod.childs[1].childs.Last().childs[0].token.value = type.token.value;
+                        ast.classMethods[oldType].Add(newMethod);
+                        ast.resualtFunc.Add(
+                            newMethod.token.value,
+                            newMethod.childs[0]
+                            );
+                    }
+                    foreach (var child in ast.classMethods[oldType])
+                    {
+                        ast.childs.Add(child);
+                    }
+                }
+                type.childs.Clear();
+            }
+            return type;
+        }
         private CommonNode parseFunc(CommonNode root, int z_buffer)
         {
             if (ast.declarotivePatternsFunctions.Keys.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
+            root.childs[0] = parseType(root.childs[0]);
+            ast.resualtFunc[root.token.value] = root.childs[0];
+
             CommonNode signature = take(root, 1);
             CommonNode bodyFunc = take(root, 2);
             List<CommonNode> childs = new List<CommonNode>();
@@ -1026,6 +1143,7 @@ namespace Qscript
             {
                 CommonNode resualtVar = new CommonNode(NT.PTR, new Token(TT.NULL, "resualtPtr", signature.token.pos));
                 resualtVar.childs.Add(ast.resualtFunc[root.token.value]);
+
                 childs.Add(resualtVar);
             }
 
@@ -1181,10 +1299,11 @@ namespace Qscript
                 }
             }
             try
-            {
+            { 
                 string[] strs = root.token.value.Split('.');
                 string type = string.Empty;
                 type = varSpace.GetTypeValue(strs[0]);
+                //Console.WriteLine($"{root.token.value} : {type}");
                 for (int i = 1; i < strs.Length-1; i++)
                     type = ast.structs[type][strs[i]].token.value;
                 if (ast.classMethods.ContainsKey(type))
@@ -1227,9 +1346,11 @@ namespace Qscript
                     string oldType2 = type.token.value;
                     Dictionary<string, CommonNode> declaratorTypes = new Dictionary<string, CommonNode>();
                     //Console.ReadKey();
+
                     type.token.value = generationDeclarationStruct(type, type.childs[0], ref declaratorTypes);
                     oldType = type.token.value;
-                    if (ast.declarativeClassNames.Contains(oldType2))
+
+                    if (!ast.structs.ContainsKey(oldType) && ast.declarativeClassNames.Contains(oldType2))
                     {
                         //Console.WriteLine("CLASS DECLARATION " + oldType2 + " | " + oldType);
                         //foreach (var c in declaratorTypes)
@@ -1237,6 +1358,7 @@ namespace Qscript
                         //    Console.WriteLine($"{c.Key} - {c.Value.token.value} - {c.Value.type}");
                         //}
                         //Console.ReadKey();
+                        
                         ast.structs.Add(oldType, new Dictionary<string, CommonNode>());
                         foreach (var child in ast.declarotiveClassVars[oldType2])
                         {
@@ -1302,9 +1424,30 @@ namespace Qscript
             varSpace.CloseSpace();
             return root;
         }
+        private CommonNode parseLoop(CommonNode root, int z_buffer)
+        {
+            varSpace.OpenSpace();
+            bool flag = false;
+            if (root.childs.Last().type == NT.VAR) flag = true;
+            if (flag) root.childs[root.childs.Count-1] = parse(root.childs.Last(), z_buffer + 1);
+            for (int i = 0; i < root.childs.Count - ((flag) ? 1 : 0); i++)
+            {
+                root.childs[i] = parse(root.childs[i], z_buffer + 1);
+            }
+            varSpace.CloseSpace();
+            return root;
+        }
         private CommonNode parseClass(CommonNode root, int z_buffer)
         {
             if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
+            return root;
+        }
+        private CommonNode parseStruct2(CommonNode root, int z_buffer)
+        {
+            for (int i = 0; i < root.childs.Count; i++)
+            {
+                root.childs[i].childs[0] = parseType(root.childs[i].childs[0]);
+            }
             return root;
         }
 
@@ -1327,7 +1470,7 @@ namespace Qscript
 
             if (table.Keys.Contains(root.token.value))
             {
-                root.type = table[root.token.value].type;
+                //root.type = table[root.token.value].type;
                 root.token.value = table[root.token.value].token.value;
             }
             for (int i = 0; i < rootNode.childs.Count; i++)
@@ -1374,10 +1517,10 @@ namespace Qscript
             string newName = string.Empty;
             if (secondDeclarator == string.Empty)
             {
-                newName = pattern.token.value;
+                newName = pattern.token.value;// + ((pattern.type == NT.TYPE) ? "" : "I");
                 for (int i = 0; i < declarator.childs.Count; i++)
                 {
-                    newName += $"_{declarator.childs[i].token.value}";
+                    newName += $"_{declarator.childs[i].token.value}" + ((declarator.childs[i].type == NT.TYPE) ? "" : "I");
                 }
             }
             else
@@ -1420,10 +1563,10 @@ namespace Qscript
             string newName = string.Empty;
             if (secondDeclarator == string.Empty)
             {
-                newName = pattern.token.value;
+                newName = pattern.token.value;// + ((pattern.type == NT.TYPE) ? "" : "I");
                 for (int i = 0; i < declarator.childs.Count; i++)
                 {
-                    newName += $"_{declarator.childs[i].token.value}";
+                    newName += $"_{declarator.childs[i].token.value}" + ((declarator.childs[i].type == NT.TYPE) ? "" : "I");
                 }
             }
             else
@@ -1493,7 +1636,7 @@ namespace Qscript
             
             return root;
         }
-        private CommonNode generationDeclarationType(CommonNode declarator)
+        private CommonNode generationDeclarationType(CommonNode declarator, bool flag = false)
         {
             //Console.WriteLine("@@!!--");
             //Console.WriteLine($"@@  {declarator.token.value}  @@");
@@ -1506,7 +1649,7 @@ namespace Qscript
             declarator = take(declarator, 0);
             foreach (var ch in declarator.childs)
             {
-                result += "_" + generationDeclarationType(ch).token.value;
+                result += "_" + generationDeclarationType(ch).token.value + ((flag) ? "" : ("_" + ((declarator.type == NT.TYPE) ? "" : "I")));
                 //Console.WriteLine($"@@  {result}  @@");
             }
             final.childs.Clear();

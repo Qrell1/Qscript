@@ -76,7 +76,13 @@ namespace Qscript
         public string GetTypeValue(string key)
         {
             if (VarsData.ContainsKey(key)) return VarsData[key].token.value;
-            if (VarsSpaces.Count != 0 && VarsSpaces.Peek().ContainsKey(key)) return VarsSpaces.Peek()[key].token.value;
+            foreach (var space in VarsSpaces)
+            {
+                if (space.ContainsKey(key))
+                {
+                    return space[key].token.value;
+                }
+            }
             return null;
         }
         public void AddVar(string key, CommonNode value)

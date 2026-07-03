@@ -109,6 +109,13 @@ namespace Qscript.Lex
                 {
                     //tokenValue = regx.Value.Length;
                     //Console.WriteLine($"[LEXER] Найден токен: {tokenType.type} значение: {regx.Value}");
+                    if (regx.Value == "." && code.strings[file][stringIndex][pos + 1] == '.')
+                    {
+                        Token tokenTss = new Token(TT.TSS, "..", stringIndex + offset);
+                        tokenList.Add(tokenTss);
+                        pos += 2;
+                        return true;
+                    }
                     if (regx.Value == "&" && code.strings[file][stringIndex][pos+1] == '&')
                     {
                         Token tokenCmp = new Token(TT.OPER, "&&", stringIndex + offset);

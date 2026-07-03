@@ -306,6 +306,9 @@ namespace Qscript
                 expect(TT.TS); skip(); expect(TT.VAR);
                 CommonNode node = new CommonNode(NT.VAR, take());
                 node = tryParseVarPath(node);
+                node.type = NT.TYPE;
+                CommonNode declarator = parseDeclarator();
+                if (declarator != null) node.childs.Add(declarator);
                 sizeofNode.childs.Add(node);
                 return sizeofNode;
             }
@@ -810,7 +813,7 @@ namespace Qscript
 
         private CommonNode parseDeclarationFunction(CommonNode varNode)
         {
-            if (varNode.childs[0].childs.Count > 0 && varNode.childs[0].type == NT.TYPE) Syntax.SyntaxError("После возвращаемого типа функции не может идти Декларотивный Кортеж!", varNode.childs[0].childs[0]);
+            //if (varNode.childs[0].childs.Count > 0 && varNode.childs[0].type == NT.TYPE) Syntax.SyntaxError("После возвращаемого типа функции не может идти Декларотивный Кортеж!", varNode.childs[0].childs[0]);
             bool qsFlag = false;
             CommonNode child;
             CommonNode args = parseVarWTypeSignature(); //expect(new TT[] { TT.LFIG, TT.SEM, TT.OPER, TT.VAR });
@@ -1301,8 +1304,10 @@ namespace Qscript
             {
                 if (peek(TT.LPAR)) { expect(TT.LPAR); skip(); }
                 expect(TT.VAR);
-                CommonNode typeNode = new CommonNode(NT.TYPE, take()); expect(TT.VAR);
-                CommonNode varNode = new CommonNode(NT.VAR, take()); varNode.childs.Add(typeNode);
+                CommonNode varNode;
+                CommonNode typeNode = new CommonNode(NT.TYPE, take());
+                if (peek(TT.VAR)) { varNode = new CommonNode(NT.VAR, take()); varNode.childs.Add(typeNode); }
+                else { varNode = typeNode; varNode.childs.Add(new CommonNode(NT.TYPE, new Token("int32", varNode.token.pos))); }
                 expect(TT.PS); skip();
                 CommonNode signature = parseFormula();
                 if (peek(TT.RPAR)) { expect(TT.RPAR); skip(); }
@@ -1328,6 +1333,44 @@ namespace Qscript
             SyntaxError();
             return null;
         }
+        private CommonNode parseLoop()
+        {
+            CommonNode loopNode = new CommonNode(NT.LOOP, take());
+
+            CommonNode varNode = null;
+            if (peek(TT.VAR))
+            {
+                varNode = new CommonNode(NT.VAR, take());
+                varNode.childs.Add(new CommonNode(NT.TYPE, new Token("int32", varNode.token.pos)));
+                expect(TT.PS); skip();
+            }
+
+            if (peek(TT.TSS))
+            {
+                skip();
+                loopNode.token.value = "loop2";
+                loopNode.childs.Add(parseFormula());
+                loopNode.childs.Add(parseBody());
+                if (varNode != null) loopNode.childs.Add(varNode);
+            }
+            else if (peek(TT.TS)) 
+            {
+                skip();
+                loopNode.token.value = "loop3";
+                loopNode.childs.Add(parseFormula());
+                expect(TT.TSS); skip();
+                loopNode.childs.Add(parseFormula());
+                loopNode.childs.Add(parseBody());
+                if (varNode != null) loopNode.childs.Add(varNode);
+            }
+            else
+            {
+                loopNode.token.value = "loop1";
+                loopNode.childs.Add(parseBody());
+            }
+
+            return loopNode;
+        }
 
         private CommonNode parseStructChildren(string nameStruct)
         {
@@ -1336,7 +1379,7 @@ namespace Qscript
             //SyntaxError($"Ну типо ты в структуре данных на позиции:{pos} используешь первым токеном оператором не того типа!!!");
 
             //
-            if (peek(TT.VAR) && (tokens[pos + 1].type == TT.VAR || tokens[pos + 1].value == "*"))
+            if (peek(TT.VAR) && (tokens[pos + 1].type == TT.VAR || tokens[pos + 1].value == "*" || tokens[pos + 1].value == "@"))
             {
                 CommonNode typeNode = new CommonNode(NT.TYPE, take()); if (tokens[pos].value == "*") { typeNode.type = NT.INDICATOR; skip(); }
                 CommonNode declarationPart = parseDeclarator();
@@ -1827,7 +1870,7 @@ namespace Qscript
             return root;
         }
 
-        public CommonNode parse() // 32 keywords
+        public CommonNode parse() // 33 keywords
         {
             //Console.WriteLine($"{tokens[pos].value} {tokens[pos].type}");
             if (peek(TT.VARDECL))
@@ -1849,6 +1892,10 @@ namespace Qscript
             if (peek(TT.RETURN) || peek(TT.BREAK) || peek(TT.CONTINUE) || peek(TT.JMP))
             {
                 return parseQueueControlOperator();
+            }
+            if (peek(TT.LOOP))
+            {
+                return parseLoop();
             }
             if (peek(TT.FOR) || peek(TT.WHILE) || peek(TT.ITER) || peek(TT.ENUMERATOR) || peek(TT.REPT))
             {
@@ -1910,6 +1957,8 @@ namespace Qscript
             {
                 return parseRegDeclaration();
             }
+            Syntax.SyntaxError($"Синтаксическая ошибка на токине: {tokens[pos].value}", tokens[pos]);
+            Console.ReadKey();
             return null;
         }
 

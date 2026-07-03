@@ -55,6 +55,9 @@ namespace Qscript
                 case NT.ENUMERATOR:
                     analisEnumerator(root, z_buffer);
                     break;
+                case NT.LOOP:
+                    analisLoop(root, z_buffer);
+                    break;
                 case NT.CALL:
                     analisCall(root, z_buffer);
                     break;
@@ -165,6 +168,8 @@ namespace Qscript
 
                     for (int i = 1; i < strs.Length; i++)
                     {
+                        if (!ast.structs.ContainsKey(type.token.value))
+                            Syntax.SyntaxError($"Структуры : {type.token.value} не существует", root);
                         if (!ast.structs[type.token.value].ContainsKey(strs[i]))
                             Syntax.SyntaxError($"В текущей области видимости не существует Переменной: {strs[i]} в {type.token.value} ", root);
                         //DataBase.PrintAllStructs(ref ast);
@@ -259,6 +264,18 @@ namespace Qscript
             foreach (CommonNode child in bodyNode.childs) analis(child, z_buffer + 2);
             varSpace.CloseSpace();
         }
+        private static void analisLoop(CommonNode root, int z_buffer)
+        {
+            varSpace.OpenSpace();
+            bool flag = false;
+            if (root.childs.Last().type == NT.VAR) flag = true;
+            if (flag) analis(root.childs.Last(),  z_buffer + 1);
+            for (int i = 0; i < root.childs.Count - ((flag) ? 1 : 0); i++)
+            {
+                analis(root.childs[i], z_buffer + 1);
+            }
+            varSpace.CloseSpace();
+        }
 
         private static bool isNodeType(NT type, CommonNode root)
         {
@@ -287,7 +304,7 @@ namespace Qscript
         public static int getStructSize(string type)
         {
             int size = 0;
-
+            
             foreach (var _var in ast.structs[type].Values)
             {
                 if (_var.type == NT.INDICATOR) size += 4;

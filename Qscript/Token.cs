@@ -41,14 +41,14 @@ namespace Qscript
         NAMESPACE, EXTERNFUNC, EXTERNLIBRARY, EXTERN, FROM,
         ASM, SEM, 
         RETURN, BREAK, CONTINUE, JMP, 
-        ITER, FOR, WHILE, ENUMERATOR, REPT,
+        LOOP, ITER, FOR, WHILE, ENUMERATOR, REPT,
         LAMBDA, STRUCT, CLASS, ENUM, VIRTUAL, OVERRIDE, 
         DEFINE, TYPEDEF, TYPEIF,
         CONST, SECTION, NATIVE, INLINE, ASMINLINE, OPERATOR, 
         SIZEOF, TYPEOF, IN, MODIFIER,
         BOOL, VAR, CHAR, ASTRING, STRING, 
         LPAR, RPAR, PARS, LFIG, RFIG, LK, RK, LKN, RKN,
-        SPACE, TAB, N, PS, TS,
+        SPACE, TAB, N, PS, TS, TSS,
         NULL
     }
 
@@ -102,7 +102,7 @@ namespace Qscript
             //tokenTypes.Add("INC", new TokenType("INC", "[\\--]*"));
             //tokenTypes.Add("DEC", new TokenType("DEC", "[\\++]*"));
             tokenTypes.Add(TT.ASTRING, @"A""[^""]*""");
-            tokenTypes.Add(TT.FLOAT,   @"([0-9]+\.[0-9]*f?|\.[0-9]+f?|[0-9]+f)");
+            tokenTypes.Add(TT.FLOAT, @"([0-9]+\.[0-9]+|[0-9]+\.[0-9]*f|[0-9]+f)");
             tokenTypes.Add(TT.HEX, "(0x[0-9A-F]+)");
             tokenTypes.Add(TT.NUMBER,  "[0-9]+");
             tokenTypes.Add(TT.PREFIX,  "(\\+\\+|--|\\<>|\\?|&)");
@@ -130,7 +130,7 @@ namespace Qscript
             tokenTypes.Add(TT.CONTINUE,  @"(\bcontinue\b|\bпродолжить\b)");
             tokenTypes.Add(TT.JMP,       @"(\bjump\b|\bпрыгнуть\b)");
 
-            
+            tokenTypes.Add(TT.LOOP,       @"\bloop\b");
             tokenTypes.Add(TT.ITER,       @"\biter\b");
             tokenTypes.Add(TT.FOR,        @"\bfor\b");
             tokenTypes.Add(TT.WHILE,      @"\bwhile\b");
