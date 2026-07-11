@@ -61,7 +61,7 @@ namespace Qscript.Lex
                     {
                         spaces += " ";
                     }
-                    //if (tokenList[i].type == TT.RETURN)
+                    //if (tokenList[i].type == TT.LITHEX)
                     //{
                         //Console.WriteLine($"[LEXER] Index:{i} Token pos:{tokenList[i].pos} type:{tokenList[i].type}{spaces}value:{tokenList[i].value}");
                     //}

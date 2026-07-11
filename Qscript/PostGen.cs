@@ -279,8 +279,8 @@ namespace Qscript
             Dictionary<string, int> timelineRegisters = new Dictionary<string, int>();
             List<string> tasks = new List<string>();
             // ну ладно esi будет спец регистром пока что только для корректировки указателей
-            string[] asmRegisters = { "ecx", "edx", "ebx", "esi", "edi", "eax" };
-            if (line) asmRegisters = new string[] { "ebx", "esi", "ecx", "edx", "edi", "eax" };
+            string[] asmRegisters = { "ecx", "edx", "ebx", "edi", "eax" };
+            if (line) asmRegisters = new string[] { "ebx", "ecx", "edx", "edi", "eax" };
 
             Random rand = new Random();
             void removeRegTask (string task)

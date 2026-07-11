@@ -37,6 +37,8 @@ namespace Qscript
             astNode = constRemove(astNode);
             // Hex to number
             astNode = hexToNumber(astNode);
+            // LitHex to number
+            astNode = lithexToNumber(astNode);
             // Ts Preparing
             astNode = tsPreparing(astNode);
             // Var Register Cheak
@@ -240,6 +242,47 @@ namespace Qscript
             // A   B   C   D   E   F
             //10, 11, 12, 13, 14, 15
             Dictionary<char, int> chars = new Dictionary<char, int>{ {'A', 10}, {'B', 11}, {'C', 12}, {'D', 13}, {'E', 14}, {'F', 15} };
+
+            // hex0F == 15
+            int resualt = 0;
+            int pow = root.token.value.Length - 1;
+            for (int i = 0; i < root.token.value.Length; i++)
+            {
+                if (chars.ContainsKey(root.token.value[i]))
+                    resualt += chars[root.token.value[i]] * (int)Math.Pow(16, pow);
+                else resualt += Convert.ToInt32(root.token.value[i].ToString()) * (int)Math.Pow(16, pow);
+                pow--;
+            }
+            root.token.value = Convert.ToString(resualt);
+            root.type = NT.NUMBER;
+
+            return root;
+        }
+        private CommonNode lithexToNumber(CommonNode root)
+        {
+            if (root.type != NT.LITHEX)
+            {
+                for (int i = 0; i < root.childs.Count; i++)
+                {
+                    root.childs[i] = lithexToNumber(root.childs[i]);
+                }
+                return root;
+            }
+            root.token.value = root.token.value.Remove(0, 2);
+            // A   B   C   D   E   F
+            //10, 11, 12, 13, 14, 15
+            Dictionary<char, int> chars = new Dictionary<char, int> { { 'A', 10 }, { 'B', 11 }, { 'C', 12 }, { 'D', 13 }, { 'E', 14 }, { 'F', 15 } };
+            //if (root.token.value.Length % 2 > 0) { root.token.value = "0"; root.type = NT.NUMBER; return root; }
+
+            char[] array = root.token.value.ToCharArray();
+            List<char> _array = new List<char>();
+
+            for (int i = array.Length - 2; i >= 0; i -= 2)
+            {
+                _array.Add(array[i]);
+                _array.Add(array[i + 1]);
+            }
+            root.token.value = new string(_array.ToArray());
 
             // hex0F == 15
             int resualt = 0;
@@ -616,6 +659,7 @@ namespace Qscript
                 if (declarationNode == null) ast.resualtFunc.Add(newRoot.token.value, newRoot.childs[0]);
                 //ast.typesArgsFunc.Add(node.token.value, signatureFuncNode);
             }
+
             if (declarationNode == null) ast.classMethods.Add(root.token.value, methodNodes);
             else ast.declarotiveClassMethods.Add(root.token.value, methodNodes);
 
@@ -1024,6 +1068,12 @@ namespace Qscript
                     return parseLoop(root, z_buffer);
                 case NT.BINOPER:
                     root = binOperReFresh(binOperCheak(root));
+                    for (int i = 0; i < root.childs.Count; i++)
+                    {
+                        root.childs[i] = parse(root.childs[i], z_buffer + 1);
+                    }
+                    return root;
+                case NT.BBODY:
                     for (int i = 0; i < root.childs.Count; i++)
                     {
                         root.childs[i] = parse(root.childs[i], z_buffer + 1);

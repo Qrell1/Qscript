@@ -369,6 +369,7 @@ namespace Qscript
             if (token.type == TT.LAMBDA) return parseLambda(token);
             if (token.type == TT.NUMBER) return new CommonNode(NT.NUMBER, token);
             if (token.type == TT.HEX)    return new CommonNode(NT.HEX, token);
+            if (token.type == TT.LITHEX) return new CommonNode(NT.LITHEX, token);
             if (token.type == TT.ASTRING) return new CommonNode(NT.ASTRING, token);
             if (token.type == TT.STRING) return new CommonNode(NT.STRING, token);
             if (token.type == TT.CHAR)   return new CommonNode(NT.CHAR,   token);
@@ -654,6 +655,18 @@ namespace Qscript
 
         private CommonNode parseBody()
         {
+            if (peek(TT.TSS))
+            {
+                skip();
+                CommonNode node = new CommonNode(NT.BODY, new Token(TT.NULL, "{}", tokens[pos].pos));
+                expect(TT.NUMBER);
+                Token token = take();
+                for (int i = 0; i < Convert.ToInt32(token.value); i++)
+                {
+                    node.childs.Add(parse());
+                }
+                return node;
+            }
             if ((!peek(TT.LFIG) && !peek(TT.SEM)))
             {
                 CommonNode node = new CommonNode(NT.BODY, new Token(TT.NULL, "{}", tokens[pos].pos));
@@ -730,7 +743,7 @@ namespace Qscript
         }
         private CommonNode parseEnumStack(TT type)
         {
-            expect(TT.LFIG);
+            if (peek(TT.RFIG)) expect(TT.LFIG);
             CommonNode stackNode = new CommonNode(NT.BODY, take());
 
             while (peek(type))
@@ -754,7 +767,7 @@ namespace Qscript
                 if (peek(TT.PS)) skip();
             }
 
-            expect(TT.RFIG); skip();
+            if (peek(TT.RFIG)) expect(TT.RFIG); skip();
             return stackNode;
         }
 
@@ -1767,9 +1780,25 @@ namespace Qscript
             return null;
         }
         private CommonNode parseOperator()
-        {
+        {  
             skip(); expect(TT.VAR);
             CommonNode typeNode = new CommonNode(NT.TYPE, take());
+
+            /*if (peek(TT.ITER))
+            {
+                skip(); expect(TT.VAR);
+                CommonNode nameFunctionGetNode = new CommonNode(NT.VAR, take());
+                nameFunctionGetNode = tryParseVarPath(nameFunctionGetNode);
+                root.operationFunctionGet.Add(typeNode.token.value, nameFunctionGetNode.token.value);
+
+                expect(TT.PS); skip();
+                expect(TT.VAR);
+
+                CommonNode nameCountNode = new CommonNode(NT.VAR, take());
+                nameCountNode = tryParseVarPath(nameCountNode);
+
+            }*/
+
             if (tokens[pos].value == "*") { skip(); typeNode.type = NT.INDICATOR; }
             CommonNode varNode = new CommonNode(NT.OPER, take());
             string operatorChar = varNode.token.value;

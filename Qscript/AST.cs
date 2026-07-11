@@ -62,6 +62,10 @@ namespace Qscript
         public Dictionary<string, string> externLibrarys = new Dictionary<string, string>();
         public Dictionary<string, List<string>> externFuncs = new Dictionary<string, List<string>>();
         public List<string> functionFromPtr = new List<string>();
+
+        public Dictionary<string, string> operationFunctionGet = new Dictionary<string, string>();
+        public Dictionary<string, string> operationCounter = new Dictionary<string, string>();
+
         public ProgramNode(NT type, Token token) : base(type, token)
         {}
     }
@@ -126,7 +130,7 @@ namespace Qscript
         // TODO: Все изменения TT вносить и сюда!
         COMMENT,
         ELSEIF, IF, ELSE, DEFIF,
-        FLOAT, NUMBER, HEX,
+        FLOAT, NUMBER, HEX, LITHEX,
         PREFIX, REGDECL, OPER, VARDECL,
         ENDINCLUDE, ASMINCLUDE, INCLUDE, USING,
         NAMESPACE, EXTERNFUNC, EXTERNLIBRARY, EXTERN, FROM,
@@ -143,7 +147,7 @@ namespace Qscript
         NULL,
         // NT чисто NT без перевода обратно в TT
         ROOT, 
-        ALLOCMEMSTATICOBJECT, REFVAR, BODY, OFFSETBODY,
+        ALLOCMEMSTATICOBJECT, REFVAR, BODY, OFFSETBODY, BBODY,
         BINOPER, FLOATBINOPER,
         FUNC,  CALL,
         CMP,

@@ -229,6 +229,7 @@ namespace Qscript
                         size = 1;
                         break;
                     case NT.TYPEOPER:
+                    case NT.TYPE: 
                         node.type = NT.TYPE;
                         type = node;
                         size = getTypeSize(type, ref ast);

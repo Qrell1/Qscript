@@ -1386,14 +1386,23 @@ namespace Qscript
                 CommonNode leftChild = take(root, 0);
                 CommonNode rightChild = take(root, 1);
 
-                string leftInstruct = (DataBase.getFormulaNodeType(leftChild, ref varSpace, ref ProgramAst).type == NT.FLOAT) ? "movss" : "cvtsi2ss";
-                string rightInstruct = (DataBase.getFormulaNodeType(rightChild, ref varSpace, ref ProgramAst).type == NT.FLOAT) ? "movss" : "cvtsi2ss";
+                string leftInstruct = (DataBase.getFormulaNodeType(leftChild, ref varSpace, ref ProgramAst).token.value == "float") ? "movd" : "cvtsi2ss";
+                string rightInstruct = (DataBase.getFormulaNodeType(rightChild, ref varSpace, ref ProgramAst).token.value == "float") ? "movd" : "cvtsi2ss";
 
+                //Console.WriteLine($"Value: {leftChild.token.value} {leftChild.type} Type: {leftInstruct} TT: {leftChild.type} {DataBase.getFormulaNodeType(leftChild, ref varSpace, ref ProgramAst).type}");
+                //Console.WriteLine($"Value: {rightChild.token.value} {rightChild.type} Type: {rightInstruct} TT: {rightChild.type} {DataBase.getFormulaNodeType(leftChild, ref varSpace, ref ProgramAst).type}");
+
+
+                
                 Translation(leftChild, z_buffer + 1);
-                _objProg.code.Append($"{leftInstruct} xmm0, {regReturn}");
+                //_objProg.code.Append($"{leftInstruct} xmm2, {regReturn}");
+                _objProg.code.Append($"push {regReturn}");
 
                 Translation(rightChild, z_buffer + 1);
                 _objProg.code.Append($"{rightInstruct} xmm1, {regReturn}");
+                _objProg.code.Append($"pop eax");
+                _objProg.code.Append($"movd xmm0, eax");
+                //_objProg.code.Append($"movss xmm0, xmm2");
 
                 switch (root.token.value)
                 {
