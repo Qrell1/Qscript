@@ -1,4 +1,4 @@
-﻿using Microsoft.SqlServer.Server;
+using Microsoft.SqlServer.Server;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -991,35 +991,51 @@ namespace Qscript
         }
         private void translationCmp (CommonNode root, int z_buffer, string cmp="")
         {
+            //Program.PrintAST(root, 0);
             string falseTag = cmpFalse;
-            //if (root.childs.Count == 1 && root.childs[0].token.value == "true")
-            //{
-            //    if (cmp != "") _objProg.code.Append($"jmp {cmp}\n");
-            //    return;
-            //}
-            //if (root.childs.Count == 1 && root.childs[0].token.value == "false")
-            //{
-            //    _objProg.code.Append($"je {falseTag}");
-            //    return;
-            //}
+
+            if (root.childs.Count == 0 && root.type != NT.CMP)
+            {
+                Translation(root, z_buffer + 1);
+                _objProg.code.Append($"cmp {regReturn}, 0");
+                //if (cmp == "") 
+                if (cmp == "") _objProg.code.Append($"je {falseTag}");
+                //else 
+                if (cmp != "") _objProg.code.Append($"jne {cmp}\n");
+                return;
+            }
+
+            if (root.childs.Count == 1 && root.childs[0].token.value == "true")
+            {
+                if (cmp != "") _objProg.code.Append($"jmp {cmp}\n");
+                return;
+            }
+            if (root.childs.Count == 1 && root.childs[0].token.value == "false")
+            {
+                if (cmp == "") _objProg.code.Append($"jmp {falseTag}");
+                return;
+            }
             if (root.childs.Count == 1)
             {
                 Translation(root.childs[0], z_buffer + 1);
                 _objProg.code.Append($"cmp {regReturn}, 0");
+                //if (cmp == "") 
                 if (cmp == "") _objProg.code.Append($"je {falseTag}");
-                else _objProg.code.Append($"jne {cmp}\n");
+                //else 
+                if (cmp != "") _objProg.code.Append($"jne {cmp}\n");
                 return;
             }
 
-            //if ("true" == root.token.value)
-            //{
-            //    if (cmp != "") _objProg.code.Append($"jmp {cmp}\n");
-            //    return;
-            //}
-            //if ("false" == root.token.value)
-            //{
-            //    _objProg.code.Append($"jmp {falseTag}\n");
-            //}
+            /*if ("true" == root.token.value || (root.childs.Count == 0 && root.token.value == "()"))
+            {
+                if (cmp != "") _objProg.code.Append($"jmp {cmp}\n");
+                return;
+            }
+            if ("false" == root.token.value)
+            {
+                _objProg.code.Append($"jmp {falseTag}\n");
+                return;
+            }*/
             if ("&&" == root.token.value)
             {
                 //_objProg.code.Append("\n[++++++++++]");
@@ -1027,6 +1043,7 @@ namespace Qscript
                 CommonNode rightChild = take(root, 1);
 
                 //_objProg.code.Append($"[++++++++++++]\n");//; CMP {root.token.value}\n");
+               
                 translationCmp(leftChild, z_buffer + 1);
                 translationCmp(rightChild, z_buffer + 1);
             }
@@ -1043,6 +1060,7 @@ namespace Qscript
 
                 _objProg.code.Append($"jmp {falseTag}\n");
                 _objProg.code.Append($"{trueTag}:\n");
+                return;
             }
             if (new string[] { "==", "!=", ">=", "<=", "<", ">" }.Contains(root.token.value))
             {
@@ -1054,20 +1072,6 @@ namespace Qscript
 
                 _objProg.code.Append($"; CMP\n");
 
-                //if (leftChild.type == NT.NUMBER && rightChild.type == NT.NUMBER)
-                //{
-                //    string reg = $".reg{regIndex++}";
-                //    _objProg.code.Append($"mov {reg}, {leftChild.token.value}\n");
-                //    _objProg.code.Append($"cmp {reg}, {rightChild.token.value}\n");
-                //}
-                //if (leftChild.type == NT.FLOAT && rightChild.type == NT.FLOAT)
-                //{
-                //    string reg = $".reg{regIndex++}";
-                //    floatVar = getFloatConst(leftChild);
-                //    floatVar2 = getFloatConst(rightChild);
-                //    _objProg.code.Append($"mov {reg}, [{floatVar}]\n");
-                //    _objProg.code.Append($"cmp {reg}, [{floatVar2}]\n");
-                //}
                 if (rightChild.type == NT.NUMBER)
                 {
                     Translation(leftChild, z_buffer + 1);

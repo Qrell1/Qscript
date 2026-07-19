@@ -48,7 +48,7 @@ namespace Qscript
             // Lambda Queue
             foreach (var child in ast.lambdaQueue) astNode.childs.Add(child);
             // Replace Constant Var Value
-            astNode = replaceConstantVarValue(astNode);
+            //astNode = replaceConstantVarValue(astNode);
             // BinOper Cheak Float
             //astNode = binOperCheak(astNode);
             // Constant BinOper ReFresh
@@ -56,9 +56,9 @@ namespace Qscript
             // Second Repcale Constant Var Value
             //astNode = replaceConstantVarValue(astNode);
             // Cmp ReFresh
-            astNode = cmpReFresh(astNode);
+            //astNode = cmpReFresh(astNode);
             // If destroy
-            astNode = cmpCheakDelete(astNode);
+            //astNode = cmpCheakDelete(astNode);
             // Class ReFresh
             astNode = classReFresh(astNode);
             // Class Inheritances
@@ -509,7 +509,7 @@ namespace Qscript
             }
             if (root.childs.Count == 1)
             {
-                if (root.childs[0].type == NT.BOOL) root.token.value = root.childs[0].token.value;
+                //if (root.childs[0].type == NT.BOOL) root.token.value = root.childs[0].token.value;
                 return root;
             }
             root.childs[0] = cmpReFresh(root.childs[0]);
@@ -522,8 +522,8 @@ namespace Qscript
                 rightNode.type == NT.CMP && (rightNode.token.value == "true")) return new CommonNode(root.type, new Token(root.token.type, "true", root.token.pos));
             if (leftNode.type == NT.CMP && (leftNode.token.value == "false") &&
                 rightNode.type == NT.CMP && (rightNode.token.value == "false")) return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
-            //if (leftNode.type == NT.CMP && rightNode.type == NT.CMP && root.token.value == "&&" && (leftNode.token.value == "true" && rightNode.token.value == "true")) return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
-            //if (leftNode.type == NT.CMP && rightNode.type == NT.CMP && root.token.value == "||" && (leftNode.token.value == "true" || rightNode.token.value == "true")) return new CommonNode(root.type, new Token(root.token.type, "true", root.token.pos));
+            if (leftNode.type == NT.CMP && rightNode.type == NT.CMP && root.token.value == "&&" && (leftNode.token.value == "true" && rightNode.token.value == "true")) return new CommonNode(root.type, new Token(root.token.type, "false", root.token.pos));
+            if (leftNode.type == NT.CMP && rightNode.type == NT.CMP && root.token.value == "||" && (leftNode.token.value == "true" || rightNode.token.value == "true")) return new CommonNode(root.type, new Token(root.token.type, "true", root.token.pos));
 
             bool cmpB = false;
             bool cmp = false;
@@ -572,25 +572,25 @@ namespace Qscript
             CommonNode cmpNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
 
-            if (root.type == NT.IF && root.childs.Count == 3 && cmpNode.token.value == "false")
+            if (root.type == NT.IF && root.childs.Count == 3 && cmpNode.token.value == "false" && cmpNode.childs.Count == 1)
             {
                 root.childs[2].childs[0].type = NT.IF;
                 if (root.childs[2].childs[0].token.value == "else") return root.childs[2].childs[0].childs[0];
                 return cmpCheakDelete(root.childs[2].childs[0]);
             }
-            if (cmpNode.token.value == "false" && cmpNode.childs.Count == 3
-                || (cmpNode.childs.Count == 1 && cmpNode.childs[0].token.value == "false"))
+            if (cmpNode.token.value == "false" && root.childs.Count == 3
+                && (cmpNode.childs.Count == 1 && cmpNode.childs[0].token.value == "false"))
             {
                 root.childs[2].childs[0].type = NT.IF;
                 if (root.childs[2].childs[0].token.value == "else") return root.childs[2].childs[0].childs[0];
                 return cmpCheakDelete(root.childs[2].childs[0]);
             }
-            else if (cmpNode.token.value == "false"
-                || (cmpNode.childs.Count == 1 && cmpNode.childs[0].token.value == "false"))
+            if ((cmpNode.token.value == "false" && root.type == NT.DEFIF)
+               || (cmpNode.childs.Count == 1 && cmpNode.childs[0].token.value == "false"))
                 return new CommonNode(NT.AIR, new Token("air", cmpNode.token.pos));
 
-            if (cmpNode.token.value == "true"
-                || (cmpNode.childs.Count == 1 && cmpNode.childs[0].token.value == "true")) return bodyNode;
+            if ((cmpNode.token.value == "true" && root.type == NT.DEFIF)
+               || (cmpNode.childs.Count == 1 && cmpNode.childs[0].token.value == "true")) return bodyNode;
             
             if (root.type == NT.DEFIF) Syntax.SyntaxError("Неопределёное define условие!", root);
             return root;
