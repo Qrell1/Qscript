@@ -67,7 +67,7 @@ namespace Qscript
                 default:
                     if (root.type == NT.TYPEOF)
                         break;
-                    if (root.type == NT.STRUCT) break;
+                    if (root.type == NT.STRUCT || root.type == NT.JMP) break;
                     for (int i = 0; i < root.childs.Count; i++)
                     {
                         analis(root.childs[i], z_buffer + 1);

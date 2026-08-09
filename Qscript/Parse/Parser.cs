@@ -201,7 +201,7 @@ namespace Qscript
         {
             Token token = take();
             if (token.type == TT.SEM) Syntax.SyntaxError("Мдамс получается ты тут накосячил. Честно я не знаю как.\n Но совет если при вызове функции не передаёшь аргументы всегда пиши ()!", new CommonNode(getNodeType(token.type), token));
-
+            
             if (token.value == "{")
             {
                 return parseOffsetBody(token);
@@ -273,8 +273,18 @@ namespace Qscript
             }
             if (token.type == TT.PREFIX && token.value == "&")
             {
+                Console.WriteLine(tokens[pos].value);
                 CommonNode addr = new CommonNode(NT.ADDRESS, token);
                 CommonNode node;
+                if (tokens[pos].value == "!")
+                {
+                    skip(); Console.WriteLine(tokens[pos].value);
+                    expect(TT.VAR);
+                    node = new CommonNode(NT.JMP, take());
+                    node = tryParseVarPath(node);
+                    addr.childs.Add(node);
+                    return addr;
+                }
                 if (tokens[pos].value == "(" && tokens[pos + 1].value == ")")
                 {
                     skip(); skip();

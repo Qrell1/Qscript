@@ -870,8 +870,8 @@ namespace Qscript
                     // |case4| - cmp - not realistic
                     if (InstructPattern(str, "mov|rr") && InstructPattern(str2, "cmp|r?") && InstructCmpReg(pattern1, pattern2))
                     {
-                        resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "r", 1))); i++;
-                        continue;
+                        //resualt.Append(InstructConcat(CopyArgInstruct(_instructSecond, _instuct, "r", 1))); i++;
+                        //continue;
                     }
                     // |case5| - cmp
                     if (InstructPattern(str, "mov|rc") && InstructPattern(str2, "cmp|r?") && InstructCmpReg(pattern1, pattern2))
@@ -902,6 +902,11 @@ namespace Qscript
                     {
                         //resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "r"))); i++;
                         //continue;
+                    }
+                    if (InstructPattern(str, "mov|rn") && InstructPattern(str2, "mov|rr") && InstructCmpReg(pattern1, pattern2, 1))
+                    {
+                        resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "r"))); i++;
+                        continue;
                     }
                     // |case10| - void
                     if (InstructPattern(str, "mov|rc") && InstructPattern(str2, "mov|rr") && InstructCmpReg(pattern1, pattern2, 1))

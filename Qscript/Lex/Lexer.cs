@@ -125,11 +125,19 @@ namespace Qscript.Lex
                     }
                     int length = regx.Value.Length;
                     Token token;
-                    if (tokenType.Key == TT.STRING)
+                    if (tokenType.Key == TT.CHAR)
                     {
                         string value = regx.Value;
                         value = value.Substring(1, value.Length - 2);
-                        value = value.Replace("\\\"", "\"").Replace("\\\\", "\\");
+                        //value = value.Replace("\\\"", "\"").Replace("\\\\", "\\");
+                        if (value.Length > 1) token = new Token(TT.STRING, value, stringIndex + offset);
+                        else token = new Token(tokenType.Key, value, stringIndex + offset);
+                    }
+                    else if (tokenType.Key == TT.STRING)
+                    {
+                        string value = regx.Value;
+                        value = value.Substring(1, value.Length - 2);
+                        //value = value.Replace("\\\"", "\"").Replace("\\\\", "\\");
                         token = new Token(tokenType.Key, value, stringIndex + offset);
                     }
                     else if (tokenType.Key == TT.ASM)

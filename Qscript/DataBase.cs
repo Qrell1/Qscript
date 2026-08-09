@@ -239,7 +239,11 @@ namespace Qscript
                         else type = ast.resualtFunc[node.token.value];
                         size = getTypeSize(type, ref ast);
                         break;
-                    default:
+                    case NT.JMP:
+                        type = new CommonNode(NT.TYPE, new Token(TT.NUMBER, "int", node.token.pos));
+                        size = 4;
+                        break;
+                default:
                         type = new CommonNode(NT.TYPE, new Token(TT.NUMBER, "int", node.token.pos));
                         size = 4;
                         break;

@@ -515,6 +515,7 @@ namespace Qscript
         }
         private void translationWhile (CommonNode root, int z_buffer)
         {
+            Program.PrintAST(root, 0);
             CommonNode cmpNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
             
@@ -964,13 +965,13 @@ namespace Qscript
             CommonNode body = take(root, 1);
             CommonNode elses = take(root, 2);
 
-            string falseName = $"{funcName}.false{++falseTagIndex}";
+            string falseName = $"{((codeData == CodeData.macroData) ? "." : "")}{funcName}.false{++falseTagIndex}";
             cmpFalse = falseName;
             translationCmp(cmp, z_buffer + 1);
             Translation(body, z_buffer + 1);
             if (elses != null)
             {
-                string elsesTag = $"{funcName}.elses{++elsesTagIndex}";
+                string elsesTag = $"{((codeData == CodeData.macroData) ? "." : "")}{funcName}.elses{++elsesTagIndex}";
                 _objProg.code.Append($"jmp {elsesTag}\n");
                 _objProg.code.Append($"{falseName}:\n");
                 //falseTagIndex++;
@@ -993,7 +994,7 @@ namespace Qscript
         {
             //Program.PrintAST(root, 0);
             string falseTag = cmpFalse;
-
+            /*
             if (root.childs.Count == 0 && root.type != NT.CMP)
             {
                 Translation(root, z_buffer + 1);
@@ -1004,7 +1005,7 @@ namespace Qscript
                 if (cmp != "") _objProg.code.Append($"jne {cmp}\n");
                 return;
             }
-
+            */
             if (root.childs.Count == 1 && root.childs[0].token.value == "true")
             {
                 if (cmp != "") _objProg.code.Append($"jmp {cmp}\n");
