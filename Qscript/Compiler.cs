@@ -515,7 +515,6 @@ namespace Qscript
         }
         private void translationWhile (CommonNode root, int z_buffer)
         {
-            Program.PrintAST(root, 0);
             CommonNode cmpNode = take(root, 0);
             CommonNode bodyNode = take(root, 1);
             
@@ -1731,9 +1730,9 @@ namespace Qscript
                         //_objProg.code.Append("cdq\n");
                         //_objProg.code.Append($"xor .reg{regIndex++}edx, .reg{regIndex - 1}edx\n");
                         //if (leftRegM != "eax")
-                        _objProg.code.Append($"mov .reg{regIndex++}ebx, {rightRegM}\n");
+                        _objProg.code.Append($"mov .reg{regIndex++}, {rightRegM}\n");
                         _objProg.code.Append($"mov eax, {leftRegM}\ncdq\n");
-                        _objProg.code.Append($"idiv .reg{regIndex-1}ebx\n");
+                        _objProg.code.Append($"idiv .reg{regIndex-1}\n");
                         _objProg.code.Append($"mov .reg{regIndex++}, eax\n");
                         _objProg.code.Append($"mov {leftRegM}, .reg{regIndex-1}\n");
                         break;
@@ -1744,7 +1743,7 @@ namespace Qscript
                         _objProg.code.Append($"mov .reg{regIndex++}, {rightRegM}\n");
                         _objProg.code.Append($"idiv .reg{regIndex++}\n");
                         _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, .reg{regIndex-3}edx\n");
-                        _objProg.code.Append($"mov {leftRegM}, .reg{regIndex++}edx\n");
+                        _objProg.code.Append($"mov {leftRegM}, .reg{regIndex++}\n");
                         break;
                     case "&":
                         _objProg.code.Append($"and {leftRegM}, {rightRegM}\n");
@@ -2006,13 +2005,13 @@ namespace Qscript
         } // DELETE: Удалить констант больше нет
         private void translationString (CommonNode root, int z_buffer)
         {
-            root.token.value = root.token.value.Replace("\\n", "', 13, 10, '");
-            root.token.value = root.token.value.Replace("\\t", "', 9, '");
+            root.token.value = root.token.value.Replace("\\n", "\n");//"', 13, 10, '");
+            root.token.value = root.token.value.Replace("\\t", "\t");//"', 9, '");
             if (!stringConsts.Keys.Contains(root.token.value))
             {
                 stringConsts.Add(root.token.value, $"str_const_{stringConstsIndex}");
                 
-                _objProg.stringsConsts.Append($"str_const_{stringConstsIndex++} du '{root.token.value}', 0\n");
+                _objProg.stringsConsts.Append($"str_const_{stringConstsIndex++} du {getUnicodeString(root.token.value)}\n");
                 _objProg.code.Append($"lea .reg{regIndex++}, [{stringConsts[root.token.value]}]");
                 regReturn = $".reg{regIndex - 1}";
                 return;
@@ -2619,6 +2618,22 @@ namespace Qscript
             }
 
             return size;
+        }
+        private string getUnicodeString (string value)
+        {
+            string resualt = "";
+
+            for (int i = 0; i < value.Length; i++)
+            {
+                if (value[i] ==  '\n') resualt += "13, 10, ";
+                else if (value[i] ==  '\t') resualt += "9, ";
+                else if (value[i] ==  '\r') resualt += "13, ";
+                //else if (value[i] ==  '\\') resualt += "92", ;
+                else resualt += $"{Convert.ToInt32(value[i])}, ";
+            }
+            if (resualt.Length > 2) { resualt = resualt.Remove(resualt.Length - 2, 2); resualt += ", 0"; }
+            else resualt = "0";
+            return resualt;
         }
 
         // ВРЕМЕННЫЙ СУПЕР ГОВНОКОД   

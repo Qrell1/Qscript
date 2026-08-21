@@ -273,12 +273,11 @@ namespace Qscript
             }
             if (token.type == TT.PREFIX && token.value == "&")
             {
-                Console.WriteLine(tokens[pos].value);
                 CommonNode addr = new CommonNode(NT.ADDRESS, token);
                 CommonNode node;
                 if (tokens[pos].value == "!")
                 {
-                    skip(); Console.WriteLine(tokens[pos].value);
+                    skip();
                     expect(TT.VAR);
                     node = new CommonNode(NT.JMP, take());
                     node = tryParseVarPath(node);

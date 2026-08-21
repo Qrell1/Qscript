@@ -923,8 +923,8 @@ namespace Qscript
                     // |case12| - void
                     if (InstructPattern(str, "mov|rr") && InstructPattern(str2, "mov|rr") && InstructCmpReg(pattern1, pattern2, 1))
                     {
-                        resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "r"))); i++;
-                        continue;
+                        //resualt.Append(InstructConcat(CopyArgInstruct(_instuct, _instructSecond, "r"))); i++;
+                        //continue;
                     }
 
                     // |case13| - void
