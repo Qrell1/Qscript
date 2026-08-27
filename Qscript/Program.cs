@@ -280,7 +280,7 @@ namespace Qscript
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start Compiler...");
             Console.ResetColor();
-            compiler = new Compiler("dsd", ast);
+            compiler = new Compiler("dsd", ast, modeApp);
             try { compiler.Translation(ast, 0); }
             catch (Exception e) { Console.WriteLine($"При Компиляции что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
             string data = compiler.ConcatData(typeApp, modeApp, archApp, formatApp);

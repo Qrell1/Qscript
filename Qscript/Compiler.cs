@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Linq.Expressions;
+using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
@@ -81,8 +82,15 @@ namespace Qscript
         private string cmpFalse;
 
         private CommonNode var;
+        private ModeApp ModeApp;
 
-        public Compiler(string _fasmCompilerPath, ProgramNode ast) { fasmCompilerPath = _fasmCompilerPath; ProgramAst = ast; varSpace.VarsData = ast.varTypes; }
+        public Compiler(string _fasmCompilerPath, ProgramNode ast, ModeApp modApp)
+        {
+            fasmCompilerPath = _fasmCompilerPath;
+            ProgramAst = ast;
+            varSpace.VarsData = ast.varTypes;
+            ModeApp = modApp;
+        }
 
 
         public CommonNode take(CommonNode node, int i = 0)
@@ -824,6 +832,8 @@ namespace Qscript
         } // TODO: Переделать регистры на .reg
         private void translationReturn (CommonNode root, int z_buffer)
         {
+
+            if (!funcName.StartsWith("qsr") && ModeApp == ModeApp.debug) _objProg.code.Append("dec [s4$tacket]");
             if (root.childs.Count == 0)
             {
                 _objProg.code.Append($"jmp {funcName}.retn\n");
@@ -2207,6 +2217,58 @@ namespace Qscript
                 _objProg.code.Append($"proc {root.token.value} {args}\n");
             else
                 _objProg.code.Append($"proc {root.token.value} \n");
+
+            if (!root.token.value.StartsWith("qsr") && ModeApp == ModeApp.debug)
+            {
+                _objProg.code.Append("push eax\n");
+                _objProg.code.Append("inc [s4$tacket]");
+                _objProg.code.Append("mov eax, [s2$tacket]\n");
+                _objProg.code.Append("cmp eax, 1\n");
+                _objProg.code.Append("jne .g\n");
+                stringConsts.Add(root.token.value, $"str_const_{stringConstsIndex}");
+                _objProg.stringsConsts.Append($"str_const_{stringConstsIndex++} du {getUnicodeString(root.token.value)}\n");
+                _objProg.code.Append($"lea esi, [{stringConsts[root.token.value]}]");
+                _objProg.code.Append("mov eax, [s1$tacket]\n");
+                _objProg.code.Append("cmp eax, 31\n");
+                _objProg.code.Append("jne .f\n");
+                _objProg.code.Append("mov ecx, 1\n");
+                _objProg.code.Append(".l:\n");
+                _objProg.code.Append("mov eax, ecx\n");
+                _objProg.code.Append("lea ebx, [s5$tacket]\n");
+                _objProg.code.Append("add ebx, eax\n");
+                _objProg.code.Append("xor edx, edx\nmov dl, byte [ebx]\n");
+                _objProg.code.Append("shl eax, 2\n");
+                _objProg.code.Append("lea ebx, [s0$tacket]\n");
+                _objProg.code.Append("add eax, ebx\n");
+                _objProg.code.Append("mov edi, dword [eax]\n");
+                _objProg.code.Append("mov eax, ecx\n");
+                _objProg.code.Append("dec eax\n");
+                _objProg.code.Append("lea ebx, [s5$tacket]\n");
+                _objProg.code.Append("add ebx, eax\n");
+                _objProg.code.Append("mov byte [ebx], dl\n");
+                _objProg.code.Append("shl eax, 2\n");
+                _objProg.code.Append("lea ebx, [s0$tacket]\n");
+                _objProg.code.Append("add eax, ebx\n");
+                _objProg.code.Append("mov dword [eax], edi\n");
+                _objProg.code.Append("inc ecx\n");
+                _objProg.code.Append("cmp ecx, 31\n");
+                _objProg.code.Append("jne .l\n");
+                _objProg.code.Append("dec [s1$tacket]\n");
+                _objProg.code.Append(".f:\n");
+                _objProg.code.Append("mov edx, [s1$tacket]\n");
+                _objProg.code.Append("lea ebx, [s5$tacket]\n");
+                _objProg.code.Append("add ebx, edx\n");
+                _objProg.code.Append("mov eax, [s4$tacket]\nmov byte [ebx], al\n");
+                _objProg.code.Append("shl edx, 2\n");
+                _objProg.code.Append("mov dword [s0$tacket+edx], esi\n");
+                _objProg.code.Append("mov eax, [s1$tacket]\n");
+                _objProg.code.Append("inc eax\n");
+                _objProg.code.Append("mov [s1$tacket], eax\n");
+
+                _objProg.code.Append(".g:\n");
+                _objProg.code.Append("pop eax\n");
+            }
+
             local();
             returnType = take(root, 0);
             funcName = root.token.value;
@@ -2228,6 +2290,8 @@ namespace Qscript
                 rep movsd
              */
             //_objProg.code.Append($"    ret\n");
+
+            if (!root.token.value.StartsWith("qsr") && ModeApp == ModeApp.debug) _objProg.code.Append("dec [s4$tacket]");
             if (ProgramAst.resualtFunc[root.token.value] == null || ProgramAst.resualtFunc[root.token.value].token.value == "void")
             {
 
@@ -2250,6 +2314,7 @@ namespace Qscript
             _objProg.code.Append($"    ret\n");
             _objProg.code.Append($"endp\n");
             local();
+            
             setWriteData(CodeData.codeData);
         } // TODO: Не трогать регистры не менять на .reg
         private void translationCall (CommonNode root, int z_buffer, string resualtPtr=null)
@@ -2685,7 +2750,8 @@ namespace Qscript
             file += _objProg.procData.ToString();
             file += "ret\n";
             if (_objProg.data.Length != 0 || _objProg.stringsConsts.Length != 0)
-                file += "\nsection '.data' data readable writable\n";
+                file += "\nsection '.data' data readable writable\ns0$tacket dd 32 dup(0)\ns1$tacket dd 1\ns2$tacket dd 1\n" +
+                    "s4$tacket dd 0\ns5$tacket db 32 dup(0)\n";
             int offset = 0;
             foreach (string str in _objProg.data.Data)
             {

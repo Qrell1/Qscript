@@ -56,6 +56,10 @@ namespace Qscript
             {
                 return true;
             }
+            for (int i = pos - 10; i != pos + 5; i++)
+            {
+                Console.WriteLine(tokens[i].ToString());
+            }
             Syntax.SyntaxError($"Ожидался Токен:{type}", tokens[pos]); // На позиции:{pos} 
             return false;
             //throw new Exception($"На позиции:{pos} Ожидался Токен:{type}");
@@ -386,6 +390,10 @@ namespace Qscript
             if (token.type == TT.BOOL)   return new CommonNode(NT.BOOL ,  token);
             if (token.type == TT.FLOAT)  return new CommonNode(NT.FLOAT,  token);
 
+            for (int i = pos - 10; i != pos+5; i++)
+            {
+                Console.WriteLine(tokens[i].ToString());
+            }
             Syntax.SyntaxError($"Ошибка в парсинге формулы из-за Токена:{token.value}", token);
             return null;
         }

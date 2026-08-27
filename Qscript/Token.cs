@@ -29,6 +29,11 @@ namespace Qscript
             value = _value;
             pos = _pos;
         }
+
+        public override string ToString()
+        {
+            return $"Type: {type} Value: {value} Pos: {pos}";
+        }
     }
 
     public enum TT
