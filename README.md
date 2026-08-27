@@ -19,6 +19,9 @@ QscriptNt - Это компилируемый язык программиров�
 - `qsr run` - собрать через FASM + запуск
 - `qsr info` - информация о qsr
 
+## Набросок программы на нём
+[Репозиторий с QLangBQ(https://github.com/Qrell1/QLangBQ)
+
 ## Полная документация
 👉 [Отдельный репозиторий с документацией](https://github.com/Qrell1/QscriptDocumentation)
 [Видео 1](https://www.youtube.com/watch?v=m0WL8Ui5-h0&t=2s)
