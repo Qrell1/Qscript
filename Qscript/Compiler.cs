@@ -1001,20 +1001,8 @@ namespace Qscript
         }
         private void translationCmp (CommonNode root, int z_buffer, string cmp="")
         {
-            //Program.PrintAST(root, 0);
             string falseTag = cmpFalse;
-            /*
-            if (root.childs.Count == 0 && root.type != NT.CMP)
-            {
-                Translation(root, z_buffer + 1);
-                _objProg.code.Append($"cmp {regReturn}, 0");
-                //if (cmp == "") 
-                if (cmp == "") _objProg.code.Append($"je {falseTag}");
-                //else 
-                if (cmp != "") _objProg.code.Append($"jne {cmp}\n");
-                return;
-            }
-            */
+
             if (root.childs.Count == 1 && root.childs[0].token.value == "true")
             {
                 if (cmp != "") _objProg.code.Append($"jmp {cmp}\n");
@@ -1036,16 +1024,7 @@ namespace Qscript
                 return;
             }
 
-            /*if ("true" == root.token.value || (root.childs.Count == 0 && root.token.value == "()"))
-            {
-                if (cmp != "") _objProg.code.Append($"jmp {cmp}\n");
-                return;
-            }
-            if ("false" == root.token.value)
-            {
-                _objProg.code.Append($"jmp {falseTag}\n");
-                return;
-            }*/
+
             if ("&&" == root.token.value)
             {
                 //_objProg.code.Append("\n[++++++++++]");
@@ -1313,12 +1292,6 @@ namespace Qscript
                 else varString = $"[{varChild.token.value}]";
 
 
-                /*if (rightChild.type == NT.FLOAT)
-                {
-                    _objProg.data.Append($"{varString} dd {rightChild.token.value.Replace("f", "")}\n");
-                    return;
-                }*/
-
                 if (varChild.childs.Count > 0 && varChild.type == NT.VAR)
                     translationVar(varChild, z_buffer + 1);
 
@@ -1512,15 +1485,6 @@ namespace Qscript
                 regPrefer = "";
                 if (varChild.type == NT.OFFSET)
                 {
-                    //var = varChild.childs[1]; regPrefer = "";
-                    //string[] strs = translationOffset(varChild, z_buffer, false);
-                    //string reg = regReturn;
-                    //varString = regReturn;
-                    //regPrefer = "";
-                    //_objProg.code.Append($"push {strs[0]}\n");
-                    //Translation(rightChild, z_buffer + 1);
-                    //_objProg.code.Append($"pop {strs[0]}\n");
-                    //_objProg.code.Append($"mov {reg}, {regReturn}\n");
                     string[] strs = translationOffset(varChild, z_buffer, false);
                     
                     
@@ -1530,33 +1494,10 @@ namespace Qscript
 
                     Translation(rightChild, z_buffer);
                     string rightReg = regReturn;
-                    /*if (!regReturn.EndsWith("qword") && !regReturn.EndsWith("dword")
-                        && (regReturn.EndsWith("word") || regReturn.EndsWith("byte")))
-                    {
-                        _objProg.code.Append($"movzx .reg{regIndex++}, {regReturn}\n");
-                        rightReg = $".reg{regIndex-1}";
-                    }*/
+
                     _objProg.code.Append($"pop {safeReg}\n");
 
                     _objProg.code.Append($"mov {strs[1]} [{safeReg}], {rightReg}\n");
-                    /*
-                    Translation(rightChild, z_buffer + 1);
-                    string reg = regReturn;
-                    _objProg.code.Append($"push {reg}\n");
-                    string strs = translationOffset(varChild, z_buffer, false)[0];
-                    if (!reg.EndsWith("qword") && !reg.EndsWith("dword")
-                        && (reg.EndsWith("word") || reg.EndsWith("byte")))
-                    {
-                        _objProg.code.Append($"pop {reg}\n");
-                        _objProg.code.Append($"movzx .reg{regIndex++}, [{reg}]\n");
-                        _objProg.code.Append($"mov {strs}, .reg{regIndex - 1}\n");
-                    }
-                    else
-                    {
-                        _objProg.code.Append($"pop {reg}\n");
-                        _objProg.code.Append($"mov {strs}, [{reg}]\n");
-                    }
-                    */
                     return;
                 }
                 else if (varChild.type == NT.USEADDRESSVAR)
@@ -1994,7 +1935,7 @@ namespace Qscript
                     _objProg.code.Append($"movss [{leftChild.token.value}], xmm0\n");
             }
         } // FIXME: Переделать как в биноперах
-        private void translationConst (CommonNode root, int  z_buffer)
+        /*private void translationConst (CommonNode root, int  z_buffer)
         {
             CommonNode constValue = take(root, 0);
 
@@ -2013,6 +1954,7 @@ namespace Qscript
                 constsIndex++;
             }
         } // DELETE: Удалить констант больше нет
+        */
         private void translationString (CommonNode root, int z_buffer)
         {
             root.token.value = root.token.value.Replace("\\n", "\n");//"', 13, 10, '");
@@ -2034,7 +1976,7 @@ namespace Qscript
         }
         private void translationAString(CommonNode root, int z_buffer)
         {
-            root.token.value = root.token.value.Remove(root.token.value.Length-1, 1).Remove(0, 2);
+            //root.token.value = root.token.value.Remove(root.token.value.Length-1, 1).Remove(0, 2);
             
             root.token.value = root.token.value.Replace("\\n", "', 13, 10, '");
             root.token.value = root.token.value.Replace("\\t", "', 9, '");
@@ -2057,7 +1999,7 @@ namespace Qscript
         {
             _objProg.code.Append($"mov .reg{regIndex++}{regPrefer}, {root.token.value}");
             regReturn = $".reg{regIndex-1}{regPrefer}";
-        } // TODO: Возможно не будет работать с .reg
+        }
         private void translationStruct (CommonNode root, int z_buffer)
         {
             if (ProgramAst.externStructs.Contains(root.token.value))
@@ -2316,7 +2258,7 @@ namespace Qscript
             local();
             
             setWriteData(CodeData.codeData);
-        } // TODO: Не трогать регистры не менять на .reg
+        } 
         private void translationCall (CommonNode root, int z_buffer, string resualtPtr=null)
         {
             //_objProg.code.Append($"; CALL {root.token.value}\n");
@@ -2510,7 +2452,7 @@ namespace Qscript
 
             regPrefer = "";
             regReturn = $".reg{regIndex++}eax";
-        } // TODO: Возможно переделать первый аргумент через qs на .reg
+        }
 
         private void translationOffset(CommonNode varNode, CommonNode rightNode, int z_buffer)
         {
