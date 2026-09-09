@@ -147,7 +147,7 @@ namespace Qscript
         NULL,
         // NT чисто NT без перевода обратно в TT
         ROOT, 
-        ALLOCMEMSTATICOBJECT, REFVAR, BODY, OFFSETBODY, BBODY,
+        ALLOCMEMSTATICOBJECT, ALLOCAGREGATE, REFVAR, BODY, OFFSETBODY, BBODY,
         BINOPER, FLOATBINOPER,
         FUNC,  CALL,
         CMP,
@@ -158,7 +158,7 @@ namespace Qscript
         TYPE, INDICATOR, PTR,
         STACK, USEADDRESSVAR,
         STEP,
-        FLOATOPER, CALLADDRESS
+        FLOATOPER, CALLADDRESS, CBODY
     }
 
 

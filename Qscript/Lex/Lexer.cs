@@ -283,7 +283,7 @@ namespace Qscript.Lex
                 }
                 if (flag == TT.STRING)
                 {
-                    if (cr != '"')
+                    if (cr != '"' && cr != '\'')
                     {
                         value += cr;
                         goto end;
@@ -321,7 +321,7 @@ namespace Qscript.Lex
                     value = string.Empty;
                     goto end;
                 }
-                else if (cr == '"' && flag == TT.NULL)
+                else if ((cr == '"' || cr == '\'') && flag == TT.NULL)
                 {
                     flag = TT.STRING;
                     value = string.Empty;

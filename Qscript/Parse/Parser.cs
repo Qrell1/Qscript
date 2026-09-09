@@ -904,6 +904,34 @@ namespace Qscript
             if (peek(TT.PREFIX) && tokens[pos].value == "?")
             {
                 CommonNode initMemStaticObject = new CommonNode(NT.ALLOCMEMSTATICOBJECT, take());
+
+                if (peek(TT.LFIG))
+                {
+                    initMemStaticObject.childs.Add(varNode);
+                    CommonNode cbodyNode = new CommonNode(NT.CBODY, initMemStaticObject.token);
+                    cbodyNode.childs.Add(initMemStaticObject);
+                    skip();
+                    while (true)
+                    {
+                        expect(TT.VAR);
+                        CommonNode childVarNode = new CommonNode(NT.VAR, take());
+                        childVarNode = tryParseVarPath(childVarNode);
+                        childVarNode.token.value = varNode.token.value + "." + childVarNode.token.value;
+                        expect(TT.OPER, "=");
+                        CommonNode binoperNode = new CommonNode(NT.BINOPER, take());
+                        CommonNode formulaNode = parseFormula();
+                        binoperNode.childs.Add(childVarNode);
+                        binoperNode.childs.Add(formulaNode);
+                        cbodyNode.childs.Add(binoperNode);
+                        if (!peek(TT.PS)) break;
+                        else skip();
+                    }
+                    expect(TT.RFIG);
+                    skip();
+
+                    return cbodyNode;
+                }
+
                 initMemStaticObject.childs.Add(varNode); if (sem || peek(TT.SEM)) { expect(TT.SEM); skip(); }
                 return initMemStaticObject;
             }
@@ -1004,8 +1032,18 @@ namespace Qscript
             if (peek(TT.VAR))
             {
                 CommonNode typeNode = new CommonNode(NT.TYPE, varNode.token);
-
-                return parseType(typeNode);
+                CommonNode retNode = new CommonNode(NT.CBODY, varNode.token);
+                    
+                retNode.childs.Add(parseType(typeNode));
+                
+                while (true)
+                {
+                    if (!peek(TT.PS)) break;
+                    skip();
+                    if (!peek(TT.VAR) && tokens[pos].value != "*") break;
+                    root.childs.Add(parseType(new CommonNode(NT.TYPE, varNode.token)));
+                }
+                return retNode;
             }
             if (peek(TT.SEM))
             {

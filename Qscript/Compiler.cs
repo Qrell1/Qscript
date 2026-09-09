@@ -166,9 +166,9 @@ namespace Qscript
                     char boolChar = (root.token.value == "true") ? '1' : '0'; _objProg.code.Append($"mov .reg{regIndex++}, {boolChar}\n");
                     regReturn = $".reg{regIndex-1}";
                     break;
-                case NT.CONST:
-                    translationConst(root, z_buffer);
-                    break;
+                //case NT.CONST:
+                //    translationConst(root, z_buffer);
+                //    break;
                 case NT.STRING:
                     translationString(root, z_buffer);
                     break;
@@ -272,6 +272,7 @@ namespace Qscript
                 case NT.OFFSETBODY:
                     translationOffsetBody(root, z_buffer);
                     break;
+                case NT.CBODY:
                 case NT.BODY:
                     for (int i = 0; i < root.childs.Count; i++)
                     {

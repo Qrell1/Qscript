@@ -50,15 +50,15 @@ namespace Qscript
             // Replace Constant Var Value
             //astNode = replaceConstantVarValue(astNode);
             // BinOper Cheak Float
-            //astNode = binOperCheak(astNode);
+            astNode = binOperCheak(astNode);
             // Constant BinOper ReFresh
-            //astNode = binOperReFresh(astNode);
+            astNode = binOperReFresh(astNode);
             // Second Repcale Constant Var Value
             //astNode = replaceConstantVarValue(astNode);
             // Cmp ReFresh
-            //astNode = cmpReFresh(astNode);
+            astNode = cmpReFresh(astNode);
             // If destroy
-            //astNode = cmpCheakDelete(astNode);
+            astNode = cmpCheakDelete(astNode);
             // Class ReFresh
             astNode = classReFresh(astNode);
             // Class Inheritances
