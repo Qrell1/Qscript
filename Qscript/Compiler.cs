@@ -2003,6 +2003,7 @@ namespace Qscript
         }
         private void translationStruct (CommonNode root, int z_buffer)
         {
+            if (ProgramAst.classAbstracts.Contains(root.token.value)) return;
             if (ProgramAst.externStructs.Contains(root.token.value))
             {
                 _objProg.data.Append($"SIZE_{root.token.value.ToUpper()} = sizeof.{root.token.value}\n");
@@ -2040,7 +2041,8 @@ namespace Qscript
 
             int size = getStructSize(root.token.value);
 
-            if (size % 4 != 0) _objProg.code.Append($"    align {4 - size % 4}\n");
+            if (offset % 4 == 3) _objProg.code.Append($"    align 2\n   align 1\n");
+            else if (offset % 4 != 0) _objProg.code.Append($"    align {offset % 4}\n");
 
             _objProg.code.Append("ends\n");
 

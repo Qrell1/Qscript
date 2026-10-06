@@ -42,6 +42,8 @@ namespace Qscript
         public Dictionary<string, List<CommonNode>> classMethods = new Dictionary<string, List<CommonNode>>();
         public Dictionary<string, List<CommonNode>> classVars = new Dictionary<string, List<CommonNode>>();
         public Dictionary<string, List<CommonNode>> classConstructors = new Dictionary<string, List<CommonNode>>();
+        public List<string> classAbstracts = new List<string>();
+        public List<string> classUnaligment  = new List<string>();
 
         public Dictionary<string, List<CommonNode>> declarotiveClassMethods = new Dictionary<string, List<CommonNode>>();
         public Dictionary<string, List<CommonNode>> declarotiveClassVars = new Dictionary<string, List<CommonNode>>();
@@ -155,10 +157,10 @@ namespace Qscript
         PREUNAROPER, POSTUNAROPER,
         REGUSE, TYPEOPER, SIGNATURE, OFFSET,
         TAG, FUNCTEMPLETE, CONSTRUCTOR, DESTRUCTOR, DECLARATOR, ELSES, NAME, AIR,
-        TYPE, INDICATOR, PTR,
+        TYPE, INDICATOR, PTR, 
         STACK, USEADDRESSVAR,
         STEP,
-        FLOATOPER, CALLADDRESS, CBODY
+        FLOATOPER, CALLADDRESS, CBODY, PARTICAL, ALIGMENT, STATICFUNCTION, REF
     }
 
 
@@ -206,7 +208,7 @@ namespace Qscript
             this.right = right;
         }
     }
-
+    
     class UnarOpNode : Node
     {
         public Token op;

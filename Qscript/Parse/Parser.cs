@@ -1446,6 +1446,12 @@ namespace Qscript
             //expect(new string[] { NT.VAR, NT.OPER });
             //SyntaxError($"Ну типо ты в структуре данных на позиции:{pos} используешь первым токеном оператором не того типа!!!");
 
+            if (tokens[pos].value == "@" && tokens[pos + 1].type == TT.VAR)
+            {
+                skip();
+                return new CommonNode(NT.REF, take());
+            }
+
             //
             if (peek(TT.VAR) && (tokens[pos + 1].type == TT.VAR || tokens[pos + 1].value == "*" || tokens[pos + 1].value == "@"))
             {
@@ -1501,9 +1507,72 @@ namespace Qscript
         private CommonNode parseStrurct()
         {
             expect(new TT[] { TT.STRUCT, TT.CLASS }); Token typeStructToken = take();
-            expect(TT.VAR); Token nameToken = take();
+
+            //bool endflag = false;
+            //bool abstractflag = false;
+            //bool particalflag = false;
+
+            Token nameToken = take();
+            List<MCS> modifairs = new List<MCS>();
+            string name = string.Empty;
+
+            bool particalflag = false;
+            bool compositionflag = false;
+
+            while (nameToken.value == "@") {
+                if (nameToken.value == "@")
+                {
+                    expect(TT.VAR);
+                    nameToken = take();
+                    switch (nameToken.value)
+                    {
+                        case "static": modifairs.Add(MCS.STATIC); break;
+                        case "partical": modifairs.Add(MCS.PARTICAL); break;
+                        case "composition": modifairs.Add(MCS.COMPOSITION); break;
+                        case "ref": modifairs.Add(MCS.REF); break;
+                        case "name": modifairs.Add(MCS.NAME); break;
+                        case "abstract": modifairs.Add(MCS.ABSTRACT); break;
+                        case "unaligment": modifairs.Add(MCS.UNALIGMENT); break;
+                        case "aligment": modifairs.Add(MCS.ALIGMENT); break;
+                        case "padding": modifairs.Add(MCS.PADDING); break;
+                        default: modifairs.Add(MCS.PADDING); break;
+                    }
+                    if (modifairs.Last() == MCS.PARTICAL)
+                    {
+                        particalflag = true;
+                        modifairs.Remove(MCS.PARTICAL);
+                    }
+                    else if (modifairs.Last() == MCS.COMPOSITION)
+                    {
+                        compositionflag = true;
+                        modifairs.Remove(MCS.COMPOSITION);
+                    }
+                    else if (modifairs.Last() == MCS.REF || modifairs.Last() == MCS.NAME)
+                    {
+                        expect(TT.OPER, "=");
+                        skip();
+                        expect(TT.VAR);
+                        nameToken = take();
+                        name = nameToken.value;
+                    }
+                }
+                nameToken = take();
+            }
+
+            if (particalflag && compositionflag)
+            {
+                Syntax.SyntaxError("В структуре не может быть два не совместимых модификатора: @partical, @composition", nameToken);
+            }
+            if (!particalflag && !compositionflag)
+            {
+                compositionflag = true;
+            }
+
             CommonNode structNode = new CommonNode(getNodeType(typeStructToken.type), nameToken);
             CommonNode declarotivePart = null;
+
+            List<Field> fields = new List<Field>();
+            List<CommonNode> metodos = new List<CommonNode>();
 
             if (peek(TT.OPER) && tokens[pos].value == ":")
             {
@@ -1512,14 +1581,6 @@ namespace Qscript
             }
 
             declarotivePart = parseDeclarator();
-            
-            /*if (peek(NT.OPER))
-            {
-                skip(); expect(NT.VAR); CommonNode varNode = new CommonNode(NT.VAR, take());
-                CommonNode declarotivePartSecond = parseDeclarator();
-                if (declarotivePartSecond != null) varNode.childs.Add(declarotivePartSecond);
-                root.parentsStructs.Add(structNode.token.value, varNode);
-            }*/
 
             if (declarotivePart != null) structNode.childs.Add(declarotivePart);
             expect(TT.LFIG); skip(); if (peek(TT.RFIG)) { skip(); return structNode; }
@@ -1534,16 +1595,47 @@ namespace Qscript
                 {
                     CommonNode varNode = parseStructChildren(nameToken.value);
                     if (varNode == null)
-                        varNode = parse(); if (!(new NT[] { NT.VAR }.Contains(varNode.type))) SyntaxError($"Ты чё в структуре Узел Типа:{varNode.type} не может находиться!");
-                    structNode.childs.Add(varNode);
-
+                        varNode = parse(); if (!(new NT[] { NT.REF, NT.VAR }.Contains(varNode.type))) SyntaxError($"Ты чё в структуре Узел Типа:{varNode.type} не может находиться!");
+                    if (varNode.type == NT.REF)
+                    {
+                        fields.Add(new Field(varNode.token.value, null, new List<MCS>()));
+                    }
+                    else
+                    {
+                        structNode.childs.Add(varNode);
+                        fields.Add(new Field(varNode.token.value, varNode.childs[0], new List<MCS>()));
+                    }
 
                     if (peek(TT.RFIG))
                     {
+
                         skip();
                         if (declarotivePart != null) root.declarotivePatternsStruct.Add(nameToken.value, structNode);
                         if (declarotivePart != null) return null;
-                        return structNode;
+
+                        if (declarotivePart == null)
+                        {
+                            if (!CompositionParser.structSpaces.ContainsKey(nameToken.value))
+                            {
+                                StructSpace structSpace = new StructSpace(name, structNode);
+                                CompositionParser.structSpaces[nameToken.value] = structSpace;
+                            }
+
+                            if (particalflag)
+                            {
+                                CompositionParser.structSpaces[nameToken.value].structParticals.Add(new ParticalStruct(nameToken.value, name, modifairs, fields));
+                                CompositionParser.structSpaces[nameToken.value].structParticals.Last().structNode = structNode;
+                                CompositionParser.structSpaces[nameToken.value].structParticals.Last().metods = new List<CommonNode>();
+                            }
+                            if (compositionflag)
+                            {
+                                CompositionParser.structSpaces[nameToken.value].structCompositions.Add(name, new CompositionStruct(name, modifairs, fields));
+                                CompositionParser.structSpaces[nameToken.value].structCompositions.Last().Value.structNode = structNode;
+                                CompositionParser.structSpaces[nameToken.value].structCompositions.Last().Value.metods = new List<CommonNode>();
+                            }
+                            return null;
+                        }
+                        else return structNode;
                     }
                     else if (peek(TT.MODIFIER))
                     {
@@ -1561,23 +1653,55 @@ namespace Qscript
             {
                 while (true)
                 {
-                    /*CommonNode varNode = parse();
-                    if (!(new string[] { NT.VAR, NT.FUNC }.Contains(varNode.type))) SyntaxError($"Ты чё в структурн Токен Типа:{varNode.type} не может первым находиться");
-                    modifierNode.childs.Add(varNode);*/
                     CommonNode varNode = parseStructChildren(nameToken.value);
                     if (varNode == null)
                         varNode = parse();
-                    if (!(new NT[] { NT.VAR, NT.FUNC, NT.CONSTRUCTOR, NT.DESTRUCTOR }.Contains(varNode.type))) SyntaxError($"Ты чё в структурн Узел Типа:{varNode.type} не может первым находиться");
-                    //modifierNode.childs.Add(varNode);
-                    structNode.childs.Add(varNode);
+                    if (!(new NT[] { NT.REF, NT.VAR, NT.FUNC, NT.CONSTRUCTOR, NT.DESTRUCTOR }.Contains(varNode.type))) SyntaxError($"Ты чё в структурн Узел Типа:{varNode.type} не может первым находиться");
+
+                    if (varNode.type == NT.REF)
+                    {
+                        fields.Add(new Field(varNode.token.value, null, new List<MCS>()));
+                    }
+                    //else if ()
+                    //{
+                    //    structNode.childs.Add(varNode);
+                    //    fields.Add(new Field(varNode.token.value, varNode.childs[0], new List<MCS>()));
+                    //}
+
+                    if (varNode.type == NT.FUNC)
+                        metodos.Add(varNode);
+                    else if (varNode.type == NT.VAR)
+                        fields.Add(new Field(varNode.token.value, varNode.childs[0], new List<MCS>()));
 
                     if (peek(TT.RFIG))
                     {
+
                         skip();
-                        //structNode.childs.Add(modifierNode);
 
                         if (declarotivePart != null) root.declarativeClassNames.Add(nameToken.value);
-                        return structNode;
+
+                        if (declarotivePart == null)
+                        {
+                            if (!CompositionParser.structSpaces.ContainsKey(nameToken.value))
+                            {
+                                StructSpace structSpace = new StructSpace(name, structNode);
+                                CompositionParser.structSpaces[nameToken.value] = structSpace;
+                            }
+
+                            if (particalflag)
+                            {
+                                CompositionParser.structSpaces[nameToken.value].structParticals.Add(new ParticalStruct(nameToken.value, name, modifairs, fields));
+                                CompositionParser.structSpaces[nameToken.value].structParticals.Last().structNode = structNode;
+                                CompositionParser.structSpaces[nameToken.value].structParticals.Last().metods = metodos;
+                            }
+                            if (compositionflag)
+                            {
+                                CompositionParser.structSpaces[nameToken.value].structCompositions.Add(name, new CompositionStruct(name, modifairs, fields));
+                                CompositionParser.structSpaces[nameToken.value].structCompositions.Last().Value.structNode = structNode;
+                                CompositionParser.structSpaces[nameToken.value].structCompositions.Last().Value.metods = metodos;
+                            }
+                            return null;
+                        } else return structNode;
                     }
                 }
             }

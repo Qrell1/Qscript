@@ -248,11 +248,20 @@ namespace Qscript
             //PrintAST(ast, 0);
 
             Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Start CompositionParser...");
+            Console.ResetColor();
+            try
+            {
+                ast = CompositionParser.parse(ast);
+            }
+            catch (Exception e) { Console.WriteLine($"При Композиционом Парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
+
+            Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start PostParser...");
             Console.ResetColor();
             addParser = new AbbreviationParser();
             try { ast = addParser.abbParse(ast); }
-            catch (Exception e) { Console.WriteLine($"При пост-парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
+            catch (Exception e) { Console.WriteLine($"При пост-парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); PrintAST(ast, 0); Console.ReadKey(); return; }
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start SemanticAnalyser...");
             Console.ResetColor();

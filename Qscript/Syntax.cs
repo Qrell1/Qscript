@@ -18,7 +18,7 @@ namespace Qscript
             Console.Write(" |  ");
             Console.ForegroundColor = ConsoleColor.White;
         }
-        private static (string, int) getFileName (int pos)
+        public static (string, int) getFileName (int pos)
         {
             int offset = 0;
             string file = string.Empty;

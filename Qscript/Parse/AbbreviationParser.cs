@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -715,25 +716,54 @@ namespace Qscript
 
         private CommonNode structCheak(CommonNode root)
         {
-            if (root.type != NT.STRUCT)
+            if (root.type != NT.STRUCT && root.type != NT.PARTICAL)
             {
                 for (int i = 0; i < root.childs.Count; i++)
                 {
                     root.childs[i] = structCheak(root.childs[i]);
                 }
                 return root;
+            } else if (root.type == NT.PARTICAL)
+            {
+                if (ast.structs.ContainsKey(root.token.value))
+                {
+                    foreach (CommonNode var in root.childs)
+                    {
+                        ast.structs[root.token.value].Add(var.token.value, var.childs[0]);
+                    }
+
+                    root.type = NT.AIR;
+                    root.childs.Clear();
+                    return root;
+                }
+                root.type = NT.CLASS;
             }
+
             //ast.structs.Add
             //parseStruct(root, 0);
-            if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
-            //if (ast.declarotiveNames.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
-            Dictionary<string, CommonNode> typesVar = new Dictionary<string, CommonNode>();
-            foreach (CommonNode var in root.childs)
+            if (!ast.structs.ContainsKey(root.token.value))
             {
-                typesVar.Add(var.token.value, var.childs[0]);
+                if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
+                //if (ast.declarotiveNames.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
+                Dictionary<string, CommonNode> typesVar = new Dictionary<string, CommonNode>();
+                foreach (CommonNode var in root.childs)
+                {
+                    typesVar.Add(var.token.value, var.childs[0]);
+                }
+                ast.structs.Add(root.token.value, typesVar);
+
+                return root;
+            } else
+            {
+                if (ast.declarotivePatternsStruct.Keys.Contains(root.token.value)) return new CommonNode(NT.AIR, root.token);
+
+                foreach (CommonNode var in root.childs)
+                {
+                    ast.structs[root.token.value].Add(var.token.value, var.childs[0]);
+                }
+
+                return root;
             }
-            ast.structs.Add(root.token.value, typesVar);
-            
             return root;
             //return parseStruct(root, 0);
         }
@@ -901,22 +931,22 @@ namespace Qscript
             List<CommonNode> list = new List<CommonNode>();
             Dictionary<string, List<string>> sortStructs = new Dictionary<string, List<string>>();
             Dictionary<string, CommonNode> structs = new Dictionary<string, CommonNode>();
-            foreach (var c in root.childs) 
-            if (c.type == NT.STRUCT)
-            {
-                sortStructs.Add(c.token.value, new List<string>());
-                bool flag = false;
-                foreach (var v in c.childs)
-                { 
-                    if (!DataBase.types.ContainsKey(v.childs[0].token.value) && v.childs[0].type != NT.INDICATOR)
+            foreach (var c in root.childs)
+                if (c.type == NT.STRUCT)
+                {
+                    sortStructs.Add(c.token.value, new List<string>());
+                    bool flag = false;
+                    foreach (var v in c.childs)
                     {
-                        sortStructs[c.token.value].Add(v.childs[0].token.value);
-                        flag = true;
+                        if (!DataBase.types.ContainsKey(v.childs[0].token.value) && v.childs[0].type != NT.INDICATOR)
+                        {
+                            sortStructs[c.token.value].Add(v.childs[0].token.value);
+                            flag = true;
+                        }
                     }
-                }
-                if (!flag) { list.Add(c); islist.Add(c.token.value); }
-                structs.Add(c.token.value, c);
-            } else list.Add(c);
+                    if (!flag) { list.Add(c); islist.Add(c.token.value); }
+                    structs.Add(c.token.value, c);
+                } else list.Add(c);
 
             /*foreach (var v in sortStructs)
             {
@@ -952,6 +982,42 @@ namespace Qscript
                 }
             }
             ast.childs = list;
+            if (isActive.Count > 0)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(" * Ошибка Отсутствуют нужные определения для структур: ");
+                foreach (var child in isActive)
+                {
+                    Console.WriteLine(" -| " + child);
+                }
+                Console.WriteLine(" => Отсутствующие определения: ");
+                List<string> strings = new List<string>();
+                List<string> worked = new List<string>();
+
+                void GetAttacments (string str, ref List<string> resualt)
+                {
+                    if (worked.Contains(str)) { return; }
+                    foreach (var child in ast.structs[str])
+                    {
+                        //Console.WriteLine(child.Value.token.value);
+                        if (child.Value.type == NT.INDICATOR) continue;
+                        else if (worked.Contains(child.Value.token.value)) continue;
+                        else if (isActive.Contains(child.Value.token.value)) GetAttacments(child.Value.token.value, ref resualt);
+                        else if (!DataBase.types.ContainsKey(child.Value.token.value) && !islist.Contains(child.Value.token.value)) resualt.Add(child.Value.token.value);
+                    }
+                    worked.Add(str);
+                }
+                foreach (var child in isActive)
+                {
+                    GetAttacments(child, ref strings);
+                }
+                foreach (var child in strings)
+                {
+                    Console.WriteLine(" -| " + child);
+                }
+                Console.ResetColor();
+                Console.ReadKey();
+            }
             return ast;
         }
         private CommonNode varRegisterCheakUses(CommonNode root)
@@ -1513,6 +1579,7 @@ namespace Qscript
 
         private CommonNode copyNodes (CommonNode root)
         {
+            //Console.WriteLine(root.token.value + " : " + root.type);
             CommonNode rootNode = new CommonNode(root.type, new Token(root.token.type, root.token.value, root.token.pos));
             List<CommonNode> nodes = new List<CommonNode>();
 
