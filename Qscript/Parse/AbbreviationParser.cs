@@ -106,11 +106,14 @@ namespace Qscript
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = callCheak(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
+            newAst = defineCheak(ast);
+            ast.childs = new List<CommonNode>(newAst.childs);
             newAst = includeParentsStructs(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
             newAst = structsSort(ast);
             ast.childs = new List<CommonNode>(newAst.childs);
             ast.varTypes = varSpace.VarsData;
+
             
             return ast;
         }
@@ -773,8 +776,13 @@ namespace Qscript
         }
         private CommonNode functionPreparing(CommonNode root)
         {
+            if (root.type == NT.STRUCT || root.type == NT.CLASS)
+            {
+                return root;
+            }
             if (root.type == NT.FUNC)
             {
+                if (root.childs.Last().type == NT.DECLARATOR) return root;
                 if (ast.functionOver.ContainsKey(root.token.value) && ast.functionOver[root.token.value].Count != 0)
                 {
                     string keyTemp = root.token.value;
@@ -980,6 +988,13 @@ namespace Qscript
                 }
                 return root;
             }
+
+            if (!ast.resualtFunc.Keys.Contains(root.token.value))
+            {
+                if (root.childs[0].token.value == "void") ast.resualtFunc.Add(root.token.value, null);
+                else ast.resualtFunc.Add(root.token.value, root.childs[0]);
+            }
+
             if (root.childs[0].token.value != "function") return root;
 
             root = functionTypePreparing(root);
@@ -1013,7 +1028,10 @@ namespace Qscript
             CommonNode bodyNode = root.childs[2];
 
             if (typeFirstNode.token.value == typeSecondNode.token.value)
+            {
+                bodyNode.type = NT.CBODY;
                 return bodyNode;
+            }
             return new CommonNode(NT.AIR, root.token);
         }
         private CommonNode constRemove(CommonNode root)
