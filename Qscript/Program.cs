@@ -18,6 +18,28 @@ namespace Qscript
         public static Compiler compiler;
         public static AbbreviationParser addParser;
 
+        public static void PrintVarSpace(ref VarSpace vars)
+        {
+            Console.WriteLine("[VarsData] - Global");
+            Console.ForegroundColor = ConsoleColor.Blue;
+            foreach (var v in vars.VarsData)
+            {
+                Console.WriteLine($"{v.Key} : {v.Value.token.value} \\ {v.Value.type}");
+            }
+            Console.WriteLine("[VarsSpace] - Local");
+            int index = 0;
+            foreach (var vs in vars.VarsSpaces)
+            {
+                Console.WriteLine($"[VarsData] - NewSpace {index}");
+                foreach (var v in vs)
+                {
+                    Console.WriteLine($"{v.Key} : {v.Value.token.value} \\ {v.Value.type}");
+                }
+                index++;
+            }
+            Console.ResetColor();
+        }
+
         static void PrintListToken (List<Token> list)
         {
             foreach (Token token in list)
@@ -139,6 +161,9 @@ namespace Qscript
             ArchApp archApp = ArchApp.x86_32;
             FormatApp formatApp = FormatApp.windows;
 
+            string orgApp = string.Empty;
+            string useApp = string.Empty;
+
             if (args.Length >= 2)
             {
                 codes = File.ReadAllLines(args[0]);
@@ -151,10 +176,18 @@ namespace Qscript
                 //Console.WriteLine("args[1] = " + args[1]);
                 //Console.Read();
                 fileStream.Close();
-
+                
                 for (int i = 1; i < args.Length; i++)
                 {
-                    if (args[i].StartsWith("-type"))
+                    if (args[i].StartsWith("-org"))
+                    {
+                        orgApp = args[i].Split('=').Last();
+                    }
+                    else if (args[i].StartsWith("-use"))
+                    {
+                        useApp = args[i].Split('=').Last();
+                    }
+                    else if (args[i].StartsWith("-type"))
                     {
                         string _typeApp = args[i].Split('=').Last().ToLower();
                         switch (_typeApp)
@@ -261,7 +294,8 @@ namespace Qscript
             Console.ResetColor();
             addParser = new AbbreviationParser();
             try { ast = addParser.abbParse(ast); }
-            catch (Exception e) { Console.WriteLine($"При пост-парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); PrintAST(ast, 0); Console.ReadKey(); return; }
+            catch (Exception e) { Console.WriteLine($"При пост-парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); string _read = Console.ReadLine();
+                if (_read[0] != 'n' && _read[0] != 'н') PrintAST(ast, 0); Console.ReadKey(); return; }
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start SemanticAnalyser...");
             Console.ResetColor();
@@ -279,8 +313,8 @@ namespace Qscript
 
                 Console.WriteLine("Показать AST? (y/n || д/н): ");
 
-                read = Console.ReadLine();
-                if (read[0] != 'n' && read[0] != 'н') PrintAST(ast, 0);
+                string _read = Console.ReadLine();
+                if (_read[0] != 'n' && _read[0] != 'н') PrintAST(ast, 0);
             }
             //Console.WriteLine("NEW AST AbbreviationParser!!!");
             //if (args.Length == 0)
@@ -292,7 +326,7 @@ namespace Qscript
             compiler = new Compiler("dsd", ast, modeApp);
             try { compiler.Translation(ast, 0); }
             catch (Exception e) { Console.WriteLine($"При Компиляции что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
-            string data = compiler.ConcatData(typeApp, modeApp, archApp, formatApp);
+            string data = compiler.ConcatData(typeApp, modeApp, archApp, formatApp, orgApp, useApp);
             compiler.WriteCode(data, filename, pathCompile, "qsr");
 
             Console.WriteLine("End...");

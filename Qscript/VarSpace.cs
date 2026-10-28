@@ -35,15 +35,32 @@ namespace Qscript
             return VarsData.ContainsValue(value);
         }
 
+        public bool AllContainsKey(string key)
+        {
+            if (VarsSpaces.Count == 0)
+            {
+                return VarsData.ContainsKey(key);
+            }
+            
+            foreach (var space in VarsSpaces)
+            {
+                if (space.ContainsKey(key))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public bool PeekContainsKey(string key)
         {
-            if (VarsSpaces.Count == 0) return false;
+            if (VarsSpaces.Count == 0) return VarsData.ContainsKey(key);
             return VarsSpaces.Peek().ContainsKey(key);
         }
 
         public bool PeekContainsValue(CommonNode value)
         {
-            if (VarsSpaces.Count == 0) return false;
+            if (VarsSpaces.Count == 0) return VarsData.ContainsValue(value);
             return VarsSpaces.Peek().ContainsValue(value);
         }
 
@@ -60,7 +77,6 @@ namespace Qscript
 
         public CommonNode GetType(string key)
         {
-            if (VarsData.ContainsKey(key)) return VarsData[key];
             //if (VarsSpaces.Count != 0 && VarsSpaces.Peek().ContainsKey(key)) return VarsSpaces.Peek()[key];
             foreach (var space in VarsSpaces)
             {
@@ -70,12 +86,12 @@ namespace Qscript
                 }
             }
 
+            if (VarsData.ContainsKey(key)) return VarsData[key];
             Console.WriteLine("Null " + key);
             return null;
         }
         public string GetTypeValue(string key)
         {
-            if (VarsData.ContainsKey(key)) return VarsData[key].token.value;
             foreach (var space in VarsSpaces)
             {
                 if (space.ContainsKey(key))
@@ -83,6 +99,7 @@ namespace Qscript
                     return space[key].token.value;
                 }
             }
+            if (VarsData.ContainsKey(key)) return VarsData[key].token.value;
             return null;
         }
         public void AddVar(string key, CommonNode value)
@@ -109,8 +126,8 @@ namespace Qscript
 
         public bool VarIsType(string key, string typeValue)
         {
-            if (VarsData.ContainsKey(key) && VarsData[key].token.value == typeValue) return true;
             if (VarsSpaces.Count != 0 && VarsSpaces.Peek().ContainsKey(key) && VarsSpaces.Peek()[key].token.value == typeValue) return true;
+            if (VarsData.ContainsKey(key) && VarsData[key].token.value == typeValue) return true;
             return false;
         }
 

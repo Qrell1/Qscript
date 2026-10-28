@@ -506,7 +506,7 @@ namespace Qscript
             Token operatpor = null;          // token 2
                                              //if (peek(NT.OPER) && (new string[] {"*", "/" }.Contains(tokens[pos].value)))
                                              //operatpor = take();
-            while ((peek(TT.OPER) || peek(TT.PREFIX)) && (new string[] { "*", "/", "%", "|", "&" }.Contains(tokens[pos].value)))
+            while ((peek(TT.OPER) || peek(TT.PREFIX)) && (new string[] { "*", "/", "%", "|", "&", "<<", ">>" }.Contains(tokens[pos].value)))
             {
                 operatpor = take();
                 CommonNode right = parsePar();
@@ -856,20 +856,20 @@ namespace Qscript
             varNode.childs.Add(body);
             if (declarator != null) varNode.childs.Add(declarator);
 
-            if (root.functionOver.ContainsKey(varNode.token.value) && root.functionOver[varNode.token.value].Count != 0)
-            {
-                string keyTemp = varNode.token.value;
-                varNode.token.value += root.functionOver[varNode.token.value].Count;
-                root.functionOver[keyTemp].Add(varNode);
-            }
+            //if (root.functionOver.ContainsKey(varNode.token.value) && root.functionOver[varNode.token.value].Count != 0)
+            //{
+            //    string keyTemp = varNode.token.value;
+            //    varNode.token.value += root.functionOver[varNode.token.value].Count;
+            //    root.functionOver[keyTemp].Add(varNode);
+            //}
 
-            if (varNode.childs[0].token.value == "void")
-                root.resualtFunc.Add(varNode.token.value, null);
-            else
-                root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
+            //if (varNode.childs[0].token.value == "void")
+            //    root.resualtFunc.Add(varNode.token.value, null);
+            //else
+            //    root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
 
             if (declarator != null) root.declarotivePatternsFunctions.Add(varNode.token.value, varNode);
-            if (!root.functionOver.ContainsKey(varNode.token.value)) root.functionOver.Add(varNode.token.value, new List<CommonNode>() { varNode });
+            //if (!root.functionOver.ContainsKey(varNode.token.value)) root.functionOver.Add(varNode.token.value, new List<CommonNode>() { varNode });
             if (qsFlag) root.qsFunction.Add(varNode.token.value);
             return varNode;
         }
@@ -1036,14 +1036,14 @@ namespace Qscript
                     
                 retNode.childs.Add(parseType(typeNode));
                 
-                while (true)
-                {
-                    if (!peek(TT.PS)) break;
-                    skip();
-                    if (!peek(TT.VAR) && tokens[pos].value != "*") break;
-                    root.childs.Add(parseType(new CommonNode(NT.TYPE, varNode.token)));
-                }
-                return retNode;
+                //while (true)
+                //{
+                //    if (!peek(TT.PS)) break;
+                //    skip();
+                //    if (!peek(TT.VAR) && tokens[pos].value != "*") break;
+                //    root.childs.Add(parseType(new CommonNode(NT.TYPE, varNode.token)));
+                //}
+                return retNode.childs.Last();
             }
             if (peek(TT.SEM))
             {
@@ -1504,7 +1504,7 @@ namespace Qscript
             SyntaxError("Неправильное объявление члена структуры данных");
             return null;
         }
-        private CommonNode parseStrurct()
+        private CommonNode parseStrurct(bool externflag = false)
         {
             expect(new TT[] { TT.STRUCT, TT.CLASS }); Token typeStructToken = take();
 
@@ -1602,9 +1602,11 @@ namespace Qscript
                     }
                     else
                     {
-                        structNode.childs.Add(varNode);
+                        //structNode.childs.Add(varNode);
                         fields.Add(new Field(varNode.token.value, varNode.childs[0], new List<MCS>()));
                     }
+
+                    if (externflag || declarotivePart != null) structNode.childs.Add(varNode);
 
                     if (peek(TT.RFIG))
                     {
@@ -1613,7 +1615,7 @@ namespace Qscript
                         if (declarotivePart != null) root.declarotivePatternsStruct.Add(nameToken.value, structNode);
                         if (declarotivePart != null) return null;
 
-                        if (declarotivePart == null)
+                        if (declarotivePart == null && !externflag)
                         {
                             if (!CompositionParser.structSpaces.ContainsKey(nameToken.value))
                             {
@@ -1635,7 +1637,7 @@ namespace Qscript
                             }
                             return null;
                         }
-                        else return structNode;
+                        return structNode;
                     }
                     else if (peek(TT.MODIFIER))
                     {
@@ -1664,7 +1666,7 @@ namespace Qscript
                     }
                     //else if ()
                     //{
-                    //    structNode.childs.Add(varNode);
+                    if(externflag || declarotivePart != null)    structNode.childs.Add(varNode);
                     //    fields.Add(new Field(varNode.token.value, varNode.childs[0], new List<MCS>()));
                     //}
 
@@ -1680,7 +1682,7 @@ namespace Qscript
 
                         if (declarotivePart != null) root.declarativeClassNames.Add(nameToken.value);
 
-                        if (declarotivePart == null)
+                        if (declarotivePart == null && !externflag)
                         {
                             if (!CompositionParser.structSpaces.ContainsKey(nameToken.value))
                             {
@@ -1701,7 +1703,7 @@ namespace Qscript
                                 CompositionParser.structSpaces[nameToken.value].structCompositions.Last().Value.metods = metodos;
                             }
                             return null;
-                        } else return structNode;
+                        } return structNode;
                     }
                 }
             }
@@ -1810,7 +1812,7 @@ namespace Qscript
 
             if (externNode.type == NT.EXTERN && peek(TT.STRUCT))
             {
-                CommonNode structNode = parseStrurct();
+                CommonNode structNode = parseStrurct(true);
                 root.externStructs.Add(structNode.token.value);
                 return structNode;
             }
@@ -1837,30 +1839,36 @@ namespace Qscript
             }
             else if (externNode.type == NT.EXTERN)
             {
-                List<string> listFuncNode = new List<string>();
-                string libraryString = string.Empty;
+                List<CommonNode> listFuncNode = new List<CommonNode>();
+                Token libraryString;
                 while (true)
                 {
                     if (peek(TT.EXTERN))
                     {
                         skip(); expect(TT.FROM); skip();
                         expect(TT.VAR);
-                        libraryString = take().value;
+                        libraryString = take();
                         break;
                     }
-                    else listFuncNode.Add(parseExtern().token.value);
+                    else listFuncNode.Add(parseExtern());
                 }
-                if (!root.externFuncs.ContainsKey(libraryString)) root.externFuncs.Add(libraryString, listFuncNode);
-                else root.externFuncs[libraryString].AddRange(listFuncNode);
-                return null;
+                CommonNode libraryfunc = new CommonNode(NT.EXTERNLIBRARY, libraryString);
+                foreach (CommonNode node in listFuncNode)
+                {
+                    libraryfunc.childs.Add(node);
+                }
+                //if (!root.externFuncs.ContainsKey(libraryString)) root.externFuncs.Add(libraryString, listFuncNode);
+                //else root.externFuncs[libraryString].AddRange(listFuncNode);
+                return libraryfunc;
             }
             else if (externNode.type == NT.EXTERNLIBRARY)
             {
                 expect(TT.VAR);
-                CommonNode libraryNode = new CommonNode(NT.VAR, take()); expect(TT.STRING);
-                if (!root.externLibrarys.ContainsKey(libraryNode.token.value)) root.externLibrarys.Add(libraryNode.token.value, take().value);
-                if (!root.externFuncs.ContainsKey(libraryNode.token.value)) root.externFuncs.Add(libraryNode.token.value, new List<string>());
-                return null;
+                CommonNode libraryNode = new CommonNode(NT.EXTERNLIBRARY, take()); expect(TT.STRING);
+                CommonNode stringNode = new CommonNode(NT.STRING, take());
+                //if (!root.externLibrarys.ContainsKey(libraryNode.token.value)) root.externLibrarys.Add(libraryNode.token.value, take().value);
+                //if (!root.externFuncs.ContainsKey(libraryNode.token.value)) root.externFuncs.Add(libraryNode.token.value, new List<string>());
+                return libraryNode;
             }
             else if (externNode.type == NT.EXTERNFUNC)
             {
@@ -1874,21 +1882,26 @@ namespace Qscript
 
 
                 CommonNode args = parseVarWTypeSignature();
-
-                if (varNode.childs[0].token.value == "void")
-                    root.resualtFunc.Add(varNode.token.value, null);
-                else
-                    root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
-                root.typesArgsFunc.Add(varNode.token.value, args);
+                CommonNode externfunc = new CommonNode(NT.EXTERNFUNC, varNode.token);
+                //if (varNode.childs[0].token.value == "void")
+                //{
+                //    Console.WriteLine(varNode.token.value);
+                //    root.externFuncsResualts.Add(varNode.token.value, null);
+                //}
+                //else
+                //    root.externFuncsResualts.Add(varNode.token.value, varNode.childs[0]);
+                externfunc.childs.Add(typeNode);
+                externfunc.childs.Add(args);
+                //root.typesArgsFuncExtern.Add(varNode.token.value, args);
                 //root.resualtFunc.Add(varNode.token.value, typeNode);
-                if (!peek(TT.FROM)) return varNode;
+                if (!peek(TT.FROM)) return externfunc;
 
                 expect(TT.FROM); skip(); expect(TT.VAR);
-                string libraryString = take().value;
-                if (!root.externFuncs.ContainsKey(libraryString)) root.externFuncs.Add(libraryString, new List<string>() { varNode.token.value });
-                else root.externFuncs[libraryString].Add(varNode.token.value);
-
-                return null;
+                //string libraryString = take().value;
+                //if (!root.externFuncs.ContainsKey(libraryString)) root.externFuncs.Add(libraryString, new List<string>() { varNode.token.value });
+                //else root.externFuncs[libraryString].Add(varNode.token.value);
+                externfunc.childs.Add(new CommonNode(NT.EXTERNLIBRARY, take()));
+                return externfunc;
             }
             return null;
         }
@@ -2008,10 +2021,10 @@ namespace Qscript
             varNode.childs.Add(args);
             varNode.childs.Add(body);
 
-            if (varNode.childs[0].token.value == "void")
-                root.resualtFunc.Add(varNode.token.value, null);
-            else
-                root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
+            //if (varNode.childs[0].token.value == "void")
+            //    root.resualtFunc.Add(varNode.token.value, null);
+            //else
+            //    root.resualtFunc.Add(varNode.token.value, varNode.childs[0]);
 
             if (qsFlag) root.qsFunction.Add(varNode.token.value);
             root.operatorFunctions.Add((operatorChar, args.childs[0].childs[0], args.childs[1].childs[0]), varNode.token.value);

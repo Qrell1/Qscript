@@ -56,15 +56,15 @@ namespace Qscript
         {
             //{ "r", "(eax|edx|ebx|ecx|esi|edi|esp|ebp)"},
             { "t", " "},
-            { "ri", @".reg[0-9]*[a-zA-Z]*"},
-            { "r", @"\b(rax|rdx|rbx|rcx|rsi|rdi|rsp|rbp|eax|edx|ebx|ecx|esi|edi|esp|ebp|al|dx|bx|cx|si|di|sp|bp)\b"},
+            { "ri", @".reg[0-9]*[!?a-zA-Z]*"},
+            { "r", @"\b(rax|rdx|rbx|rcx|rsi|rdi|rsp|rbp|eax|edx|ebx|ecx|esi|edi|esp|ebp|al|bl|dl|cl|ah|bh|dh|ch|dx|ax|bx|cx|si|di|sp|bp)\b"},
             //{ "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
             { "i", "\\.?[a-z\\\\.A-Z_][a-z\\\\.A-Z\\\\.0-9_]*\\:" },
             { "m", "\\[[^\\[\\]]+\\]" },
             //{ "m", @"\b\[^\[\]+\]\b" },
             //{ "m", @"\[^\[\]+\]" },
             { "v", @"\b[\\.a-z\\.A-Z_][\\.a-z\\.A-Z\\.0-9_]*\b" },
-            { "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
+            { "c", @"(\b[A-Z_A-Z_]+[0-9]*\b|\$)"},
             //{ "c", @"\b[A-Z_A-Z_]+[0-9]*\b"},
             { "n", "-?[0-9]+" },
             { "o", "(/|\\*|\\-|\\+)"},
@@ -114,6 +114,7 @@ namespace Qscript
 
         public static objProgram PostTranslation(objProgram _objProgram, ProgramNode _ProgramAst)
         {
+            //Console.WriteLine(_objProgram.procData.ToString());
             objProgram objProgramResualt = new objProgram();
             objProgramResualt.stringsConsts = _objProgram.stringsConsts;
             objProgramResualt.macroData = _objProgram.macroData;
@@ -274,13 +275,14 @@ namespace Qscript
             Console.WriteLine("Start RegisterMachine...");
             Console.ResetColor();
             StringData resualt = new StringData();
+            Dictionary<string, string> tableForms = new Dictionary<string, string>();
             Dictionary<string, string> tableRegisters = new Dictionary<string, string>();
             Dictionary<string, string> tableSafeRegisters = new Dictionary<string, string>();
             Dictionary<string, int> timelineRegisters = new Dictionary<string, int>();
             List<string> tasks = new List<string>();
             // ну ладно esi будет спец регистром пока что только для корректировки указателей
-            string[] asmRegisters = { "ecx", "edx", "ebx", "edi", "eax" };
-            if (line) asmRegisters = new string[] { "ebx", "ecx", "edx", "edi", "eax" };
+            string[] asmRegisters = { "ecx", "edx", "ebx", "edi", };
+            if (line) asmRegisters = new string[] { "ebx", "ecx", "edx", "edi" };
 
             Random rand = new Random();
             void removeRegTask (string task)
@@ -298,21 +300,31 @@ namespace Qscript
                 }
                 return (count > 1) ? true : false;
             }
-            string getFreeReg (string reg)
+            (string, string) getFreeReg (string reg)
             {
+                string r;
+                if (reg.EndsWith("!"))
+                {
+                    return ("eax", "eax");
+                }
                 if (reg.EndsWith("safe"))
                 {
                     for (int i = 0; i < asmRegisters.Length; i++)
                     {
-                        if (!tableSafeRegisters.ContainsValue(asmRegisters[i])) return asmRegisters[i];
+                        if (!tableSafeRegisters.ContainsValue(asmRegisters[i])) return (asmRegisters[i], asmRegisters[i]);
                     }
-
-                    return asmRegisters[rand.Next(0, 4)];
+                    r = asmRegisters[rand.Next(0, 4)];
+                    return (r,r);
                 }
                 else if (reg.EndsWith("qword") || reg.EndsWith("dword"))
                 {
                     string regType = reg.Substring(reg.Length-5);
                     int regSize = (regType == "qword") ? 0 : 1;
+                    reg = reg.Replace(regType, "");
+                    if (reg.EndsWith("!"))
+                    {
+                        return (DataBase.regs["eax"][regSize], "eax");
+                    }
 
                     string regReturn = string.Empty;
                     for (int i = 0; i < asmRegisters.Length; i++)
@@ -320,13 +332,17 @@ namespace Qscript
                         if (!tableRegisters.ContainsValue(asmRegisters[i])) regReturn = asmRegisters[i];
                     } if (regReturn == string.Empty) regReturn = asmRegisters[rand.Next(0, 5)];
 
-                    regReturn = DataBase.regs[regReturn][regSize];
-                    return regReturn;
+                    return (DataBase.regs[regReturn][regSize], regReturn);
                 }
                 else if (reg.EndsWith("word") || reg.EndsWith("byte"))
                 {
                     string regType = reg.Substring(reg.Length - 4);
                     int regSize = (regType == "word") ? 2 : 3;
+                    reg = reg.Replace(regType, "");
+                    if (reg.EndsWith("!"))
+                    {
+                        return (DataBase.regs["eax"][regSize], "eax");
+                    }
 
                     string regReturn = string.Empty;
                     for (int i = 0; i < asmRegisters.Length; i++)
@@ -336,8 +352,7 @@ namespace Qscript
                     }
                     if (regReturn == string.Empty) regReturn = asmRegisters[rand.Next(0, 5)];
 
-                    regReturn = DataBase.regs[regReturn][regSize];
-                    return regReturn;
+                    return (DataBase.regs[regReturn][regSize], regReturn);
                 }
                 else if (reg.EndsWith("x") || reg.EndsWith("l") || reg.EndsWith("h"))
                 {
@@ -353,16 +368,16 @@ namespace Qscript
                     } catch { number = number.Remove(number.Length-1, 1); }
                     regPrefer = regPrefer.Replace(number, "");
 
-                    if (!tableRegisters.ContainsValue(regPrefer)) return regPrefer;
-                    else return "push" + regPrefer;
+                    if (!tableRegisters.ContainsValue(regPrefer)) return (regPrefer, DataBase.uregs[regPrefer]);
+                    else return (regPrefer, "push" + DataBase.uregs[regPrefer]);
                 }
 
                 for (int i = 0; i < asmRegisters.Length; i++)
                 {
-                    if (!tableRegisters.ContainsValue(asmRegisters[i])) return asmRegisters[i];
+                    if (!tableRegisters.ContainsValue(asmRegisters[i])) return (asmRegisters[i], asmRegisters[i]);
                 }
-               
-                return "push" + asmRegisters[rand.Next(0,4)];
+                r = asmRegisters[rand.Next(0, 4)];
+                return (r, "push" + r);
             }
             for (int i = 0; i < instructs.Count; i++)
             {
@@ -389,6 +404,8 @@ namespace Qscript
                     }
                 }
             }
+    
+            string s1, s2;
 
             for (int i = 0; i < instructs.Count; i++)
             {
@@ -460,12 +477,15 @@ namespace Qscript
                         {
                             if (pat.value.EndsWith("safe"))
                             {
-                                tableSafeRegisters.Add(pat.value, getFreeReg(pat.value));
+                                (s1, s2) = getFreeReg(pat.value);
+                                tableSafeRegisters.Add(pat.value, s2);
+                                tableForms.Add(pat.value, s1);
                             }
                             else
                             {
-                                string freeReg = getFreeReg(pat.value);
-                                tableRegisters.Add(pat.value, (freeReg.StartsWith("push")) ? freeReg.Remove(0, 4).ToString() : freeReg);
+                                (string freeReg, string fullReg) = getFreeReg(pat.value);
+                                tableRegisters.Add(pat.value, (fullReg.StartsWith("push")) ? fullReg.Remove(0, 4).ToString() : fullReg);
+                                tableForms.Add(pat.value, freeReg);
                             }
                             //if (freeReg.StartsWith("push")) resualt.Append($"push {freeReg.Remove(0,4)}\n");
                         } else
@@ -477,11 +497,11 @@ namespace Qscript
                             }*/
                         }
                         string oldReg = pat.value;
-                        if (oldReg.EndsWith("safe")) pat.value = tableSafeRegisters[oldReg];
-                        else pat.value = tableRegisters[oldReg];
+                        if (oldReg.EndsWith("safe")) pat.value = tableForms[oldReg];
+                        else pat.value = tableForms[oldReg];
                         pat.key = "r";
                         if (oldReg.EndsWith("safe") && timelineRegisters[oldReg] == i) tableSafeRegisters.Remove(oldReg);
-                        else if (timelineRegisters[oldReg] == i) tableRegisters.Remove(oldReg);
+                        else if (timelineRegisters[oldReg] == i) { tableRegisters.Remove(oldReg); tableForms.Remove(oldReg); }
                     }
                     else if (pat.key == "m")
                     {
@@ -495,13 +515,16 @@ namespace Qscript
                                 {
                                     if (pat.value.EndsWith("safe"))
                                     {
-                                        tableSafeRegisters.Add(strtrim, getFreeReg(strtrim));
+                                        (s1, s2) = getFreeReg(pat.value);
+                                        tableSafeRegisters.Add(strtrim, s2);
+                                        tableForms.Add(strtrim, s1);
                                         continue;
                                     }
                                     else
                                     {
-                                        string freeReg = getFreeReg(strtrim);
-                                        tableRegisters.Add(strtrim, (freeReg.StartsWith("push")) ? freeReg.Remove(0, 4).ToString() : freeReg);
+                                        (s1, s2) = getFreeReg(pat.value);
+                                        tableRegisters.Add(strtrim, (s2.StartsWith("push")) ? s2.Remove(0, 4).ToString() : s2);
+                                        tableForms.Add(strtrim, s1);
                                     }
                                 }
                                 else
@@ -512,10 +535,10 @@ namespace Qscript
                                         removeRegTask(tableRegisters[strtrim]);
                                     }*/
                                 }
-                                if (strtrim.EndsWith("safe")) pat.value = pat.value.Replace(strtrim, tableSafeRegisters[strtrim]);
-                                else pat.value = pat.value.Replace(strtrim, tableRegisters[strtrim]);
-                                if (strtrim.EndsWith("safe") && timelineRegisters[strtrim] == i) tableSafeRegisters.Remove(strtrim);
-                                else if (timelineRegisters[strtrim] == i) tableRegisters.Remove(strtrim);
+                                if (strtrim.EndsWith("safe")) pat.value = pat.value.Replace(strtrim, tableForms[strtrim]);
+                                else pat.value = pat.value.Replace(strtrim, tableForms[strtrim]);
+                                if (strtrim.EndsWith("safe") && timelineRegisters[strtrim] == i) { tableSafeRegisters.Remove(strtrim); tableForms.Remove(strtrim); }
+                                else if (timelineRegisters[strtrim] == i) { tableRegisters.Remove(strtrim); tableForms.Remove(strtrim); }
                             }
                         }
                     }
@@ -761,7 +784,15 @@ namespace Qscript
                                             default: sizeIndex = 1; break;
                                         }
 
+                                    if (_inst.value != "lea" && _inst.value != "movsx")
+                                    {
                                         _inst.pattern[k].value = DataBase.regs[_inst.pattern[k].value][sizeIndex];
+                                        for (int h = 0; h < _inst.pattern.Count; h++)
+                                        { 
+                                            if (_inst.pattern[h].key == "r")
+                                                _inst.pattern[h].value = DataBase.regs[_inst.pattern[h].value][sizeIndex];
+                                        }
+                                    }
                                 }
                                     /*if (patterns[0].key == "r"
                                         && _inst.pattern[k].key == "r"
@@ -817,6 +848,52 @@ namespace Qscript
                             continue;
                         }
                     }
+
+
+                    if (InstructPattern(str, "?|rr") && _instuct.value != "out" && _instuct.value != "in")
+                    {  // sizeLeft == 4 & sizeRight == 1
+                        int sizeLeft = DataBase.uaregs[pattern1[0].value];
+                        int sizeRight = DataBase.uaregs[pattern1[1].value];
+                        if (sizeRight > sizeLeft)
+                        {
+                            string reg = DataBase.regs[DataBase.uregs[pattern1[1].value]][DataBase.aregs[pattern1[0].value]];
+                            bool flag = false;
+                            for(int f = 0; f < _instuct.pattern.Count; f++)
+                            {
+                                if (_instuct.pattern[f].key == "r" && !flag) flag = true;
+                                else if (_instuct.pattern[f].key == "r") _instuct.pattern[f].value = reg;
+                            }
+                        }
+                        if (sizeRight < sizeLeft)
+                        {
+                            if (_instuct.value == "movzx")
+                            {
+                                
+                            }
+                            else if (_instuct.value == "mov")
+                            {
+                                _instuct.value = "movsx";
+                            }
+                            else
+                            {
+                                string reg = DataBase.regs[DataBase.uregs[pattern1[1].value]][DataBase.aregs[pattern1[0].value]];
+                                //reg = DataBase.regs[DataBase.uregs[pattern1[0].value]][1];
+                                //resualt.Append($"movsx {reg}, {pattern1[1].value}");
+
+                                bool flag = false;
+                                for (int f = 0; f < _instuct.pattern.Count; f++)
+                                {
+                                    if (_instuct.pattern[f].key == "r" && !flag) flag = true;
+                                    else if (_instuct.pattern[f].key == "r") _instuct.pattern[f].value = reg;
+                                }
+
+                                //resualt.Append(InstructConcat(_instuct));
+                                //continue;
+                                //resualt.Append($"xor {reg}, {reg}");
+                            }
+                        }
+                    }
+
                     if (pattern1.Count == pattern2.Count && pattern1.Count == 2 && _instuct.value == _instructSecond.value &&
                         pattern1[0].value == pattern2[1].value && pattern1[1].value == pattern2[0].value)
                     {

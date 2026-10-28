@@ -295,7 +295,14 @@ namespace Qscript.Lex
                     goto end;
                 }
 
-                if (ff && (str == "++" || str == "--" || str == "<>")) // PREFIX
+                if (ff && (str == "<<" || str == ">>"))
+                {
+                    token = new Token(TT.OPER, str, stringIndex + offset);
+                    tokenList.Add(token);
+                    pos += 1;
+                    goto end;
+                }
+                else if (ff && (str == "++" || str == "--" || str == "<>")) // PREFIX
                 {
                     token = new Token(TT.PREFIX, str, stringIndex + offset);
                     tokenList.Add(token);

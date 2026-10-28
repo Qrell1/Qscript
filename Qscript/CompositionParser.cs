@@ -398,6 +398,7 @@ namespace Qscript
                     general = st.Value;
                 }
             }
+            
             if (general == null)
             {
                 Syntax.SyntaxError($"Не удалось найти гланую компазицию структуры: {name}", nametype);
@@ -485,6 +486,11 @@ namespace Qscript
             if (general.metods.Count == 0)
                 nametype.type = NT.STRUCT;
             else nametype.type = NT.CLASS;
+
+            if (general.modifairs.Contains(MCS.UNALIGMENT))
+            {
+                CompositionParser.ast.classUnaligment.Add(nametype.token.value);
+            }
 
             return nametype;
         }

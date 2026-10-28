@@ -75,7 +75,7 @@ namespace QSicon
                 if (args[0] == "info")
                 {
                     Console.WriteLine("======================");
-                    Console.WriteLine("=<  Version : 0.2v  >=");
+                    Console.WriteLine("=<  Version : 0.3v  >=");
                     Console.WriteLine("======================");
                 }
                 else if (args[0] == "update")
@@ -244,31 +244,51 @@ namespace QSicon
                 }
                 if (args[0] == "run" || outFlag)
                 {
-                    run:
+                run:
                     string projectPath = Environment.CurrentDirectory;
                     string configStrings = File.ReadAllText(projectPath + "\\config.json");
                     QscriptProject qscriptConfig = JsonConvert.DeserializeObject<QscriptProject>(configStrings);
 
                     string compileExe = qscriptConfig.compile_path.Split('\\').Last();
                     string fasmExe = qscriptConfig.compile_path.Replace(compileExe, "") + "\\fasm\\FASM.EXE";
+                    string toForm = "exe";
+
+                    if (args.Length > 2)
+                    {
+                        for (int i = 1; i < args.Length; i++)
+                        {
+                            if (args[i].StartsWith("-type"))
+                            {
+                                switch (args[i].Split('=').Last())
+                                {
+                                    case "exe": toForm = "exe"; break;
+                                    case "bin": toForm = "bin"; break;
+                                    default: toForm = "exe"; break;
+                                }
+                            }
+                        }
+                    }
 
                     Directory.CreateDirectory($"{projectPath}\\out\\");
 
                     var proc = new Process();
                     proc.StartInfo.FileName = fasmExe;
                     proc.StartInfo.Domain = $"{projectPath}\\scr\\";
-                    proc.StartInfo.Arguments = $"-m65536 \"{projectPath}\\scr\\bin\\main.qsr\" \"{projectPath}\\out\\main.exe\"";
+                    proc.StartInfo.Arguments = $"-m65536 \"{projectPath}\\scr\\bin\\main.qsr\" \"{projectPath}\\out\\main.{toForm}\"";
                     proc.Start();
 
                     proc.WaitForExit();
                     proc.Close();
 
                     //Console.Clear();
-                    Console.WriteLine($"{projectPath}\\out>start main.exe");
-                    var outExe = new Process();
-                    outExe.StartInfo.FileName = $"{projectPath}\\out\\main.exe";
-                    outExe.StartInfo.Domain = $"{projectPath}\\out\\";
-                    outExe.Start();
+                    Console.WriteLine($"{projectPath}\\out>start main.{toForm}");
+                    if (toForm == "exe")
+                    {
+                        var outExe = new Process();
+                        outExe.StartInfo.FileName = $"{projectPath}\\out\\main.exe";
+                        outExe.StartInfo.Domain = $"{projectPath}\\out\\";
+                        outExe.Start();
+                    }
                 }
                 //Thread.Sleep(1000);
                 return;

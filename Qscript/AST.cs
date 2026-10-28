@@ -55,6 +55,8 @@ namespace Qscript
         public Dictionary<string, string> ClassesInheritances = new Dictionary<string, string>();
 
         public Dictionary<string, Dictionary<string, CommonNode>> structs = new Dictionary<string, Dictionary<string, CommonNode>>();
+        public Dictionary<string, CommonNode> externFuncsResualts = new Dictionary<string, CommonNode>();
+        public Dictionary<string, CommonNode> typesArgsFuncExtern = new Dictionary<string, CommonNode>();
         public List<string> externStructs = new List<string>();
 
         public Dictionary<string, List<CommonNode>> functionOver = new Dictionary<string, List<CommonNode>>();
