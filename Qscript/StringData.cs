@@ -21,6 +21,11 @@ namespace Qscript
             Data.Add(str);
             Length++;
         }
+        public int AppendN(string str)
+        {
+            Data.Add(str);
+            return Length++;
+        }
 
         public string ToString()
         {

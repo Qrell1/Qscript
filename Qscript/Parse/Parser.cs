@@ -991,6 +991,8 @@ namespace Qscript
             {
                 skip();
                 varNode.type = NT.TAG;
+                if (varNode.token.value[0] != '.')
+                    varNode.token.value = "." + varNode.token.value;
                 return varNode;
             }
             if (peek(TT.OPER) && tokens[pos].value == "*")
@@ -2030,6 +2032,21 @@ namespace Qscript
             root.operatorFunctions.Add((operatorChar, args.childs[0].childs[0], args.childs[1].childs[0]), varNode.token.value);
             return varNode;
         }
+        private CommonNode parseTage()
+        {
+            CommonNode tageNode = new CommonNode(NT.VAR, take());
+            expect(TT.VAR);
+            tageNode.token.value += take().value;
+            tageNode = tryParseVarPath(tageNode);
+            tageNode.type = NT.TAG;
+            expect(TT.OPER, ":");
+            skip();
+            tageNode.token.value += ":";
+            Console.WriteLine(tageNode.token.value);
+
+            return tageNode;
+        }
+
 
         private CommonNode parseRegDeclaration()
         {
@@ -2094,6 +2111,10 @@ namespace Qscript
         public CommonNode parse() // 33 keywords
         {
             //Console.WriteLine($"{tokens[pos].value} {tokens[pos].type}");
+            if (tokens[pos].value == ".")
+            {
+                return parseTage();
+            }
             if (peek(TT.VARDECL))
             {
                 return parseVarDeclaration();
@@ -2178,6 +2199,7 @@ namespace Qscript
             {
                 return parseRegDeclaration();
             }
+            
             Syntax.SyntaxError($"Синтаксическая ошибка на токине: {tokens[pos].value}", tokens[pos]);
             Console.ReadKey();
             return null;

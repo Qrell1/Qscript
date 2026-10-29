@@ -110,7 +110,9 @@ namespace Qscript
             {"edx", new string[] {"rdx","edx","dx","dl"}},
             {"ebx", new string[] {"rbx","ebx","bx","bl"}},
             {"edi", new string[] {"rdi","edi","di","ah"}},
-            {"esi", new string[] {"rsi","esi","si","ch"}}
+            {"esi", new string[] {"rsi","esi","si","ch"}},
+            {"esp", new string[] {"rsp","esp","sp","spl"}},
+            {"ebp", new string[] {"rbp","ebp","bp","bpl"}},
         };
         public static Dictionary<string, string> uregs = new Dictionary<string, string>()
         {
@@ -139,7 +141,16 @@ namespace Qscript
             {"di",  "edi"},
             {"rsi", "esi"},
             {"esi", "esi"},
-            {"si",  "esi"}
+            {"si",  "esi"},
+
+            {"rsp", "esp"},
+            {"esp", "esp"},
+            {"sp",  "esp"},
+            {"spl", "esp"},
+            {"rbp", "ebp"},
+            {"ebp", "ebp"},
+            {"bp",  "ebp"},
+            {"bpl", "ebp"},
         };
         public static Dictionary<string, int> aregs = new Dictionary<string, int>()
         {
@@ -168,7 +179,13 @@ namespace Qscript
             {"di",  2},
             {"rsi", 0},
             {"esi", 1},
-            {"si",  2}
+            {"si",  2},
+            {"rsp", 0},
+            {"esp", 1},
+            {"sp",  2},
+            {"rbp", 0},
+            {"ebp", 1},
+            {"bp",  2},
         };
         public static Dictionary<string, int> uaregs = new Dictionary<string, int>()
         {
@@ -197,7 +214,20 @@ namespace Qscript
             {"di",  2},
             {"rsi", 8},
             {"esi", 4},
-            {"si",  2}
+            {"si",  2},
+            {"rsp", 8},
+            {"esp", 4},
+            {"sp",  2},
+            {"rbp", 8},
+            {"ebp", 4},
+            {"bp",  2},
+        };
+        public static Dictionary<int, string> sizes = new Dictionary<int, string>()
+        {
+            {8, "qword"},
+            {4, "dword"},
+            {2,  "word"},
+            {1,  "byte"},
         };
         public static Dictionary<string, string> regschars = new Dictionary<string, string>()
         {
