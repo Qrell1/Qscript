@@ -70,6 +70,8 @@ namespace Qscript
         public Dictionary<string, string> operationFunctionGet = new Dictionary<string, string>();
         public Dictionary<string, string> operationCounter = new Dictionary<string, string>();
 
+        public List<string> interruptionsFuncs = new List<string>();
+
         public ProgramNode(NT type, Token token) : base(type, token)
         {}
     }

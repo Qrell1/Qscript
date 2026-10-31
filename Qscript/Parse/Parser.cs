@@ -1868,6 +1868,7 @@ namespace Qscript
                 expect(TT.VAR);
                 CommonNode libraryNode = new CommonNode(NT.EXTERNLIBRARY, take()); expect(TT.STRING);
                 CommonNode stringNode = new CommonNode(NT.STRING, take());
+                libraryNode.childs.Add(stringNode);
                 //if (!root.externLibrarys.ContainsKey(libraryNode.token.value)) root.externLibrarys.Add(libraryNode.token.value, take().value);
                 //if (!root.externFuncs.ContainsKey(libraryNode.token.value)) root.externFuncs.Add(libraryNode.token.value, new List<string>());
                 return libraryNode;
@@ -2041,8 +2042,6 @@ namespace Qscript
             tageNode.type = NT.TAG;
             expect(TT.OPER, ":");
             skip();
-            tageNode.token.value += ":";
-            Console.WriteLine(tageNode.token.value);
 
             return tageNode;
         }

@@ -742,8 +742,7 @@ namespace Qscript
                 {
                     ast.typesArgsFuncExtern.Add(root.token.value, root.childs[1]);
                     ast.resualtFunc.Add(root.token.value, root.childs[0]);
-                    if (!ast.externFuncs.ContainsKey(libraryString)) ast.externFuncs.Add(libraryString, new List<string>() { root.token.value });
-                    else ast.externFuncs[libraryString].Add(root.token.value);
+                    if (!ast.externFuncs.ContainsKey(libraryString)) ast.externFuncs.Add(libraryString, new List<string>() { });
                 }
                 root.childs.Clear();
                 root.type = NT.AIR;
@@ -752,16 +751,17 @@ namespace Qscript
             else if (root.type == NT.EXTERNFUNC)
             {
                 ast.typesArgsFuncExtern.Add(root.token.value, root.childs[1]);
-                ast.resualtFunc.Add(root.token.value, root.childs[0]);
-                if (ast.childs.Count == 3)
+                if (root.childs[0].token.value == "void") ast.resualtFunc.Add(root.token.value, null);
+                else ast.resualtFunc.Add(root.token.value, root.childs[0]);
+                if (root.childs.Count == 3)
                 {
-                    string libraryString = ast.childs[2].token.value;
+                    string libraryString = root.childs[2].token.value;
+
                     if (!ast.externFuncs.ContainsKey(libraryString)) ast.externFuncs.Add(libraryString, new List<string>() { root.token.value });
                     else ast.externFuncs[libraryString].Add(root.token.value);
                 }
                 root.childs.Clear();
                 root.type = NT.AIR;
-                Console.WriteLine(root.token.value);
                 return root;
             }
             else
@@ -995,6 +995,13 @@ namespace Qscript
                 else ast.resualtFunc.Add(root.token.value, root.childs[0]);
             }
 
+            if (root.childs[0].token.value == "interruption")
+            {
+                root.childs[0].token.value = "void";
+                ast.resualtFunc[root.token.value] = null;
+                ast.interruptionsFuncs.Add(root.token.value);
+                return root;
+            }
             if (root.childs[0].token.value != "function") return root;
 
             root = functionTypePreparing(root);

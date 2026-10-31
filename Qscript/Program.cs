@@ -296,6 +296,7 @@ namespace Qscript
             try { ast = addParser.abbParse(ast); }
             catch (Exception e) { Console.WriteLine($"При пост-парсинге что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); string _read = Console.ReadLine();
                 if (_read[0] != 'n' && _read[0] != 'н') PrintAST(ast, 0); Console.ReadKey(); return; }
+            //PrintAST(ast, 0);
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start SemanticAnalyser...");
             Console.ResetColor();
@@ -319,14 +320,14 @@ namespace Qscript
             //Console.WriteLine("NEW AST AbbreviationParser!!!");
             //if (args.Length == 0)
             //PrintAST(ast, 0);
-            
+
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Start Compiler...");
             Console.ResetColor();
             compiler = new Compiler("dsd", ast, modeApp);
             try { compiler.Translation(ast, 0); }
             catch (Exception e) { Console.WriteLine($"При Компиляции что-то пошло не так...(\n{e.Message}\n{e.StackTrace}"); Console.ReadKey(); return; }
-            string data = compiler.ConcatData(typeApp, modeApp, archApp, formatApp, orgApp, useApp);
+            string data = compiler.ConcatData(typeApp, modeApp, archApp, formatApp, orgApp, useApp, ast.externFuncs.Count);
             compiler.WriteCode(data, filename, pathCompile, "qsr");
 
             Console.WriteLine("End...");

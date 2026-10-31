@@ -233,7 +233,7 @@ namespace Qscript
             for (int i = 0; i < instructs.Count; i++)
             {
                 inst _inst = instructs[i];
-                if (_inst.value ==  "proc")
+                if (_inst.value ==  "proc" || _inst.value == "proci")
                 {
                     foreach (var pat in _inst.pattern) { if (pat.key == "v") {  func = true; funcName = pat.value.Trim(); break; } }
                 }
@@ -570,6 +570,8 @@ namespace Qscript
             Dictionary <string, string> varsmemorytypes = new Dictionary<string, string>();
             int localvarsoffset = 0;
             int argssize = 0;
+            int localvarssize = 0;
+            Dictionary<string, string> oldVars = new Dictionary<string, string>();
             for (int i = 0; i < instructs.Count; i++)
             {
                 try
@@ -585,67 +587,73 @@ namespace Qscript
 
                     // proceture preparing
                     // // proc Name arg1:DWORD arg2:WORD
-                    if (_inst.value == "proc")
+                    if (_inst.value == "proc" || _inst.value == "proci")
                     {
+                        oldVars = new Dictionary<string, string>(vars);
+                        
                         localvarsoffset = 0;
                         argssize = 0;
                         varsmemory.Clear();
                         varsmemorytypes.Clear();
                         string resualtProcString = $"{patterns[0].value}: ";//$"proc {patterns[0].value} ";
-                        int localvarssize = Convert.ToInt32(patterns[1].value) * 4;
+                        localvarssize = Convert.ToInt32(patterns[1].value) * 4;
 
                         /*
                          push ebp
                          mov ebp, esp
                          */
-                        resualtProcString += $"\n    push ebp\n    mov ebp, esp\n    sub esp, {((localvarssize == 0) ? "0" : Convert.ToString(localvarssize))}\n";
-
-                        for (int j = 2; j < patterns.Count; j++)
+                        if (_inst.value == "proc")
                         {
-                            //Console.WriteLine(patterns[j].value);
-                            //Console.WriteLine(patterns[j+1].value);
-                            patterns[j].value = patterns[j].value.Remove(patterns[j].value.Length - 1, 1);
-                            
-                            if (patterns[j  + 1].value[0] == '*')
+                            resualtProcString += $"\n    push ebp\n    mov ebp, esp\n    sub esp, {((localvarssize == 0) ? "0" : Convert.ToString(localvarssize))}\n";
+
+                            for (int j = 2; j < patterns.Count; j++)
                             {
-                                if (vars.ContainsKey(patterns[j].value))
-                                { vars[patterns[j].value] = "*" + patterns[j + 2].value; }
-                                else { vars.Add(patterns[j].value, "*" + patterns[j + 2].value); }
-                                //resualtProcString += $" {patterns[j].value}:DWORD ,";
-                                varsmemory.Add(patterns[j].value, $"ebp+{argssize+8}");
-                                argssize += 4;
+                                //Console.WriteLine(patterns[j].value);
+                                //Console.WriteLine(patterns[j+1].value);
+                                patterns[j].value = patterns[j].value.Remove(patterns[j].value.Length - 1, 1);
+
+                                if (patterns[j + 1].value[0] == '*')
+                                {
+                                    if (vars.ContainsKey(patterns[j].value))
+                                    { vars[patterns[j].value] = "*" + patterns[j + 2].value; }
+                                    else { vars.Add(patterns[j].value, "*" + patterns[j + 2].value); }
+                                    //resualtProcString += $" {patterns[j].value}:DWORD ,";
+                                    varsmemory.Add(patterns[j].value, $"ebp+{argssize + 8}");
+                                    argssize += 4;
+                                    j++;
+                                }
+                                else if (!DataBase.typesarg.ContainsValue(patterns[j + 1].value))
+                                {
+                                    //Console.WriteLine(patterns[j + 1].value + " : " + patterns[j].value);
+                                    //resualtProcString += $" {patterns[j].value}:DWORD ,";
+                                    if (vars.ContainsKey(patterns[j].value))
+                                    { vars[patterns[j].value] = "*" + patterns[j + 1].value; }
+                                    else { vars.Add(patterns[j].value, "*" + patterns[j + 1].value); }
+                                    varsmemory.Add(patterns[j].value, $"ebp+{argssize + 8}");
+                                    argssize += 4;
+                                }
+                                else
+                                {
+                                    //resualtProcString += $" {patterns[j].value}:{patterns[j + 1].value} ,";
+                                    if (vars.ContainsKey(patterns[j].value))
+                                    { vars[patterns[j].value] = patterns[j + 1].value; }
+                                    else { vars.Add(patterns[j].value, patterns[j + 1].value); }
+                                    varsmemory.Add(patterns[j].value, $"ebp+{argssize + 8}");
+                                    argssize += 4;
+                                }
+                                args.Add(patterns[j].value);
                                 j++;
                             }
-                            else if (!DataBase.typesarg.ContainsValue(patterns[j + 1].value))
-                            {
-                                //Console.WriteLine(patterns[j + 1].value + " : " + patterns[j].value);
-                                //resualtProcString += $" {patterns[j].value}:DWORD ,";
-                                if (vars.ContainsKey(patterns[j].value))
-                                { vars[patterns[j].value] = "*" + patterns[j + 1].value; }
-                                else { vars.Add(patterns[j].value, "*" + patterns[j + 1].value); }
-                                varsmemory.Add(patterns[j].value, $"ebp+{argssize+8}");
-                                argssize += 4;
-                            }
-                            else
-                            {
-                                //resualtProcString += $" {patterns[j].value}:{patterns[j + 1].value} ,";
-                                if (vars.ContainsKey(patterns[j].value))
-                                { vars[patterns[j].value] = patterns[j + 1].value; }
-                                else { vars.Add(patterns[j].value, patterns[j + 1].value); }
-                                varsmemory.Add(patterns[j].value, $"ebp+{argssize+8}");
-                                argssize += 4;
-                            }
-                            args.Add(patterns[j].value);
-                            j++;
-                        }
-                        if (patterns.Count > 1) resualtProcString = resualtProcString.Remove(resualtProcString.Length - 1, 1);
+                            if (patterns.Count > 1) resualtProcString = resualtProcString.Remove(resualtProcString.Length - 1, 1);
+                        } 
                         //Console.WriteLine("Resualt Proc - " + resualtProcString);
                         resualt.Append(resualtProcString + "\n");
+                        if (_inst.value == "proci") resualt.Append("pusha\n");
                         continue;
                     }
 
                     // endp preparing
-                    if (_inst.value == "endp")
+                    if (_inst.value == "endp" || _inst.value == "endpi")
                     {
                         foreach (var child in args)
                         {
@@ -657,9 +665,23 @@ namespace Qscript
                          pop ebp
                          ret
                          */
-                        resualt.Append("mov esp, ebp\n");
-                        resualt.Append("pop ebp\n");
-                        resualt.Append("ret\n\n");
+                        vars.Clear();
+                        vars = new Dictionary<string, string>(oldVars);
+                        oldVars.Clear();
+                        if (_inst.value == "endp")
+                        {
+                            resualt.Append($"    add esp, {((localvarssize == 0) ? "0" : Convert.ToString(localvarssize))}");
+                            resualt.Append("    mov esp, ebp\n");
+                            resualt.Append("    pop ebp\n");
+                            resualt.Append("    ret\n\n");
+                        } else
+                        {
+                            resualt.Append("    mov dx, 0x20\n");
+                            resualt.Append("    mov al, 0x20\n");
+                            resualt.Append("    out dx, al\n");
+                            resualt.Append("    popa\n");
+                            resualt.Append("    iretd\n\n");
+                        }
                         continue;
                     }
 
@@ -667,30 +689,66 @@ namespace Qscript
                     // // local Name dd 0
                     if (_inst.value == "local" || _inst.value == "mlocal")
                     {
-                        localvarsoffset += 4;
+
                         //string resualtLocalString = $"local {patterns[0].value.Trim()} ";
                         //Console.WriteLine(resualtLocalString + " || " + patterns[1]);
                         if (patterns[1].value.Trim().First() == '*')
                         {
+                            localvarsoffset += 4;
                             //resualtLocalString += $" dd 0\n";
                             if (!vars.ContainsKey(patterns[0].value)) vars.Add(patterns[0].value.Trim(), "*" + patterns[2].value);
                             else vars[patterns[0].value] = "*" + patterns[2].value;
                             varsmemorytypes.Add($"ebp-{localvarsoffset}", "*" + patterns[2].value.Trim());
+                            varsmemory.Add(patterns[0].value.Trim(), $"ebp-{localvarsoffset}");
                         }
-                        else
+                        else if (!DataBase.typesregs.ContainsKey(patterns[1].value.Trim()))
                         {
+                            void localingStaticStruct (string root, string prefix)
+                            {
+                                Dictionary<string, CommonNode> fields = ProgramAst.structs[root];
+                                foreach (var field in fields)
+                                {
+                                    if (field.Value.type == NT.INDICATOR)
+                                    {
+                                        //Console.WriteLine(prefix + field.Key);
+                                        localvarsoffset += 4;
+                                        varsmemorytypes.Add($"ebp-{localvarsoffset}", DataBase.INDICATORtype);
+                                        varsmemory.Add(prefix + field.Key, $"ebp-{localvarsoffset}");
+                                        vars.Add(prefix + field.Key, "*" + field.Value.token.value);
+                                    } else if (ProgramAst.structs.ContainsKey(field.Key))
+                                    {
+                                        Console.WriteLine(prefix + field.Key);
+                                        vars.Add(field.Key, field.Value.token.value);
+                                        localingStaticStruct(field.Value.token.value, prefix + "." + field.Key);
+                                    } else {
+                                        localvarsoffset += 4;
+                                        //Console.WriteLine(prefix + field.Key);
+                                        varsmemorytypes.Add($"ebp-{localvarsoffset}", field.Value.token.value);
+                                        varsmemory.Add(prefix + field.Key, $"ebp-{localvarsoffset}");
+                                        vars.Add(prefix + field.Key, field.Value.token.value);
+                                    }
+                                }
+                            }
+                            //Console.WriteLine(":::::::: " + patterns[0].value.Trim());
+                            vars.Add(patterns[0].value.Trim(), patterns[1].value.Trim());
+                            //varsmemorytypes.Add($"ebp-{localvarsoffset+4}", patterns[1].value.Trim());
+                            varsmemory.Add(patterns[0].value.Trim(), $"ebp-{localvarsoffset+4}");
+                            localingStaticStruct(patterns[1].value.Trim(), patterns[0].value.Trim() + ".");
+                        } else
+                        {
+                            localvarsoffset += 4;
                             //resualtLocalString += $" {patterns[1].value} 0\n";
                             if (!vars.ContainsKey(patterns[0].value)) vars.Add(patterns[0].value.Trim(), patterns[1].value.Trim());
                             else vars[patterns[0].value] = patterns[1].value.Trim();
                             varsmemorytypes.Add($"ebp-{localvarsoffset}", patterns[1].value.Trim());
+                            varsmemory.Add(patterns[0].value.Trim(), $"ebp-{localvarsoffset}");
                         }
                         //if (_inst.value[0] != 'm') resualt.Append(resualtLocalString);
-                        varsmemory.Add(patterns[0].value.Trim(), $"ebp-{localvarsoffset}");
-                        
+                        if (_inst.value == "local") resualt.Append($"mov dword[ebp-{localvarsoffset}],0\n");
+
                         continue;
                     }
 
-                    Console.WriteLine(str);
                     // memory preparing
                     // // mov eax, [List.Node.next]
                     for (int j = 0; j < _inst.pattern.Count; j++)
@@ -751,7 +809,11 @@ namespace Qscript
                                     if (ParentTypeIndicator == NT.TYPE)
                                     {
                                         temp += $".{strs[k]}";
-                                        //Console.WriteLine(temp);
+                                        //Console.WriteLine("++ " + temp);
+                                        if (varsmemory.ContainsKey(temp))
+                                        {
+                                            temp = varsmemory[temp];
+                                        }
                                     } else
                                     {
                                         resualt.Append($"mov esi, [{temp}]\n");
@@ -762,6 +824,10 @@ namespace Qscript
                                     ParentType = ProgramAst.structs[ParentType][strs[k]].token.value;
                                 }
                                 resualtMemory = temp;
+                                if (varsmemory.ContainsKey(temp.Trim()))
+                                {
+                                    resualtMemory = varsmemory[temp];
+                                }
                                 /*
                                  temp = [ ]"point.{str[1]}"
                                  eaxFlag = true // первый * в eax
@@ -811,6 +877,7 @@ namespace Qscript
                             {
                                 resualtMemory = strs[0];
                                 type = vars[strs[0]];
+
                                 ParentType = type;
                                 if (ParentType[0] == '*')
                                 {
@@ -829,6 +896,10 @@ namespace Qscript
                             //if (DataBase.typesarg.ContainsKey(ParentType) && ParentTypeIndicator == NT.INDICATOR)
                             //    _size = DataBase.typesarg[ParentType].ToLower();
                             //else 
+                            if (varsmemory.ContainsKey(resualtMemory.Trim()))
+                            {
+                                resualtMemory = varsmemory[resualtMemory.Trim()];
+                            }
                             if (ParentTypeIndicator == NT.INDICATOR) _size = "dword";
                             else if (DataBase.typesarg.ContainsKey(ParentType)) _size = DataBase.typesarg[ParentType].ToLower();
                             else _size = "dword";
@@ -885,9 +956,7 @@ namespace Qscript
                         }
                     }
 
-                    //Console.WriteLine("^$$ " + str);
                     string _ins1 = InstructConcat(_inst);
-                    //Console.WriteLine("!!!"+_ins1);
                     if (!_ins1.Contains(" qword") && !_ins1.Contains(" dword")
                                 && !_ins1.Contains(" word") && !_ins1.Contains(" byte")
                                 && 
@@ -962,6 +1031,7 @@ namespace Qscript
                 }
                 catch (Exception e)
                 {
+                    //if (e.ToString().Contains("Элемент с тем же ключом уже был добавлен."))
                     //Console.WriteLine(e.ToString());
                     //Console.ReadLine();
                     resualt.Append(instructs[i].ToString());
@@ -1010,7 +1080,9 @@ namespace Qscript
                         case "byte":  size = 3; break;
                         default: size = 1; break;
                     }
-                    string newReg = DataBase.regs[DataBase.uregs[pattern1[0].value.Trim()]][size];
+                    string newReg;
+                    if (size == DataBase.aregs[pattern1[0].value.Trim()]) newReg = pattern1[0].value.Trim();
+                    else newReg = DataBase.regs[DataBase.uregs[pattern1[0].value.Trim()]][size];
                     //Console.WriteLine($"mov {sizeRight} {pattern1[0].value}, {pattern1[1].value} ------- {_sizeRight} {sizeRight}\n");
                     resualt.Append($"mov {newReg}, {pattern1[1].value} {pattern1[2].value}\n");
                     continue;

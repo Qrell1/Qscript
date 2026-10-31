@@ -77,7 +77,7 @@ namespace Qscript
         private string[] regTemp;
 
         private int old;
-        private int localvars;
+        private int localvarssize;
 
         private StringData tempData = new StringData();
         private CodeData codeData = CodeData.codeData;
@@ -1233,7 +1233,8 @@ namespace Qscript
                 if (!varSpace.PeekContainsKey(root.token.value) && _objProg.local == true)
                 {
                     _objProg.code.Append($"local {root.token.value} {classes} 0\n");
-                    localvars += 1;
+                    if (type.type == NT.INDICATOR || DataBase.types.Keys.Contains(type.token.value)) localvarssize += 4;
+                    else localvarssize += DataBase.getStructSize(type.token.value, ref ProgramAst);
                 }
                 if (!varSpace.AllContainsKey(root.token.value)) varSpace.AddVar(root.token.value, type);
             }
@@ -2204,7 +2205,7 @@ namespace Qscript
             //CommonNode types2 = take(root, 0);
             CommonNode signature = take(root, 1);
             string args = string.Empty;
-            localvars = 0;
+            localvarssize = 0;
             for (int i = 0; i < signature.childs.Count; i++)
             {
                 if (!DataBase.types.ContainsKey(signature.childs[i].childs[0].token.value) && signature.childs[i].token.value != "resualtPtr")
@@ -2306,10 +2307,11 @@ namespace Qscript
                 rep movsd
              */
             //_objProg.code.Append($"    ret\n");
-
+            string prefix = "";
+            if (ProgramAst.interruptionsFuncs.Contains(root.token.value)) prefix = "i";
             if (args.Length != 0)
-                _objProg.code.Data[n] = $"proc {root.token.value} {localvars} {args}\n";
-            else _objProg.code.Data[n] = $"proc {root.token.value} {localvars}\n";
+                _objProg.code.Data[n] = $"proc{prefix} {root.token.value} {localvarssize} {args}\n";
+            else _objProg.code.Data[n] = $"proc{prefix} {root.token.value} {localvarssize}\n";
 
             if (!root.token.value.StartsWith("qsr") && ModeApp == ModeApp.debug) _objProg.code.Append("dec [s4$tacket]");
             if (ProgramAst.resualtFunc[root.token.value] == null || ProgramAst.resualtFunc[root.token.value].token.value == "void")
@@ -2323,7 +2325,7 @@ namespace Qscript
                 _objProg.code.Append($".{root.token.value}.return:\n");
                 _objProg.code.Append($"    mov edi, [resualtPtr]\n");
                 _objProg.code.Append($"    test edi, edi\n");
-                _objProg.code.Append($"    jz {root.token.value}.retn\n");
+                _objProg.code.Append($"    jz .{root.token.value}.retn\n");
                 //_objProg.code.Append($"    mov edi, [resualtPtr]\n");
                 _objProg.code.Append($"    mov ecx, SIZE_{ProgramAst.resualtFunc[root.token.value].token.value.ToUpper()}/4\n");
                 _objProg.code.Append($"    rep movsd\n");
@@ -2331,8 +2333,8 @@ namespace Qscript
             }
             _objProg.code.Append($".{root.token.value}.retn:\n");
             //_objProg.code.Append($"    leave\n");
-            _objProg.code.Append($"    ret\n");
-            _objProg.code.Append($"endp\n");
+            //_objProg.code.Append($"    ret\n");
+            _objProg.code.Append($"endp{prefix}\n");
             local();
             
             setWriteData(CodeData.codeData);
@@ -2453,16 +2455,21 @@ namespace Qscript
             }
 
             bool flag = false;
-            foreach (var library in ProgramAst.externLibrarys.Keys)
-                if (ProgramAst.externFuncs[library].Contains(root.token.value)) flag = true;
- 
+            //foreach (var library in ProgramAst.externLibrarys.Keys)
+            //    if (ProgramAst.externFuncs[library].Contains(root.token.value)) flag = true;
+            foreach (var externLibrary in ProgramAst.externFuncs)
+            {
+                if (externLibrary.Value.Contains(root.token.value)) flag = true;
+            }
+
+
             if (flag
                 || (!ProgramAst.resualtFunc.ContainsKey(root.token.value) && varSpace.ContainsKey(root.token.value))
                 || ProgramAst.functionFromPtr.Contains(root.token.value))
             {
                 _objProg.code.Append($"call [{root.token.value}]\n");
             }
-            else _objProg.code.Append($"call {root.token.value}\nadd esp, {Convert.ToString(signatureCall.childs.Count*4)}\n");
+            else _objProg.code.Append($"call {root.token.value}\nadd esp, {Convert.ToString(signatureCall.childs.Count * 4)}\n"); // \nadd esp, {Convert.ToString(signatureCall.childs.Count*4)}
 
             try
             {
@@ -2740,7 +2747,7 @@ namespace Qscript
                 _objProg.code.Append(strings[i] + "\n");
         }
 
-        public string ConcatData(TypeApp typeApp, ModeApp modeApp, ArchApp archApp, FormatApp formatApp, string orgApp, string useApp)
+        public string ConcatData(TypeApp typeApp, ModeApp modeApp, ArchApp archApp, FormatApp formatApp, string orgApp, string useApp, int externLibrarysCount)
         {
             bool sections = true;
             if (typeApp == TypeApp.bin)
@@ -2852,7 +2859,7 @@ namespace Qscript
                 file += "start: ;START MAIN\n";
                 file += _objProg.codeData.ToString();
             }
-            if (TypeApp.asmmodule != typeApp && ProgramAst.externLibrarys.Count > 0)
+            if (TypeApp.asmmodule != typeApp && externLibrarysCount > 0)
             {
                 file += "section '.idata' import data readable\n";
                 string libraryInclude = "library ";

@@ -182,43 +182,46 @@ namespace Qscript
         }
         private static void analisCall(CommonNode root, int z_buffer)
         {
-            //Console.WriteLine($"Call {root.token.value}");
-            if (varSpace.ContainsKey(root.token.value) && varSpace.GetTypeValue(root.token.value) == "function") return;
-            foreach (var externLibrary in ast.externFuncs)
+            try
             {
-                if (externLibrary.Value.Contains(root.token.value)) return;
-            }
-            if (!ast.resualtFunc.ContainsKey(root.token.value) && !ast.inlineNames.Contains(root.token.value))
-            {
-                Syntax.SyntaxError($"Функции: {root.token.value} не сущестует чтобы её вызывать!", root);
-            }
-            else
-            {
-                foreach (CommonNode child in root.childs[0].childs) analis(child, z_buffer + 2);
-                if (ast.inlineNames.Contains(root.token.value)) return;
-
-                CommonNode funcSignatureNode = ast.typesArgsFunc[root.token.value];
-                CommonNode callSignatureNode = root.childs[0];
-
-                if (((funcSignatureNode.childs.Count != 0 && funcSignatureNode.childs.First().type == NT.PTR) ? funcSignatureNode.childs.Count - 1 : funcSignatureNode.childs.Count) != callSignatureNode.childs.Count)
-                    Syntax.SyntaxError($"Ошибка вызова Функции: {root.token.value} ты пердаёшь {callSignatureNode.childs.Count} аргументов,\nНо функция принемает {funcSignatureNode.childs.Count} аргументов", root);
+                //Console.WriteLine($"Call {root.token.value}");
+                if (varSpace.ContainsKey(root.token.value) && varSpace.GetTypeValue(root.token.value) == "function") return;
+                foreach (var externLibrary in ast.externFuncs)
+                {
+                    if (externLibrary.Value.Contains(root.token.value)) return;
+                }
+                if (!ast.resualtFunc.ContainsKey(root.token.value) && !ast.inlineNames.Contains(root.token.value))
+                {
+                    Syntax.SyntaxError($"Функции: {root.token.value} не сущестует чтобы её вызывать!", root);
+                }
                 else
                 {
-                    /*int[] sizes = new int[callSignatureNode.childs.Count];
+                    foreach (CommonNode child in root.childs[0].childs) analis(child, z_buffer + 2);
+                    if (ast.inlineNames.Contains(root.token.value)) return;
 
-                    for (int i = 0; i < sizes.Length; i++)
+                    CommonNode funcSignatureNode = ast.typesArgsFunc[root.token.value];
+                    CommonNode callSignatureNode = root.childs[0];
+
+                    if (((funcSignatureNode.childs.Count != 0 && funcSignatureNode.childs.First().type == NT.PTR) ? funcSignatureNode.childs.Count - 1 : funcSignatureNode.childs.Count) != callSignatureNode.childs.Count)
+                        Syntax.SyntaxError($"Ошибка вызова Функции: {root.token.value} ты пердаёшь {callSignatureNode.childs.Count} аргументов,\nНо функция принемает {funcSignatureNode.childs.Count} аргументов", root);
+                    else
                     {
-                        sizes[i] = getFormulaNodeSize(callSignatureNode.childs[i]);
+                        /*int[] sizes = new int[callSignatureNode.childs.Count];
+
+                        for (int i = 0; i < sizes.Length; i++)
+                        {
+                            sizes[i] = getFormulaNodeSize(callSignatureNode.childs[i]);
+                        }
+
+
+                        for (int i = 0; i < funcSignatureNode.childs.Count; i++)
+                        {
+                            if (sizes[i] != getFormulaNodeSize(funcSignatureNode.childs[i]))
+                                Syntax.SyntaxError($"Тип аргумента {i} вызываемой Функции: {root.token.value} несовподает с {funcSignatureNode.childs[i].token.value}!", callSignatureNode.childs[i]);
+                        }*/
                     }
-
-
-                    for (int i = 0; i < funcSignatureNode.childs.Count; i++)
-                    {
-                        if (sizes[i] != getFormulaNodeSize(funcSignatureNode.childs[i]))
-                            Syntax.SyntaxError($"Тип аргумента {i} вызываемой Функции: {root.token.value} несовподает с {funcSignatureNode.childs[i].token.value}!", callSignatureNode.childs[i]);
-                    }*/
                 }
-            }
+            } catch { }
         }
 
         // cycle 
